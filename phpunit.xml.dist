@@ -2,7 +2,6 @@
 <phpunit backupGlobals="false"
 	bootstrap="test/bootstrap.php"
 	backupStaticAttributes="false"
-	colors="true"
 	convertErrorsToExceptions="true"
 	convertNoticesToExceptions="true"
 	convertWarningsToExceptions="true"
@@ -12,13 +11,13 @@
 >
 	<testsuites>
 		<testsuite name="Resque Test Suite">
-			<directory>./test/Resque/</directory>
+			<directory>./test/Resque</directory>
 		</testsuite>
 	</testsuites>
 
 	<filter>
 		<whitelist>
-			<directory suffix=".php">./lib/Resque/</directory>
+			<directory suffix=".php">./src/Resque/</directory>
 		</whitelist>
 	</filter>
 </phpunit>

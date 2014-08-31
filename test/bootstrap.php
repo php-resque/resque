@@ -1,4 +1,7 @@
 <?php
+
+use Resque\Resque;
+
 /**
  * Resque test bootstrap file - sets up a test environment.
  *
@@ -9,6 +12,7 @@
 
 $loader = require __DIR__ . '/../vendor/autoload.php';
 $loader->add('Resque_Tests', __DIR__);
+$loader->add('Resque\Tests', __DIR__);
 
 define('TEST_MISC', realpath(__DIR__ . '/misc/'));
 define('REDIS_CONF', TEST_MISC . '/redis.conf');
@@ -86,15 +90,7 @@ if(function_exists('pcntl_signal')) {
 	pcntl_signal(SIGTERM, 'sigint');
 }
 
-class Test_Job
-{
-	public static $called = false;
 
-	public function perform()
-	{
-		self::$called = true;
-	}
-}
 
 class Failing_Job_Exception extends Exception
 {
@@ -109,14 +105,9 @@ class Failing_Job
 	}
 }
 
-class Test_Job_Without_Perform_Method
-{
-
-}
-
 class Test_Job_With_SetUp
 {
-	public static $called = false;
+	public $called = false;
 	public $args = false;
 
 	public function setUp()
@@ -133,7 +124,7 @@ class Test_Job_With_SetUp
 
 class Test_Job_With_TearDown
 {
-	public static $called = false;
+	public $called = false;
 	public $args = false;
 
 	public function perform()

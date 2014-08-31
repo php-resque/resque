@@ -1,4 +1,7 @@
 <?php
+
+namespace Resque;
+
 /**
  * Resque statistic management (jobs processed, failed, etc)
  *
@@ -6,7 +9,7 @@
  * @author		Chris Boulton <chris@bigcommerce.com>
  * @license		http://www.opensource.org/licenses/mit-license.php
  */
-class Resque_Stat
+class Stat
 {
 	/**
 	 * Get the value of the supplied statistic counter for the specified statistic.
@@ -14,7 +17,7 @@ class Resque_Stat
 	 * @param string $stat The name of the statistic to get the stats for.
 	 * @return mixed Value of the statistic.
 	 */
-	public static function get($stat)
+	public function get($stat)
 	{
 		return (int)Resque::redis()->get('stat:' . $stat);
 	}
@@ -26,7 +29,7 @@ class Resque_Stat
 	 * @param int $by The amount to increment the statistic by.
 	 * @return boolean True if successful, false if not.
 	 */
-	public static function incr($stat, $by = 1)
+	public function incr($stat, $by = 1)
 	{
 		return (bool)Resque::redis()->incrby('stat:' . $stat, $by);
 	}
@@ -38,7 +41,7 @@ class Resque_Stat
 	 * @param int $by The amount to decrement the statistic by.
 	 * @return boolean True if successful, false if not.
 	 */
-	public static function decr($stat, $by = 1)
+	public function decr($stat, $by = 1)
 	{
 		return (bool)Resque::redis()->decrby('stat:' . $stat, $by);
 	}
@@ -49,7 +52,7 @@ class Resque_Stat
 	 * @param string $stat The name of the statistic to delete.
 	 * @return boolean True if successful, false if not.
 	 */
-	public static function clear($stat)
+	public function clear($stat)
 	{
 		return (bool)Resque::redis()->del('stat:' . $stat);
 	}

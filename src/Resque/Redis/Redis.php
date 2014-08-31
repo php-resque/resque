@@ -1,4 +1,7 @@
 <?php
+
+namespace Resque\Redis;
+
 /**
  * Wrap Credis to add namespace support and various helper methods.
  *
@@ -6,7 +9,7 @@
  * @author		Chris Boulton <chris@bigcommerce.com>
  * @license		http://www.opensource.org/licenses/mit-license.php
  */
-class Resque_Redis
+class Redis
 {
 	/**
 	 * Redis namespace
@@ -96,7 +99,7 @@ class Resque_Redis
 	 * Set Redis namespace (prefix) default: resque
 	 * @param string $namespace
 	 */
-	public static function prefix($namespace)
+	public function prefix($namespace)
 	{
 	    if (strpos($namespace, ':') === false) {
 	        $namespace .= ':';
@@ -112,7 +115,7 @@ class Resque_Redis
     public function __construct($server, $database = null)
 	{
 		if (is_array($server)) {
-			$this->driver = new Credis_Cluster($server);
+			$this->driver = new \Credis_Cluster($server);
 		}
 		else {
 
@@ -123,7 +126,7 @@ class Resque_Redis
 			$timeout = isset($options['timeout']) ? intval($options['timeout']) : null;
 			$persistent = isset($options['persistent']) ? $options['persistent'] : '';
 
-			$this->driver = new Credis_Client($host, $port, $timeout, $persistent);
+			$this->driver = new \Credis_Client($host, $port, $timeout, $persistent);
 			if ($password){
 				$this->driver->auth($password);
 			}
@@ -153,7 +156,7 @@ class Resque_Redis
 	 * @return array An array of DSN compotnents, with 'false' values for any unknown components. e.g.
 	 *               [host, port, db, user, pass, options]
 	 */
-	public static function parseDsn($dsn)
+	public function parseDsn($dsn)
 	{
 		if ($dsn == '') {
 			// Use a sensible default for an empty DNS string
@@ -227,17 +230,17 @@ class Resque_Redis
 		try {
 			return $this->driver->__call($name, $args);
 		}
-		catch (CredisException $e) {
+		catch (\CredisException $e) {
 			return false;
 		}
 	}
 
-	public static function getPrefix()
+	public function getPrefix()
 	{
 	    return self::$defaultNamespace;
 	}
 
-	public static function removePrefix($string)
+	public function removePrefix($string)
 	{
 	    $prefix=self::getPrefix();
 

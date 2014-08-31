@@ -1,6 +1,11 @@
 <?php
+
+namespace Resque\Failure;
+
 /**
  * Interface that all failure backends should implement.
+ *
+ * @deprecated Using object construction for behaviour is not what they are for.
  *
  * @package		Resque/Failure
  * @author		Chris Boulton <chris@bigcommerce.com>
@@ -13,9 +18,8 @@ interface Resque_Failure_Interface
 	 *
 	 * @param object $payload Object containing details of the failed job.
 	 * @param object $exception Instance of the exception that was thrown by the failed job.
-	 * @param object $worker Instance of Resque_Worker that received the job.
+	 * @param object $worker Instance of Worker that received the job.
 	 * @param string $queue The name of the queue the job was fetched from.
 	 */
 	public function __construct($payload, $exception, $worker, $queue);
 }
-?>

@@ -39,7 +39,7 @@ pre and post jobs
 
 * PHP 5.3+
 * Redis 2.2+
-* Optional but Recommended: Composer
+* Composer
 
 ## Getting Started ##
 
@@ -345,13 +345,13 @@ A sample plugin is included in the `extras` directory.
 
 #### beforeFirstFork ####
 
-Called once, as a worker initializes. Argument passed is the instance of `Resque_Worker`
+Called once, as a worker initializes. Argument passed is the instance of `Worker`
 that was just initialized.
 
 #### beforeFork ####
 
 Called before php-resque forks to run a job. Argument passed contains the instance of
-`Resque_Job` for the job about to be run.
+`Job` for the job about to be run.
 
 `beforeFork` is triggered in the **parent** process. Any changes made will be permanent
 for as long as the **worker** lives.
@@ -359,7 +359,7 @@ for as long as the **worker** lives.
 #### afterFork ####
 
 Called after php-resque forks to run a job (but before the job is run). Argument
-passed contains the instance of `Resque_Job` for the job about to be run.
+passed contains the instance of `Job` for the job about to be run.
 
 `afterFork` is triggered in the **child** process after forking out to complete a job. Any
 changes made will only live as long as the **job** is being processed.
@@ -367,7 +367,7 @@ changes made will only live as long as the **job** is being processed.
 #### beforePerform ####
 
 Called before the `setUp` and `perform` methods on a job are run. Argument passed
-contains the instance of `Resque_Job` for the job about to be run.
+contains the instance of `Job` for the job about to be run.
 
 You can prevent execution of the job by throwing an exception of `Resque_Job_DontPerform`.
 Any other exceptions thrown will be treated as if they were thrown in a job, causing the
@@ -376,7 +376,7 @@ job to fail.
 #### afterPerform ####
 
 Called after the `perform` and `tearDown` methods on a job are run. Argument passed
-contains the instance of `Resque_Job` that was just run.
+contains the instance of `Job` that was just run.
 
 Any exceptions thrown will be treated as if they were thrown in a job, causing the job
 to be marked as having failed.
@@ -386,7 +386,7 @@ to be marked as having failed.
 Called whenever a job fails. Arguments passed (in this order) include:
 
 * Exception - The exception that was thrown when the job failed
-* Resque_Job - The job that failed
+* Job - The job that failed
 
 #### afterEnqueue ####
 

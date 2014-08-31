@@ -1,12 +1,18 @@
 <?php
+
+namespace Resque;
+
 /**
  * Resque event/plugin system class
+ *
+ * @deprecated reinventing the wheel.
+ * @todo replace all Event stuff with Symfony event dispatcher .
  *
  * @package		Resque/Event
  * @author		Chris Boulton <chris@bigcommerce.com>
  * @license		http://www.opensource.org/licenses/mit-license.php
  */
-class Resque_Event
+class Event
 {
 	/**
 	 * @var array Array containing all registered callbacks, indexked by event name.
@@ -20,7 +26,7 @@ class Resque_Event
 	 * @param mixed $data Optional, any data that should be passed to each callback.
 	 * @return true
 	 */
-	public static function trigger($event, $data = null)
+	public function trigger($event, $data = null)
 	{
 		if (!is_array($data)) {
 			$data = array($data);
@@ -47,7 +53,7 @@ class Resque_Event
 	 * @param mixed $callback Any callback callable by call_user_func_array.
 	 * @return true
 	 */
-	public static function listen($event, $callback)
+	public function listen($event, $callback)
 	{
 		if (!isset(self::$events[$event])) {
 			self::$events[$event] = array();
@@ -64,7 +70,7 @@ class Resque_Event
 	 * @param mixed $callback The callback as defined when listen() was called.
 	 * @return true
 	 */
-	public static function stopListening($event, $callback)
+	public function stopListening($event, $callback)
 	{
 		if (!isset(self::$events[$event])) {
 			return true;
@@ -81,7 +87,7 @@ class Resque_Event
 	/**
 	 * Call all registered listeners.
 	 */
-	public static function clearListeners()
+	public function clearListeners()
 	{
 		self::$events = array();
 	}
