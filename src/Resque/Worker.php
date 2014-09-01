@@ -4,6 +4,11 @@ namespace Resque;
 
 use Psr\Log\LogLevel;
 use Psr\Log\LoggerInterface;
+use Resque\Job\DirtyExitException;
+use Resque\Job\Exception\DontPerformException;
+use Resque\Job\Exception\InvalidJobException;
+use Resque\Job\JobFactory;
+use Resque\Job\JobInterface;
 use Resque\Job\Status;
 
 /**
@@ -67,9 +72,11 @@ class Worker
      * this method.
      *
      * @param Queue|Queue[] $queues String with a single queue name, array with multiple.
+     * @param null $jobFactory
      */
-    public function __construct($queues)
+    public function __construct($queues, $jobFactory = null)
     {
+        $this->jobFactory = $jobFactory ?: new JobFactory();
         $this->logger = new Log();
 
         if (!is_array($queues)) {
@@ -197,12 +204,13 @@ class Worker
             if (null === $job) {
                 // For an interval of 0, break now - helps with unit testing etc
                 if ($interval == 0) {
+
                     break;
                 }
 
                 if ($blocking === false) {
                     // If no job was found, we sleep for $interval before continuing and checking again
-                    $this->logger->log(LogLevel::INFO, 'Sleeping for {interval}', array('interval' => $interval));
+                    $this->logger->log(LogLevel::DEBUG, 'Sleeping for {interval}', array('interval' => $interval));
                     if ($this->paused) {
                     } else {
                         $this->updateProcTitle('Waiting for ' . implode(',', $this->queues));
@@ -214,17 +222,22 @@ class Worker
                 continue;
             }
 
-            $this->logger->log(LogLevel::NOTICE, 'Starting work on {job}', array('job' => $job));
+            $this->logger->notice(
+                sprintf(
+                    'Starting work on %s',
+                    $job
+                ),
+                array('job' => $job)
+            );
+
             //Resque_Event::trigger('beforeFork', $job);
             $this->workingOn($job);
 
             $this->childPid = Foreman::fork();
 
-            // Forked and we're the child. Run the job.
+            // if forking, and forked, or not forking run the job.
             if ($this->childPid === 0 || $this->childPid === false) {
-                $status = 'Processing ' . $job->queue . ' since ' . strftime('%F %T');
-                $this->updateProcTitle($status);
-                $this->logger->log(LogLevel::INFO, $status);
+                // Forked and we're the child, or not forking.
 
                 $this->perform($job);
 
@@ -233,18 +246,19 @@ class Worker
                 }
             }
 
+            // if forking and forked, wait for child
             if ($this->childPid > 0) {
                 // Parent process, sit and wait
                 $status = 'Forked ' . $this->childPid . ' at ' . strftime('%F %T');
                 $this->updateProcTitle($status);
-                $this->logger->log(LogLevel::INFO, $status);
+                $this->logger->log(LogLevel::DEBUG, $status);
 
                 // Wait until the child process finishes before continuing
                 pcntl_wait($status);
                 $exitStatus = pcntl_wexitstatus($status);
                 if ($exitStatus !== 0) {
                     $job->fail(
-                        new Resque_Job_DirtyExitException(
+                        new DirtyExitException(
                             'Job exited with exit code ' . $exitStatus
                         )
                     );
@@ -260,24 +274,52 @@ class Worker
      * Process a single job.
      *
      * @param Job $job The job to be processed.
+     * @return void
      */
     public function perform(Job $job)
     {
+        $status = 'Performing Job ' . $job;
+        $this->updateProcTitle($status);
+        $this->logger->log(LogLevel::INFO, $status);
+
         try {
-            //Resque_Event::trigger('afterFork', $job);
-            $job->perform();
-        } catch (\Exception $e) {
-            $this->logger->log(
-                LogLevel::CRITICAL,
-                '{job} has failed {stack}',
-                array('job' => $job, 'stack' => $e->getMessage())
+            $jobInstance = $this->jobFactory->createJob($job);
+
+            //Resque_Event::trigger('resque.job.before_perform', $job); @todo restore
+
+//            if (method_exists($instance, 'setUp')) {
+//                $instance->setUp();
+//            }
+
+            $jobInstance->perform();
+
+//            if (method_exists($instance, 'tearDown')) {
+//                $instance->tearDown();
+//            }
+
+            //Resque_Event::trigger('resque.job.after_perform', $job);  @todo restore
+        } catch (DontPerformException $e) {
+            //Resque_Event::trigger('resque.job.dont_perform', $job);  @todo restore
+            return;
+        } catch(\Exception $e) {
+            // @todo call logger->error(), this is not a critical, and improve error message.
+            //       Also trigger resque.job.failed event
+            $this->logger->error(
+                '{job} has failed, {stack}',
+                array(
+                    'job' => $job,
+                    'stack' => $e->getMessage()
+                )
             );
-            $job->fail($e);
+
+            // $job->fail($e); @todo Restore failure behaviour.
+
             return;
         }
 
-        $job->updateStatus(Status::STATUS_COMPLETE);
-        $this->logger->log(LogLevel::NOTICE, '{job} has finished', array('job' => $job));
+        // $job->updateStatus(Status::STATUS_COMPLETE); @todo update status behaviour
+
+        $this->logger->notice('{job} has successfully processed', array('job' => $job));
     }
 
     /**
@@ -294,20 +336,20 @@ class Worker
         }
 
         if ($blocking === true) {
-            $job = Job::reserveBlocking($queues, $timeout);
-            if ($job) {
-                $this->logger->log(LogLevel::INFO, 'Found job on {queue}', array('queue' => $job->queue));
+            $payload = Job::reserveBlocking($queues, $timeout);
+            if ($payload) {
+                $this->logger->log(LogLevel::INFO, 'Found job on {queue}', array('queue' => $payload->queue));
 
-                return $job;
+                return $payload;
             }
         } else {
             foreach ($queues as $queue) {
                 $this->logger->log(LogLevel::INFO, 'Checking {queue} for jobs', array('queue' => $queue));
-                $job = $queue->pop();
-                if ($job) {
+                $payload = $queue->pop();
+                if ($payload) {
                     $this->logger->log(LogLevel::INFO, 'Found job on {queue}', array('queue' => $queue));
 
-                    return $job;
+                    return $payload;
                 }
             }
         }

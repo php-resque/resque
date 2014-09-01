@@ -17,7 +17,7 @@ class Foreman
     protected $workers;
 
     /**
-     * @var array
+     * @var array Workers currently registered in Redis as work() has been called.
      */
     protected $registeredWorkers;
 
@@ -98,6 +98,10 @@ class Foreman
      */
     public function registerWorker(Worker $worker)
     {
+        if (in_array($worker, $this->registeredWorkers, true)) {
+            throw new \Exception('Cannot double register a worker, call unregister(), or halt() to clear');
+        }
+
         $this->registeredWorkers[(string) $worker] = $worker;
 
         Resque::redis()->sadd('workers', $worker);

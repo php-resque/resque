@@ -32,7 +32,7 @@ class JobTest extends ResqueTestCase
      */
     public function testObjectArgumentsCannotBePassedToJob()
     {
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
 
         $args = new stdClass;
@@ -42,7 +42,7 @@ class JobTest extends ResqueTestCase
 
     public function testEnqueuedJobReturnsExactSamePassedInArguments()
     {
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
 
         $args = array(
@@ -92,7 +92,7 @@ class JobTest extends ResqueTestCase
 
     public function testFailedJobExceptionsAreCaught()
     {
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
 
         $payload = array(
@@ -113,7 +113,7 @@ class JobTest extends ResqueTestCase
      */
     public function testJobWithoutPerformMethodThrowsException()
     {
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
 
         Resque::enqueue('jobs', 'Test_Job_Without_Perform_Method');
@@ -127,7 +127,7 @@ class JobTest extends ResqueTestCase
      */
     public function testInvalidJobThrowsException()
     {
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
 
         Resque::enqueue('jobs', 'Invalid_Job');
@@ -138,7 +138,7 @@ class JobTest extends ResqueTestCase
 
     public function testJobWithSetUpCallbackFiresSetUp()
     {
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
 
         $payload = array(
@@ -156,7 +156,7 @@ class JobTest extends ResqueTestCase
 
     public function testJobWithTearDownCallbackFiresTearDown()
     {
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
 
         $payload = array(
@@ -174,7 +174,7 @@ class JobTest extends ResqueTestCase
 
     public function testJobWithNamespace()
     {
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
 
         Resque_Redis::prefix('php');

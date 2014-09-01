@@ -12,7 +12,7 @@ class StatTest extends ResqueTestCase
 {
 	public function testStatCanBeIncremented()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         Resque_Stat::incr('test_incr');
 		Resque_Stat::incr('test_incr');
@@ -21,7 +21,7 @@ class StatTest extends ResqueTestCase
 
 	public function testStatCanBeIncrementedByX()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         Resque_Stat::incr('test_incrX', 10);
 		Resque_Stat::incr('test_incrX', 11);
@@ -30,7 +30,7 @@ class StatTest extends ResqueTestCase
 
 	public function testStatCanBeDecremented()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         Resque_Stat::incr('test_decr', 22);
 		Resque_Stat::decr('test_decr');
@@ -39,7 +39,7 @@ class StatTest extends ResqueTestCase
 
 	public function testStatCanBeDecrementedByX()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         Resque_Stat::incr('test_decrX', 22);
 		Resque_Stat::decr('test_decrX', 11);
@@ -48,7 +48,7 @@ class StatTest extends ResqueTestCase
 
 	public function testGetStatByName()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         Resque_Stat::incr('test_get', 100);
 		$this->assertEquals(100, Resque_Stat::get('test_get'));
@@ -56,7 +56,7 @@ class StatTest extends ResqueTestCase
 
 	public function testGetUnknownStatReturns0()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         $this->assertEquals(0, Resque_Stat::get('test_get_unknown'));
 	}

@@ -24,7 +24,7 @@ class EventTest extends ResqueTestCase
 
 	public function tearDown()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         \Resque\Event::clearListeners();
 		$this->callbacksHit = array();
@@ -32,7 +32,7 @@ class EventTest extends ResqueTestCase
 
 	public function getEventTestJob()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         $payload = array(
 			'class' => 'Test_Job',
@@ -59,7 +59,7 @@ class EventTest extends ResqueTestCase
 	 */
 	public function testEventCallbacksFire($event, $callback)
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         \Resque\Event::listen($event, array($this, $callback));
 
@@ -72,7 +72,7 @@ class EventTest extends ResqueTestCase
 	
 	public function testBeforeForkEventCallbackFires()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         $event = 'beforeFork';
 		$callback = 'beforeForkEventCallback';
@@ -88,7 +88,7 @@ class EventTest extends ResqueTestCase
 
 	public function testBeforePerformEventCanStopWork()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         $callback = 'beforePerformEventDontPerformCallback';
 		\Resque\Event::listen('beforePerform', array($this, $callback));
@@ -102,7 +102,7 @@ class EventTest extends ResqueTestCase
 	
 	public function testAfterEnqueueEventCallbackFires()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         $callback = 'afterEnqueueEventCallback';
 		$event = 'afterEnqueue';
@@ -116,7 +116,7 @@ class EventTest extends ResqueTestCase
 
 	public function testStopListeningRemovesListener()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         $callback = 'beforePerformEventCallback';
 		$event = 'beforePerform';
@@ -136,7 +136,7 @@ class EventTest extends ResqueTestCase
 	
 	public function beforePerformEventDontPerformCallback($instance)
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         $this->callbacksHit[] = __FUNCTION__;
 		throw new Resque_Job_DontPerform;

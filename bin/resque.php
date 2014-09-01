@@ -87,7 +87,7 @@ if (!empty($PREFIX)) {
     );
 
     $foreman
-        ->register($worker);
+        ->registerWorker($worker);
 
   //  $worker->setLogger($logger);
 

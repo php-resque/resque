@@ -12,7 +12,7 @@ class WorkerTest extends ResqueTestCase
 {
 	public function testGetWorkerById()
 	{
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
         $worker = new Worker('*');
 		$worker->setLogger(new Resque_Log());
@@ -24,7 +24,7 @@ class WorkerTest extends ResqueTestCase
 
 	public function testPausedWorkerDoesNotPickUpJobs()
 	{
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
         $worker = new Worker('*');
 		$worker->setLogger(new Resque_Log());
@@ -37,7 +37,7 @@ class WorkerTest extends ResqueTestCase
 
 	public function testResumedWorkerPicksUpJobs()
 	{
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
         $worker = new Worker('*');
 		$worker->setLogger(new Resque_Log());
@@ -105,7 +105,7 @@ class WorkerTest extends ResqueTestCase
 
 	public function testWildcardQueueWorkerWorksAllQueues()
 	{
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
         $worker = new Worker('*');
 
@@ -132,7 +132,7 @@ class WorkerTest extends ResqueTestCase
 
 	public function testWorkerClearsItsStatusWhenNotWorking()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
 		Resque::enqueue('jobs', 'Test_Job');
 		$worker = new Worker('jobs');
@@ -145,7 +145,7 @@ class WorkerTest extends ResqueTestCase
 
 	public function testWorkerRecordsWhatItIsWorkingOn()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         $worker = new Worker('jobs');
 		$worker->setLogger(new Resque_Log());
@@ -174,8 +174,8 @@ class WorkerTest extends ResqueTestCase
 
 		$worker = new Worker($queue);
 
-		$worker->work();
-		$worker->work();
+		$worker->work(0);
+		$worker->work(0);
 
 		$this->assertEquals(0, $worker->getStat('processed'));
 		$this->assertEquals(0, $worker->getStat('failed'));
@@ -183,7 +183,7 @@ class WorkerTest extends ResqueTestCase
 
 	public function testWorkerFailsUncompletedJobsOnExit()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         $worker = new Worker('jobs');
 		$worker->setLogger(new Resque_Log());
@@ -202,7 +202,7 @@ class WorkerTest extends ResqueTestCase
 
     public function testBlockingListPop()
     {
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         $worker = new Worker('jobs');
 		$worker->setLogger(new Resque_Log());

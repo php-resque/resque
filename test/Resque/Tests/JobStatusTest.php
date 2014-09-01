@@ -26,7 +26,7 @@ class JobStatusTest extends ResqueTestCase
 
 	public function testJobStatusCanBeTracked()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         $token = Resque::enqueue('jobs', 'Test_Job', null, true);
 		$status = new Resque_Job_Status($token);
@@ -35,7 +35,7 @@ class JobStatusTest extends ResqueTestCase
 
 	public function testJobStatusIsReturnedViaJobInstance()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         $token = Resque::enqueue('jobs', 'Test_Job', null, true);
 		$job = Resque_Job::reserve('jobs');
@@ -44,7 +44,7 @@ class JobStatusTest extends ResqueTestCase
 
 	public function testQueuedJobReturnsQueuedStatus()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         $token = Resque::enqueue('jobs', 'Test_Job', null, true);
 		$status = new Resque_Job_Status($token);
@@ -53,7 +53,7 @@ class JobStatusTest extends ResqueTestCase
 
 	public function testRunningJobReturnsRunningStatus()
 	{
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
         $token = Resque::enqueue('jobs', 'Failing_Job', null, true);
 		$job = $this->worker->reserve();
@@ -64,7 +64,7 @@ class JobStatusTest extends ResqueTestCase
 
 	public function testFailedJobReturnsFailedStatus()
 	{
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
 
         $token = Resque::enqueue('jobs', 'Failing_Job', null, true);
@@ -75,7 +75,7 @@ class JobStatusTest extends ResqueTestCase
 
 	public function testCompletedJobReturnsCompletedStatus()
 	{
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
 
         $token = Resque::enqueue('jobs', 'Test_Job', null, true);
@@ -86,7 +86,7 @@ class JobStatusTest extends ResqueTestCase
 
 	public function testStatusIsNotTrackedWhenToldNotTo()
 	{
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
 
         $token = Resque::enqueue('jobs', 'Test_Job', null, false);
@@ -96,7 +96,7 @@ class JobStatusTest extends ResqueTestCase
 
 	public function testStatusTrackingCanBeStopped()
 	{
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
 
         Resque_Job_Status::create('test');
@@ -108,7 +108,7 @@ class JobStatusTest extends ResqueTestCase
 
 	public function testRecreatedJobWithTrackingStillTracksStatus()
 	{
-        return $this->markTestSkipped();
+        return self::markTestSkipped();
 
 
         $originalToken = Resque::enqueue('jobs', 'Test_Job', null, true);

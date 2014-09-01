@@ -17,7 +17,7 @@ class ForemanTest extends ResqueTestCase
         $foreman = new Foreman();
 
         $foreman
-            ->addWorker($worker);
+            ->registerWorker($worker);
 
         // Make sure the worker is in the list
         $this->assertTrue((bool)$this->redis->sismember('resque:workers', $worker));
@@ -32,7 +32,7 @@ class ForemanTest extends ResqueTestCase
         for ($i = 0; $i < $count; ++$i) {
             $queue = new Queue('queue_' . $i);
             $worker = new Worker($queue);
-            $foreman->addWorker($worker);
+            $foreman->registerWorker($worker);
         }
 
         // Now try to get them
@@ -62,7 +62,7 @@ class ForemanTest extends ResqueTestCase
         $this->assertCount(0, $this->redis->smembers('resque:workers'));
     }
 
-    public function testInvalidWorkerDoesNotExist()
+    public function testUnregisteredWorkerDoesNotExistInRedis()
     {
         $foreman = new Foreman();
 
@@ -100,7 +100,7 @@ class ForemanTest extends ResqueTestCase
             ->addWorker(clone $mockWorker);
 
         $foreman
-            ->work();
+            ->work(0);
 
         $this->assertSame(0, $workMethodCalls);
         $this->assertCount(5, $foreman->allLocal());
@@ -112,7 +112,7 @@ class ForemanTest extends ResqueTestCase
 
     public function testWorkerCleansUpDeadWorkersOnStartup()
     {
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         // Register a good worker
         $goodWorker = new Worker('jobs');
@@ -141,7 +141,7 @@ class ForemanTest extends ResqueTestCase
 
     public function testDeadWorkerCleanUpDoesNotCleanUnknownWorkers()
     {
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         // Register a bad worker on this machine
         $worker = new Worker('jobs');

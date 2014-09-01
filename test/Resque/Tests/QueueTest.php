@@ -23,7 +23,7 @@ class QueueTest extends ResqueTestCase
 
     public function testJobCanBeEnqueued()
     {
-        $this->assertTrue((bool)$this->queue->enqueue(new Job('Test_Job')));
+        $this->assertTrue($this->queue->enqueue(new Job('Test_Job')));
     }
 
     public function testQueuedJobCanBePopped()
@@ -43,7 +43,7 @@ class QueueTest extends ResqueTestCase
     public function testAfterJobIsPoppedItIsRemoved()
     {
         $this->queue->enqueue(new Job('Test_Job'));
-        $this->queue->pop();
+        $this->assertNotNull($this->queue->pop());
         $this->assertNull($this->queue->pop());
     }
 }

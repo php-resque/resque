@@ -12,7 +12,7 @@ class LogTest extends ResqueTestCase
 {
 	public function testLogInterpolate()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         $logger   = new Resque_Log();
 		$actual   = $logger->interpolate('string {replace}', array('replace' => 'value'));
@@ -23,7 +23,7 @@ class LogTest extends ResqueTestCase
 
 	public function testLogInterpolateMutiple()
 	{
-        return $this->markTestIncomplete();
+        return self::markTestSkipped();
 
         $logger   = new Resque_Log();
 		$actual   = $logger->interpolate(

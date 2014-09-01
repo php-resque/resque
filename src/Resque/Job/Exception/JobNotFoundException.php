@@ -2,8 +2,6 @@
 
 namespace Resque\Job\Exception;
 
-use Resque\Exception\ResqueException;
-
-class JobNotFoundException extends ResqueException
+class JobNotFoundException extends InvalidJobException
 {
 }

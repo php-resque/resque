@@ -8,7 +8,7 @@ use Resque\Job\JobInterface;
 use Resque\Job\Status;
 
 /**
- * Resque job
+ * Resque Job
  *
  * @todo Think of a better name for this object, as the Job is technically the class constructed by this. Payload? :s
  */
@@ -46,9 +46,20 @@ class Job
      */
     public function __construct($jobClass, $arguments = array())
     {
-        $this->id = md5(uniqid('', true));
         $this->class = $jobClass;
         $this->arguments = $arguments;
+    }
+
+    /**
+     * @return string
+     */
+    public function getId()
+    {
+        if (null === $this->id) {
+            $this->id = md5(uniqid('', true));
+        }
+
+        return $this->id;
     }
 
     /**
@@ -79,9 +90,9 @@ class Job
     public function jsonSerialize()
     {
         return array(
-            'class' => $this->class,
-            'args' => array($this->arguments),
-            'id' => $this->id,
+            'class' => $this->getJobClass(),
+            'args' => array($this->getArguments()),
+            'id' => $this->getId(),
             'queue_time' => microtime(true),
         );
     }
@@ -112,74 +123,7 @@ class Job
         return $status->get();
     }
 
-    /**
-     * Actually execute a job by calling the perform method on the class
-     * associated with the job with the supplied arguments.
-     *
-     * @return bool
-     * @throws JobNotFoundException When the job's class could not be found or it does not contain a perform method.
-     */
-    public function perform()
-    {
-        try {
-            //Resque_Event::trigger('beforePerform', $this); @todo The worker should trigger this.
-
-            $instance = $this->createInstance();
-
-            if (method_exists($instance, 'setUp')) {
-                $instance->setUp();
-            }
-
-            $instance->perform();
-
-            if (method_exists($instance, 'tearDown')) {
-                $instance->tearDown();
-            }
-
-            //Resque_Event::trigger('afterPerform', $this);  @todo The worker should trigger this.
-        } // beforePerform/setUp have said don't perform this job. Return.
-        catch (Resque_Job_DontPerform $e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Get the instantiated object for this job that will be performing work.
-     *
-     * @return object An instance of the target class that this job is for.
-     * @throws Resque_Exception
-     */
-    protected function createInstance()
-    {
-//        if (!is_null($this->instance)) {
-//            return $this->instance;
-//        }
-
-        if (false === class_exists($this->class)) {
-            throw new JobNotFoundException(
-                'Could not find job class ' . $this->class . '.'
-            );
-        }
-
-        $instance = new $this->class;
-        // @todo check if JobInterface is implemented.
-
-        if (false === $instance instanceof JobInterface) {
-            throw new ResqueException(
-                'Job class ' . $this->class . ' needs to implement Resque\JobInterface'
-            );
-        }
-
-        $instance->job = $this;
-//        $this->instance->args = $this->getArguments();
-//        $this->instance->queue = $this->queue;
-
-        return $instance;
-    }
-
-    /**
+     /**
      * @param \Resque\Queue $queue
      */
     public function setQueue($queue)
@@ -206,8 +150,8 @@ class Job
 //            $this->worker,
 //            $this->queue
 //        );
-        Stat::incr('failed');
-        Stat::incr('failed:' . $this->worker);
+//        Stat::incr('failed');
+//        Stat::incr('failed:' . $this->worker);
     }
 
     /**
@@ -217,16 +161,6 @@ class Job
      */
     public function __toString()
     {
-        $name = array(
-            'Job{' . $this->queue . '}'
-        );
-        if (!empty($this->id)) {
-            $name[] = 'ID: ' . $this->id;
-        }
-        $name[] = $this->getJobClass();
-        if (!empty($this->getArguments())) {
-            $name[] = json_encode($this->getArguments());
-        }
-        return '(' . implode(' | ', $name) . ')';
+        return 'Job' . json_encode($this->jsonSerialize(), true);
     }
 }

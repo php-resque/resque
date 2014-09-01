@@ -5,7 +5,7 @@ namespace Resque;
 /**
  * Resque QueueInterface
  *
- * Define the basic interface a Queue needed by a worker.
+ * Defines the basic interface of a Queue needed by a worker.
  */
 interface QueueInterface
 {
