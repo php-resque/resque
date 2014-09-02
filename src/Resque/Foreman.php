@@ -42,10 +42,13 @@ class Foreman
         list($hostname, $pid, $queues) = explode(':', $workerId, 3);
         $queues = explode(',', $queues);
 
-        // @todo turn $queues in Queue objects.
+        $worker = new Worker();
+        foreach ($queues as $queue) {
+            $worker->addQueue(new Queue($queue));
+        }
 
-        $worker = new Worker($queues);
         $worker->setId($workerId);
+
         return $worker;
     }
 

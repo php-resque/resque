@@ -4,6 +4,11 @@ namespace Resque;
 
 use Psr\Log\LogLevel;
 use Psr\Log\LoggerInterface;
+use Resque\Event\EventDispatcher;
+use Resque\Event\JobBeforePerformEvent;
+use Resque\Event\JobFailedEvent;
+use Resque\Event\JobAfterPerformEvent;
+use Resque\Event\JobPerformedEvent;
 use Resque\Job\DirtyExitException;
 use Resque\Job\Exception\DontPerformException;
 use Resque\Job\Exception\InvalidJobException;
@@ -61,6 +66,11 @@ class Worker
     private $childPid = null;
 
     /**
+     * @var Event\EventDispatcher
+     */
+    protected $eventDispatcher;
+
+    /**
      * Constructor
      *
      * Instantiate a new worker, given a list of queues that it should be working
@@ -74,15 +84,18 @@ class Worker
      * @param Queue|Queue[] $queues String with a single queue name, array with multiple.
      * @param null $jobFactory
      */
-    public function __construct($queues, $jobFactory = null)
+    public function __construct($queues = null, $jobFactory = null)
     {
         $this->jobFactory = $jobFactory ?: new JobFactory();
+        $this->eventDispatcher = new EventDispatcher();
         $this->logger = new Log();
 
-        if (!is_array($queues)) {
-            $this->addQueue($queues);
-        } else {
-            $this->addQueues($queues);
+        if (false === (null === $queues)) {
+            if (!is_array($queues)) {
+                $this->addQueue($queues);
+            } else {
+                $this->addQueues($queues);
+            }
         }
 
         if (function_exists('gethostname')) {
@@ -285,7 +298,9 @@ class Worker
         try {
             $jobInstance = $this->jobFactory->createJob($job);
 
-            //Resque_Event::trigger('resque.job.before_perform', $job); @todo restore
+            $this->eventDispatcher->dispatch(
+                new JobBeforePerformEvent($job)
+            );
 
 //            if (method_exists($instance, 'setUp')) {
 //                $instance->setUp();
@@ -297,22 +312,29 @@ class Worker
 //                $instance->tearDown();
 //            }
 
-            //Resque_Event::trigger('resque.job.after_perform', $job);  @todo restore
-        } catch (DontPerformException $e) {
+            $this->eventDispatcher->dispatch(
+                new JobAfterPerformEvent($job)
+            );
+        } catch (DontPerformException $exception) {
             //Resque_Event::trigger('resque.job.dont_perform', $job);  @todo restore
+
+            // @todo work out the value in a DontPerformException
+
             return;
-        } catch(\Exception $e) {
-            // @todo call logger->error(), this is not a critical, and improve error message.
-            //       Also trigger resque.job.failed event
+        } catch (\Exception $exception) {
             $this->logger->error(
-                '{job} has failed, {stack}',
+                '{job} has failed, {stack}', // @todo improve error message.
                 array(
                     'job' => $job,
-                    'stack' => $e->getMessage()
+                    'stack' => $exception->getMessage()
                 )
             );
 
             // $job->fail($e); @todo Restore failure behaviour.
+
+            $this->eventDispatcher->dispatch(
+                new JobFailedEvent($job, $exception)
+            );
 
             return;
         }
@@ -320,12 +342,18 @@ class Worker
         // $job->updateStatus(Status::STATUS_COMPLETE); @todo update status behaviour
 
         $this->logger->notice('{job} has successfully processed', array('job' => $job));
+
+        $this->eventDispatcher->dispatch(
+            new JobPerformedEvent($job)
+        );
     }
 
     /**
+     * @todo The name reserve doesn't sit well, all it's doing is asking queues for jobs. Change it.
+     *
      * @param  bool $blocking
      * @param  int $timeout
-     * @return Job|null               Instance of Job if a job is found, null if not.
+     * @return Job|null Instance of Job if a job is found, null if not.
      */
     public function reserve($blocking = false, $timeout = null)
     {
