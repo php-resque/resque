@@ -136,24 +136,4 @@ class ResqueJob
 
 		return self::create($this->queue, $this->payload['class'], $this->getArguments(), $monitor);
 	}
-
-	/**
-	 * Generate a string representation used to describe the current job.
-	 *
-	 * @return string The string representation of the job.
-	 */
-	public function __toString()
-	{
-		$name = array(
-			'Job{' . $this->queue .'}'
-		);
-		if(!empty($this->payload['id'])) {
-			$name[] = 'ID: ' . $this->payload['id'];
-		}
-		$name[] = $this->payload['class'];
-		if(!empty($this->payload['args'])) {
-			$name[] = json_encode($this->payload['args']);
-		}
-		return '(' . implode(' | ', $name) . ')';
-	}
 }

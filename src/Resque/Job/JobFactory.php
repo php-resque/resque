@@ -27,6 +27,7 @@ class JobFactory implements JobFactoryInterface
 
         $instance = new $class;
 
+        // @todo I think this should probably be in Worker->perform(), why should the factory care?
         if (false === ($instance instanceof JobInterface)) {
             throw new Exception\InvalidJobException(
                 'Job "' . $class . '" needs to implement Resque\JobInterface'
