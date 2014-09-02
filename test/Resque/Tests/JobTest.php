@@ -14,6 +14,7 @@ class JobTest extends ResqueTestCase
      * @var Queue
      */
     protected $queue;
+
     /**
      * @var Worker
      */
@@ -28,23 +29,18 @@ class JobTest extends ResqueTestCase
     }
 
     /**
-     * @expectedException InvalidArgumentException
+     * @expectedException \InvalidArgumentException
      */
     public function testObjectArgumentsCannotBePassedToJob()
     {
-        return self::markTestSkipped();
-
-
-        $args = new stdClass;
+        $args = new \stdClass;
         $args->test = 'somevalue';
-        Resque::enqueue('jobs', 'Test_Job', $args);
+
+        new Job('Test_Job', $args);
     }
 
     public function testEnqueuedJobReturnsExactSamePassedInArguments()
     {
-        return self::markTestSkipped();
-
-
         $args = array(
             'int' => 123,
             'numArray' => array(
@@ -56,8 +52,15 @@ class JobTest extends ResqueTestCase
                 'key2' => 'value2'
             ),
         );
-        Resque::enqueue('jobs', 'Test_Job', $args);
-        $job = Resque_Job::reserve('jobs');
+
+        $this->queue->push(
+            new Job(
+                'Test_Job',
+                $args
+            )
+        );
+
+        $job = $this->queue->pop();
 
         $this->assertEquals($args, $job->getArguments());
     }

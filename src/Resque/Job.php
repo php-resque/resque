@@ -47,7 +47,7 @@ class Job
     public function __construct($jobClass, $arguments = array())
     {
         $this->class = $jobClass;
-        $this->arguments = $arguments;
+        $this->setArguments($arguments);
     }
 
     /**
@@ -123,12 +123,27 @@ class Job
         return $status->get();
     }
 
-     /**
+    /**
      * @param \Resque\Queue $queue
      */
     public function setQueue($queue)
     {
         $this->queue = $queue;
+    }
+
+    /**
+     * @param $args
+     * @throws \InvalidArgumentException when $args is not an array
+     */
+    public function setArguments($args)
+    {
+        if (false === is_array($args)) {
+            throw new \InvalidArgumentException(
+                'Supplied $args must be an array.'
+            );
+        }
+
+        $this->arguments = $args;
     }
 
     /**
