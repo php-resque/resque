@@ -14,17 +14,7 @@ $loader = require __DIR__ . '/../vendor/autoload.php';
 $loader->add('Resque_Tests', __DIR__);
 $loader->add('Resque\Tests', __DIR__);
 
-define('TEST_MISC', realpath(__DIR__ . '/misc/'));
-define('REDIS_CONF', TEST_MISC . '/redis.conf');
-
-// Get redis port from conf
-$config = file_get_contents(REDIS_CONF);
-if(!preg_match('#^\s*port\s+([0-9]+)#m', $config, $matches)) {
-	echo "Could not determine redis port from redis.conf";
-	exit(1);
-}
-
-Resque::setBackend('localhost:' . $matches[1]);
+Resque::setBackend('localhost:6379');
 
 if(function_exists('pcntl_signal')) {
 	// Override INT and TERM signals, so they do a clean shutdown and also
@@ -36,8 +26,6 @@ if(function_exists('pcntl_signal')) {
 	pcntl_signal(SIGINT, 'sigint');
 	pcntl_signal(SIGTERM, 'sigint');
 }
-
-
 
 class Failing_Job_Exception extends Exception
 {

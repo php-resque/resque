@@ -62,6 +62,7 @@ class JobTest extends ResqueTestCase
 
         $job = $this->queue->pop();
 
+        $this->assertNotNull($job);
         $this->assertEquals($args, $job->getArguments());
     }
 
@@ -88,6 +89,7 @@ class JobTest extends ResqueTestCase
 
         $poppedJob = $this->queue->pop();
 
+        $this->assertNotNull($poppedJob);
         $this->assertEquals($insertedJob->getJobClass(), $poppedJob->getJobClass());
         $this->assertEquals($insertedJob->getArguments(), $poppedJob->getArguments());
         $this->assertNull($this->queue->pop());
