@@ -14,4 +14,4 @@ before_script:
   - sh -c "if [ $REDIS_STANDALONE -eq 0 ]; then cd phpredis-2.2.3/ && phpize && ./configure && make && make install; fi"
   - sh -c "if [ $REDIS_STANDALONE -eq 0 ]; then echo \"extension=redis.so\" >> `php --ini | grep \"Loaded Configuration\" | sed -e \"s|.*:\s*||\"`; fi"
   - composer install
-script: ./vendor/bin/phpunit
+script: ./vendor/bin/phpunit --colors --coverage-text
