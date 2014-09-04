@@ -25,6 +25,7 @@ It also supports the following additional features:
 * Has the ability to track the status of jobs
 * Will mark a job as failed, if a forked child running a job does
 not exit with a status code as 0
+* avoids singletons
 
 ## Requirements
 
@@ -35,11 +36,10 @@ not exit with a status code as 0
 ## Getting Started
 
 The easiest way to work with php-resque is when it's installed as a Composer package inside your project.
-Composer isn't strictly required, but makes life a lot easier.
 
 If you're not familiar with Composer, please see <http://getcomposer.org/>.
 
-1. Add php-resque to your application's composer.json.
+Add php-resque to your application's composer.json.
 
 ```sh
 composer require zomble/php-resque:dev-master
@@ -253,38 +253,31 @@ automatically detect and use it.
 ## Event System
 
 php-resque comes with a basic event system that can be used by your application. However you can [plug in
-a bridge to your applications event system](#Dispatcher Replacement).
+a bridge to your applications event system](#dispatcher-replacement).
 
-In the supplied dispatcher you can listen in on events ([as listed below](#Evnts) by registering
+In the supplied dispatcher you can listen in on events ([as listed below](#events) by registering
 [callables](http://php.net/manual/en/language.types.callable.php) against them, that will be triggered when an
 event is raised:
 
 ```php
-<?php
-
 // @see Resque\Event\EventDispatcher
-
 $dispatcher->addListener('eventName', [callback]);
 ```
 
 `[callback]` may be anything in PHP that [is callable](http://php.net/manual/en/function.is-callable.php):
 
-Event objects are passed through as a singular argument (documented below).
+Event objects are passed through as a singular argument, ([documented below](#events)).
 
 You can stop listening to an event by calling `EventDispatcher->removeListener` with the same arguments supplied
 to `EventDispatcher->removeListener`.
 
 A sample plugin is included in the `extras` directory.
 
-### Dispatcher Replacement
-
-// @todo document usage
-
 ### Events
 
 In php-resque each event is an object that will have various properties depending on the situation. The following list
-shows each of the event and corresponding objects that come with them. At a minimum all event objects will implement
-the `Resque\Event\EventInterface` interface.
+shows each of the event names and corresponding objects that come with them. At a minimum all event objects will
+implement the `Resque\Event\EventInterface` interface.
 
 #### beforeFirstFork
 
@@ -336,6 +329,10 @@ Called after a job has been queued using the `Resque::enqueue` method. Arguments
 * Arguments - array of arguments supplied to the job
 * Queue - string containing the name of the queue the job was added to
 * ID - string containing the new token of the enqueued job
+
+### Dispatcher Replacement
+
+// @todo document usage
 
 ## Step-By-Step ##
 

@@ -305,7 +305,7 @@ class Worker
             $jobInstance->perform();
 
             $this->eventDispatcher->dispatch(
-                new JobAfterPerformEvent($job, $jobInstance)
+                new JobAfterPerformEvent($job)
             );
         } catch (DontPerformException $exception) {
             //Resque_Event::trigger('resque.job.dont_perform', $job);  @todo restore
