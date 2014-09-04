@@ -299,21 +299,13 @@ class Worker
             $jobInstance = $this->jobFactory->createJob($job);
 
             $this->eventDispatcher->dispatch(
-                new JobBeforePerformEvent($job)
+                new JobBeforePerformEvent($job, $jobInstance)
             );
-
-//            if (method_exists($instance, 'setUp')) {
-//                $instance->setUp();
-//            }
 
             $jobInstance->perform();
 
-//            if (method_exists($instance, 'tearDown')) {
-//                $instance->tearDown();
-//            }
-
             $this->eventDispatcher->dispatch(
-                new JobAfterPerformEvent($job)
+                new JobAfterPerformEvent($job, $jobInstance)
             );
         } catch (DontPerformException $exception) {
             //Resque_Event::trigger('resque.job.dont_perform', $job);  @todo restore

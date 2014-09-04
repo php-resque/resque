@@ -1,78 +1,53 @@
-php-resque: PHP Resque Worker (and Enqueue) [![Build Status](https://secure.travis-ci.org/chrisboulton/php-resque.png)](http://travis-ci.org/chrisboulton/php-resque)
-===========================================
+PHP Resque
+==========
 
-Resque is a Redis-backed library for creating background jobs, placing
-those jobs on one or more queues, and processing them later.
+PHP Resque is a Redis-backed library for creating background jobs, placing those jobs in queues, and processing
+them some time in the future.
 
-## Background ##
+## Background
 
-Resque was pioneered and is developed by the fine folks at GitHub (yes,
-I am a kiss-ass), and written in Ruby. What you're seeing here is an
-almost direct port of the Resque worker and enqueue system to PHP.
+Resque was pioneered and is developed by the fine folks at GitHub, and written in Ruby. What you're seeing here is a
+port of the Resque worker and enqueue system to PHP.
 
 For more information on Resque, visit the official GitHub project:
  <https://github.com/resque/resque>
 
-For further information, see the launch post on the GitHub blog:
- <http://github.com/blog/542-introducing-resque>
-
-The PHP port does NOT include its own web interface for viewing queue
-stats, as the data is stored in the exact same expected format as the
-Ruby version of Resque.
-
-The PHP port provides much the same features as the Ruby version:
+This PHP port provides much the same features as the Ruby version:
 
 * Workers can be distributed between multiple machines
 * Includes support for priorities (queues)
 * Resilient to memory leaks (forking)
-* Expects failure
+* Expects failures
+* Lifecycle events
 
 It also supports the following additional features:
 
 * Has the ability to track the status of jobs
 * Will mark a job as failed, if a forked child running a job does
 not exit with a status code as 0
-* Has built in support for `setUp` and `tearDown` methods, called
-pre and post jobs
 
-## Requirements ##
+## Requirements
 
 * PHP 5.3+
 * Redis 2.2+
 * Composer
 
-## Getting Started ##
+## Getting Started
 
-The easiest way to work with php-resque is when it's installed as a
-Composer package inside your project. Composer isn't strictly
-required, but makes life a lot easier.
+The easiest way to work with php-resque is when it's installed as a Composer package inside your project.
+Composer isn't strictly required, but makes life a lot easier.
 
 If you're not familiar with Composer, please see <http://getcomposer.org/>.
 
 1. Add php-resque to your application's composer.json.
 
-```json
-{
-    // ...
-    "require": {
-        "chrisboulton/php-resque": "1.2.x"	// Most recent tagged version
-    },
-    // ...
-}
-```
-
-2. Run `composer install`.
-
-3. If you haven't already, add the Composer autoload to your project's
-   initialization file. (example)
-
 ```sh
-require 'vendor/autoload.php';
+composer require zomble/php-resque:dev-master
 ```
 
-## Jobs ##
+## Jobs
 
-### Queueing Jobs ###
+### Queueing Jobs
 
 Jobs are queued as follows:
 
@@ -108,31 +83,6 @@ via `$this->args`.
 Any exception thrown by a job will result in the job failing - be
 careful here and make sure you handle the exceptions that shouldn't
 result in a job failing.
-
-Jobs can also have `setUp` and `tearDown` methods. If a `setUp` method
-is defined, it will be called before the `perform` method is run.
-The `tearDown` method, if defined, will be called after the job finishes.
-
-
-```php
-class My_Job
-{
-    public function setUp()
-    {
-        // ... Set up environment for this job
-    }
-
-    public function perform()
-    {
-        // .. Run job
-    }
-
-    public function tearDown()
-    {
-        // ... Remove environment for this job
-    }
-}
-```
 
 ### Tracking Job Statuses ###
 
@@ -197,10 +147,6 @@ variable:
 ```sh
 $ QUEUE=file_serve APP_INCLUDE=../application/init.php php bin/resque
 ```
-
-*Pro tip: Using Composer? More than likely, you don't need to worry about
-`APP_INCLUDE`, because hopefully Composer is responsible for autoloading
-your application too!*
 
 Getting your application underway also includes telling the worker your job
 classes, by means of either an autoloader or including them.
@@ -304,51 +250,48 @@ adds this functionality to PHP before 5.5, so if you'd like process
 titles updated, install the PECL module as well. php-resque will
 automatically detect and use it.
 
-## Event/Hook System ##
+## Event System
 
-php-resque has a basic event system that can be used by your application
-to customize how some of the php-resque internals behave.
+php-resque comes with a basic event system that can be used by your application. However you can [plug in
+a bridge to your applications event system](#Dispatcher Replacement).
 
-You listen in on events (as listed below) by registering with `Resque_Event`
-and supplying a callback that you would like triggered when the event is
-raised:
+In the supplied dispatcher you can listen in on events ([as listed below](#Evnts) by registering
+[callables](http://php.net/manual/en/language.types.callable.php) against them, that will be triggered when an
+event is raised:
 
-```sh
-Resque_Event::listen('eventName', [callback]);
+```php
+<?php
+
+// @see Resque\Event\EventDispatcher
+
+$dispatcher->addListener('eventName', [callback]);
 ```
 
-`[callback]` may be anything in PHP that is callable by `call_user_func_array`:
+`[callback]` may be anything in PHP that [is callable](http://php.net/manual/en/function.is-callable.php):
 
-* A string with the name of a function
-* An array containing an object and method to call
-* An array containing an object and a static method to call
-* A closure (PHP 5.3+)
+Event objects are passed through as a singular argument (documented below).
 
-Events may pass arguments (documented below), so your callback should accept
-these arguments.
-
-You can stop listening to an event by calling `Resque_Event::stopListening`
-with the same arguments supplied to `Resque_Event::listen`.
-
-It is up to your application to register event listeners. When enqueuing events
-in your application, it should be as easy as making sure php-resque is loaded
-and calling `Resque_Event::listen`.
-
-When running workers, if you run workers via the default `bin/resque` script,
-your `APP_INCLUDE` script should initialize and register any listeners required
-for operation. If you have rolled your own worker manager, then it is again your
-responsibility to register listeners.
+You can stop listening to an event by calling `EventDispatcher->removeListener` with the same arguments supplied
+to `EventDispatcher->removeListener`.
 
 A sample plugin is included in the `extras` directory.
 
-### Events ###
+### Dispatcher Replacement
 
-#### beforeFirstFork ####
+// @todo document usage
+
+### Events
+
+In php-resque each event is an object that will have various properties depending on the situation. The following list
+shows each of the event and corresponding objects that come with them. At a minimum all event objects will implement
+the `Resque\Event\EventInterface` interface.
+
+#### beforeFirstFork
 
 Called once, as a worker initializes. Argument passed is the instance of `Worker`
 that was just initialized.
 
-#### beforeFork ####
+#### beforeFork
 
 Called before php-resque forks to run a job. Argument passed contains the instance of
 `Job` for the job about to be run.
@@ -366,17 +309,13 @@ changes made will only live as long as the **job** is being processed.
 
 #### beforePerform ####
 
-Called before the `setUp` and `perform` methods on a job are run. Argument passed
+Called before the `perform` methods on a job are run. Argument passed
 contains the instance of `Job` for the job about to be run.
-
-You can prevent execution of the job by throwing an exception of `Resque_Job_DontPerform`.
-Any other exceptions thrown will be treated as if they were thrown in a job, causing the
-job to fail.
 
 #### afterPerform ####
 
-Called after the `perform` and `tearDown` methods on a job are run. Argument passed
-contains the instance of `Job` that was just run.
+Called after the `perform` methods on a job are run. Argument passed
+contains the instance of the `Job` and job instance that was just run.
 
 Any exceptions thrown will be treated as if they were thrown in a job, causing the job
 to be marked as having failed.
@@ -402,54 +341,3 @@ Called after a job has been queued using the `Resque::enqueue` method. Arguments
 
 For a more in-depth look at what php-resque does under the hood (without 
 needing to directly examine the code), have a look at `HOWITWORKS.md`.
-
-## Contributors ##
-
-### Project Lead ###
-
-* @chrisboulton
-
-### Others ###
-
-* @acinader
-* @ajbonner
-* @andrewjshults
-* @atorres757
-* @benjisg
-* @cballou
-* @chaitanyakuber
-* @charly22
-* @CyrilMazur
-* @d11wtq
-* @danhunsaker
-* @dceballos
-* @ebernhardson
-* @hlegius
-* @hobodave
-* @humancopy
-* @iskandar
-* @JesseObrien
-* @jjfrey
-* @jmathai
-* @joshhawthorne
-* @KevBurnsJr
-* @lboynton
-* @maetl
-* @matteosister
-* @MattHeath
-* @mickhrmweb
-* @Olden
-* @patrickbajao
-* @pedroarnal
-* @ptrofimov
-* @rajibahmed
-* @richardkmiller
-* @Rockstar04
-* @ruudk
-* @salimane
-* @scragg0x
-* @scraton
-* @thedotedge
-* @tonypiper
-* @trimbletodd
-* @warezthebeef
