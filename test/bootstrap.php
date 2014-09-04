@@ -19,8 +19,7 @@ Resque::setBackend('localhost:6379');
 if(function_exists('pcntl_signal')) {
 	// Override INT and TERM signals, so they do a clean shutdown and also
 	// clean up redis-server as well.
-	function sigint()
-	{
+	function sigint() {
 	 	exit;
 	}
 	pcntl_signal(SIGINT, 'sigint');
@@ -37,38 +36,5 @@ class Failing_Job
 	public function perform()
 	{
 		throw new Failing_Job_Exception('Message!');
-	}
-}
-
-class Test_Job_With_SetUp
-{
-	public $called = false;
-	public $args = false;
-
-	public function setUp()
-	{
-		self::$called = true;
-	}
-
-	public function perform()
-	{
-
-	}
-}
-
-
-class Test_Job_With_TearDown
-{
-	public $called = false;
-	public $args = false;
-
-	public function perform()
-	{
-
-	}
-
-	public function tearDown()
-	{
-		self::$called = true;
 	}
 }
