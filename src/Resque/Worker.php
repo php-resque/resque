@@ -10,6 +10,7 @@ use Resque\Event\JobBeforePerformEvent;
 use Resque\Event\JobFailedEvent;
 use Resque\Event\JobAfterPerformEvent;
 use Resque\Event\JobPerformedEvent;
+use Resque\Event\JobBeforeForkEvent;
 use Resque\Job\DirtyExitException;
 use Resque\Job\Exception\DontPerformException;
 use Resque\Job\Exception\InvalidJobException;
@@ -70,6 +71,11 @@ class Worker
      * @var Event\EventDispatcher
      */
     protected $eventDispatcher;
+
+    /**
+     * @var bool if the worker should fork to perform.
+     */
+    protected $fork = true;
 
     /**
      * Constructor
@@ -247,42 +253,48 @@ class Worker
                 array('job' => $job)
             );
 
-            //Resque_Event::trigger('beforeFork', $job);
             $this->workingOn($job);
 
-            $this->childPid = Foreman::fork();
+            if ($this->fork) {
 
-            // if forking, and forked, or not forking run the job.
-            if ($this->childPid === 0 || $this->childPid === false) {
-                // Forked and we're the child, or not forking.
+                $this->eventDispatcher->dispatch(
+                    new JobBeforeForkEvent($job)
+                );
 
-                $this->perform($job);
+                // @todo sanely handle prefork tasks, such as disconnect from redis.
+                $this->childPid = Foreman::fork();
 
-                if ($this->childPid === 0) {
+                if (0 === $this->childPid) {
+                    // Forked and we're the child
+
+                    $this->perform($job);
+
                     exit(0);
                 }
-            }
 
-            // if forking and forked, wait for child
-            if ($this->childPid > 0) {
-                // Parent process, sit and wait
-                $status = 'Forked ' . $this->childPid . ' at ' . strftime('%F %T');
-                $this->updateProcTitle($status);
-                $this->logger->log(LogLevel::DEBUG, $status);
+                if ($this->childPid > 0) {
+                    // Forked and we're the parent, sit and wait
+                    $status = 'Forked ' . $this->childPid . ' at ' . strftime('%F %T');
+                    $this->updateProcTitle($status);
+                    $this->logger->log(LogLevel::DEBUG, $status);
 
-                // Wait until the child process finishes before continuing
-                pcntl_wait($status);
-                $exitStatus = pcntl_wexitstatus($status);
-                if ($exitStatus !== 0) {
-                    $job->fail(
-                        new DirtyExitException(
-                            'Job exited with exit code ' . $exitStatus
-                        )
-                    );
+                    // Wait until the child process finishes before continuing
+                    pcntl_wait($status);
+                    $exitStatus = pcntl_wexitstatus($status);
+                    if ($exitStatus !== 0) {
+                        $job->fail(
+                            new DirtyExitException(
+                                'Job exited with exit code ' . $exitStatus
+                            )
+                        );
+                    }
                 }
+
+                $this->childPid = null;
+            } else {
+                $this->perform($job);
             }
 
-            $this->childPid = null;
             $this->doneWorking();
         }
     }
@@ -302,6 +314,12 @@ class Worker
         try {
             $jobInstance = $this->jobFactory->createJob($job);
 
+            if (false === ($jobInstance instanceof JobInterface)) {
+                throw new Exception\InvalidJobException(
+                    'Job ' . $job . ' "' . get_class($jobInstance) . '" needs to implement Resque\JobInterface'
+                );
+            }
+
             $this->eventDispatcher->dispatch(
                 new JobBeforePerformEvent($job, $jobInstance)
             );
@@ -311,12 +329,6 @@ class Worker
             $this->eventDispatcher->dispatch(
                 new JobAfterPerformEvent($job)
             );
-        } catch (DontPerformException $exception) {
-            //Resque_Event::trigger('resque.job.dont_perform', $job);  @todo restore
-
-            // @todo work out the value in a DontPerformException
-
-            return;
         } catch (\Exception $exception) {
             $this->logger->error(
                 '{job} has failed, {stack}', // @todo improve error message.
@@ -597,5 +609,10 @@ class Worker
     public function setLogger(\Psr\Log\LoggerInterface $logger)
     {
         $this->logger = $logger;
+    }
+
+    public function setForkOnPerform($fork)
+    {
+        $this->fork = (bool) $fork;
     }
 }
