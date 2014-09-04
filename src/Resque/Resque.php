@@ -60,10 +60,12 @@ class Resque
         }
 
         self::$redis = new Client(
+            null,
             array(
                 'prefix' => 'resque:'
             )
         );
+
         return self::$redis;
     }
 }

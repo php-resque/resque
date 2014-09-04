@@ -96,6 +96,8 @@ class Foreman
     /**
      * Registers this worker in Redis.
      *
+     * @throws \Exception
+     *
      * @param Worker $worker
      * @return $this
      */
@@ -149,6 +151,8 @@ class Foreman
         // @todo Guard multiple calls. Expect ->work() ->halt() ->work() etc
 
         foreach ($this->workers as $worker) {
+
+            Resque::redis()->disconnect();
 
             $worker->setPid(static::fork());
 

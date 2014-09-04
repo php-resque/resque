@@ -114,12 +114,11 @@ class JobTest extends ResqueTestCase
     }
 
     /**
-     * @expectedException Resque_Exception
+     * @expectedException \Resque\Exception\ResqueException
      */
     public function testJobWithoutPerformMethodThrowsException()
     {
         return self::markTestSkipped();
-
 
         Resque::enqueue('jobs', 'Test_Job_Without_Perform_Method');
         $job = $this->worker->reserve();
@@ -128,7 +127,7 @@ class JobTest extends ResqueTestCase
     }
 
     /**
-     * @expectedException Resque_Exception
+     * @expectedException \Resque\Exception\ResqueException
      */
     public function testInvalidJobThrowsException()
     {

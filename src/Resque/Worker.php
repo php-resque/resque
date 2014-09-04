@@ -4,6 +4,7 @@ namespace Resque;
 
 use Psr\Log\LogLevel;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Resque\Event\EventDispatcher;
 use Resque\Event\JobBeforePerformEvent;
 use Resque\Event\JobFailedEvent;
@@ -88,7 +89,7 @@ class Worker
     {
         $this->jobFactory = $jobFactory ?: new JobFactory();
         $this->eventDispatcher = new EventDispatcher();
-        $this->logger = new Log();
+        $this->logger = new NullLogger();
 
         if (false === (null === $queues)) {
             if (!is_array($queues)) {
@@ -105,7 +106,6 @@ class Worker
         }
 
         $this->hostname = $hostname;
-        $this->id = uniqid($this->hostname) . ':' . getmypid() . ':' . implode(',', $this->queues);
     }
 
     /**
@@ -162,7 +162,11 @@ class Worker
 
     public function getId()
     {
-       return uniqid($this->hostname) . ':' . getmypid() . ':' . implode(',', $this->queues);
+        if (null === $this->id) {
+            $this->id =  uniqid($this->hostname) . ':' . getmypid() . ':' . implode(',', $this->queues);
+        }
+
+       return $this->id;
     }
 
     /**
