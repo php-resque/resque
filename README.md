@@ -25,7 +25,7 @@ It also supports the following additional features:
 * Has the ability to track the status of jobs
 * Will mark a job as failed, if a forked child running a job does
 not exit with a status code as 0
-* avoids singletons
+* Avoids singletons
 
 ## Requirements
 
@@ -275,9 +275,9 @@ A sample plugin is included in the `extras` directory.
 
 ### Events
 
-In php-resque each event is an object that will have various properties depending on the situation. The following list
-shows each of the event names and corresponding objects that come with them. At a minimum all event objects will
-implement the `Resque\Event\EventInterface` interface.
+In php-resque each event is an object with a name, and optionally other various properties depending on the situation.
+The following list shows each of the event names and corresponding objects that come with them. At a minimum all event
+objects will implement the `Resque\Event\EventInterface` interface.
 
 #### beforeFirstFork
 

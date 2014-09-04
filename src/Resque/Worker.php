@@ -364,7 +364,7 @@ class Worker
             }
         } else {
             foreach ($queues as $queue) {
-                $this->logger->log(LogLevel::INFO, 'Checking {queue} for jobs', array('queue' => $queue));
+                $this->logger->log(LogLevel::DEBUG, 'Checking {queue} for jobs', array('queue' => $queue));
                 $payload = $queue->pop();
                 if ($payload) {
                     $this->logger->log(LogLevel::INFO, 'Found job on {queue}', array('queue' => $queue));

@@ -2,6 +2,8 @@
 
 namespace Resque;
 
+use Predis\Client;
+
 /**
  * Resque.. holds redis connection
  *
@@ -57,7 +59,11 @@ class Resque
             return self::$redis;
         }
 
-        self::$redis = new Redis\Redis(self::$redisServer, self::$redisDatabase);
+        self::$redis = new Client(
+            array(
+                'prefix' => 'resque:'
+            )
+        );
         return self::$redis;
     }
 }

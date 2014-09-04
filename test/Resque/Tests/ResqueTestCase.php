@@ -3,6 +3,7 @@
 namespace Resque\Tests;
 
 use PHPUnit_Framework_TestCase;
+use Predis\Client;
 
 /**
  * Resque test case class. Contains setup and teardown methods.
@@ -20,7 +21,7 @@ class ResqueTestCase extends PHPUnit_Framework_TestCase
 	{
         parent::setUp();
 
-		$this->redis = new \Credis_Client('localhost');
-		$this->redis->flushDb();
+		$this->redis = new Client();
+		$this->redis->flushdb();
 	}
 }
