@@ -17,7 +17,10 @@
 
 	<filter>
 		<whitelist>
-			<directory suffix=".php">./src/Resque/</directory>
+			<directory suffix=".php">./src/Resque</directory>
+            <exclude>
+                <directory suffix=".php">./src/Resque/Tests</directory>
+            </exclude>
 		</whitelist>
 	</filter>
 </phpunit>

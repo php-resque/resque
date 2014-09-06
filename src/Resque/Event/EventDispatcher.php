@@ -30,10 +30,6 @@ class EventDispatcher implements EventDispatcherInterface
         }
 
         foreach ($this->listeners[$event->getName()] as $callback) {
-            if (false === is_callable($callback)) {
-                continue;
-            }
-
             call_user_func($callback, $event);
         }
     }
