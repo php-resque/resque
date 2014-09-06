@@ -2,10 +2,15 @@
 
 namespace Resque;
 
+use Predis\ClientInterface;
+use Psr\Log\NullLogger;
 use Resque\Exception\ResqueRuntimeException;
 
 /**
  * Resque Foreman
+ *
+ * @todo storage... this class is mostly storage things.
+ * @deprecated once storage complete the remain functions here remain in Resque.
  *
  * Handles creating, pruning, forking, killing and general management of workers.
  */
@@ -21,22 +26,45 @@ class Foreman
      */
     protected $registeredWorkers;
 
+    /**
+     * @var ClientInterface Redis connection.
+     */
+    protected $redis;
+
     public function __construct()
     {
         $this->workers = array();
         $this->registeredWorkers = array();
+        $this->logger = new NullLogger();
+
+        if (function_exists('gethostname')) {
+            $this->hostname = gethostname();
+        } else {
+            $this->hostname = php_uname('n');
+        }
+    }
+
+    /**
+     * @param ClientInterface $redis
+     * @return $this
+     */
+    public function setRedisBackend(ClientInterface $redis)
+    {
+        $this->redis = $redis;
+
+        return $this;
     }
 
     /**
      * Given a worker ID, find it and return an instantiated worker class for it.
      *
      * @param string $workerId The ID of the worker.
-     * @return Worker Instance of the worker. False if the worker does not exist.
+     * @return Worker Instance of the worker. null if the worker does not exist.
      */
     public function find($workerId)
     {
         if (false /** === $this->exists($workerId) */ || false === strpos($workerId, ":")) {
-            return false;
+            return null;
         }
 
         list($hostname, $pid, $queues) = explode(':', $workerId, 3);
@@ -58,7 +86,7 @@ class Foreman
      */
     public function all()
     {
-        $workers = Resque::redis()->smembers('workers');
+        $workers = $this->redis->smembers('workers');
 
         if (!is_array($workers)) {
             $workers = array();
@@ -72,29 +100,8 @@ class Foreman
         return $instances;
     }
 
-    public function allLocal()
-    {
-        return $this->workers;
-    }
-
     /**
-     * @param Worker $worker
-     * @return $this
-     * @throws \Exception if the worker has already been added
-     */
-    public function addWorker(Worker $worker)
-    {
-        if (in_array($worker, $this->workers, true)) {
-            throw new \Exception('Cannot add a worker that already exists');
-        }
-
-        $this->workers[] = $worker;
-
-        return $this;
-    }
-
-    /**
-     * Registers this worker in Redis.
+     * Registers the given worker in Redis.
      *
      * @throws \Exception
      *
@@ -107,32 +114,35 @@ class Foreman
             throw new \Exception('Cannot double register a worker, call unregister(), or halt() to clear');
         }
 
-        $this->registeredWorkers[(string) $worker] = $worker;
+        $id = $worker->getId();
 
-        Resque::redis()->sadd('workers', $worker);
-        Resque::redis()->set('worker:' . $worker . ':started', strftime('%a %b %d %H:%M:%S %Z %Y'));
+        $this->registeredWorkers[$id] = $worker;
+
+        $this->redis->sadd('workers', $id);
+        $this->redis->set('worker:' . $id . ':started', strftime('%a %b %d %H:%M:%S %Z %Y'));
 
         return $this;
     }
 
     /**
-     * Unregisters this worker in Redis. (shutdown etc)
+     * Unregisters the given worker from Redis.
      */
     public function unregisterWorker(Worker $worker)
     {
+        $id = $worker->getId();
         // @todo Restore.
 //        if(is_object($this->currentJob)) {
 //            $this->currentJob->fail(new Resque_Job_DirtyExitException);
 //        }
 
-        $id = $worker->getId();
-        Resque::redis()->srem('workers', $id);
-        Resque::redis()->del('worker:' . $id);
-        Resque::redis()->del('worker:' . $id . ':started');
-        Stat::clear('processed:' . $id);
-        Stat::clear('failed:' . $id);
+        $this->redis->srem('workers', $id);
+        $this->redis->del('worker:' . $id);
+        $this->redis->del('worker:' . $id . ':started');
 
-        unset($this->registeredWorkers[(string) $worker]);
+//        Stat::clear('processed:' . $id);
+//        Stat::clear('failed:' . $id);
+
+        unset($this->registeredWorkers[$id]);
     }
 
     /**
@@ -143,23 +153,23 @@ class Foreman
      */
     public function isRegistered(Worker $worker)
     {
-        return (bool) Resque::redis()->sismember('workers', (string) $worker);
+        return (bool) $this->redis->sismember('workers', (string) $worker);
     }
 
-    public function work()
+    public function work($workers)
     {
         // @todo Guard multiple calls. Expect ->work() ->halt() ->work() etc
+        // @todo Check workers are instanceof Worker.
 
-        foreach ($this->workers as $worker) {
+        $this->redis->disconnect();
 
-            Resque::redis()->disconnect();
-
-            $worker->setPid(static::fork());
-
+        /** @var Worker $worker */
+        foreach ($workers as $worker) {
+            $worker->setPid(self::fork());
             if (!$worker->pid) {
                 // This is child process, it will work and then die.
                 $this->registerWorker($worker);
-                $worker->work();
+                $worker->work(0);
                 $this->unregisterWorker($worker);
 
                 exit();
@@ -167,7 +177,7 @@ class Foreman
         }
 
         // wait for slaves
-        foreach ($this->registeredWorkers as $worker) {
+        foreach ($workers as $worker) {
             $status = 0;
             if ($worker->pid != pcntl_waitpid($worker->pid, $status)) {
                 die("Error with wait pid $worker->pid.\n");
@@ -230,11 +240,12 @@ class Foreman
         foreach($workers as $worker) {
             if (is_object($worker)) {
                 list($host, $pid, $queues) = explode(':', (string)$worker, 3);
-                if($host != $this->hostname || in_array($pid, $workerPids) || $pid == getmypid()) {
+                if ($host != $this->hostname || in_array($pid, $workerPids) || $pid == getmypid()) {
+
                     continue;
                 }
-                $this->logger->log(LogLevel::INFO, 'Pruning dead worker: {worker}', array('worker' => (string)$worker));
-                $this->unregister($worker);
+                $this->logger->warning('Pruning dead worker {worker}', array('worker' => (string)$worker));
+                $this->unregisterWorker($worker);
             }
         }
     }

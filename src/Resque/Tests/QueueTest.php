@@ -19,6 +19,7 @@ class QueueTest extends ResqueTestCase
         parent::setUp();
 
         $this->queue = new Queue('jobs');
+        $this->queue->setRedisBackend($this->redis);
     }
 
     public function testJobCanBeEnqueued()

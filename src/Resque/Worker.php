@@ -2,6 +2,7 @@
 
 namespace Resque;
 
+use Predis\ClientInterface;
 use Psr\Log\LogLevel;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -11,6 +12,7 @@ use Resque\Event\JobFailedEvent;
 use Resque\Event\JobAfterPerformEvent;
 use Resque\Event\JobPerformedEvent;
 use Resque\Event\JobBeforeForkEvent;
+use Resque\Event\WorkerStartupEvent;
 use Resque\Job\DirtyExitException;
 use Resque\Job\Exception\DontPerformException;
 use Resque\Job\Exception\InvalidJobException;
@@ -78,6 +80,11 @@ class Worker
     protected $fork = true;
 
     /**
+     * @var ClientInterface Redis connection.
+     */
+    protected $redis;
+
+    /**
      * Constructor
      *
      * Instantiate a new worker, given a list of queues that it should be working
@@ -106,12 +113,21 @@ class Worker
         }
 
         if (function_exists('gethostname')) {
-            $hostname = gethostname();
+            $this->hostname = gethostname();
         } else {
-            $hostname = php_uname('n');
+            $this->hostname = php_uname('n');
         }
+    }
 
-        $this->hostname = $hostname;
+    /**
+     * @param ClientInterface $redis
+     * @return $this
+     */
+    public function setRedisBackend(ClientInterface $redis)
+    {
+        $this->redis = $redis;
+
+        return $this;
     }
 
     /**
@@ -159,17 +175,17 @@ class Worker
     /**
      * Set the ID of this worker to a given ID string.
      *
-     * @param string $workerId ID for the worker.
+     * @param string $id ID for the worker.
      */
-    public function setId($workerId)
+    public function setId($id)
     {
-        $this->id = $workerId;
+        $this->id = $id;
     }
 
     public function getId()
     {
         if (null === $this->id) {
-            $this->id =  uniqid($this->hostname) . ':' . getmypid() . ':' . implode(',', $this->queues);
+            $this->id =  $this->hostname . ':' . getmypid() . ':' . implode(',', $this->queues);
         }
 
        return $this->id;
@@ -188,12 +204,11 @@ class Worker
      */
     public function work($interval = 3, $blocking = false)
     {
-        $this->updateProcTitle('Starting');
-
         $this->startup();
 
         while (true) {
             if ($this->shutdown) {
+
                 break;
             }
 
@@ -226,6 +241,7 @@ class Worker
 
             if (null === $job) {
                 // For an interval of 0, break now - helps with unit testing etc
+                // @todo remove with some method, which I can mock.
                 if ($interval == 0) {
 
                     break;
@@ -245,23 +261,15 @@ class Worker
                 continue;
             }
 
-            $this->logger->notice(
-                sprintf(
-                    'Starting work on %s',
-                    $job
-                ),
-                array('job' => $job)
-            );
-
             $this->workingOn($job);
 
             if ($this->fork) {
-
                 $this->eventDispatcher->dispatch(
                     new JobBeforeForkEvent($job)
                 );
 
-                // @todo sanely handle prefork tasks, such as disconnect from redis.
+                $this->redis->disconnect();
+
                 $this->childPid = Foreman::fork();
 
                 if (0 === $this->childPid) {
@@ -295,15 +303,62 @@ class Worker
                 $this->perform($job);
             }
 
-            $this->doneWorking();
+            $this->workComplete($job);
         }
     }
 
     /**
-     * Process a single job.
+     * Tell Redis which job we're currently working on.
+     *
+     * @todo storage
+     *
+     * @param Job $job The job we're working on.
+     */
+    protected function workingOn(Job $job)
+    {
+        $this->logger->notice(
+            sprintf(
+                'Starting work on %s',
+                $job
+            ),
+            array(
+                'job' => $job
+            )
+        );
+
+        //$job->worker = $this;
+        $this->currentJob = $job;
+        $job->updateStatus(Status::STATUS_RUNNING);
+        $data = json_encode(
+            array(
+                'queue' => $job->queue,
+                'run_at' => strftime('%a %b %d %H:%M:%S %Z %Y'),
+                'payload' => $job->jsonSerialize()
+            )
+        );
+
+        Resque::redis()->set('worker:' . $this, $data);
+    }
+
+    /**
+     * Notify Redis that we've finished working on a job, clearing the working
+     * state and incrementing the job stats.
+     *
+     * @todo storage
+     */
+    protected function workComplete()
+    {
+        $this->currentJob = null;
+        Stat::incr('processed');
+        Stat::incr('processed:' . (string) $this);
+        Resque::redis()->del('worker:' . (string)$this);
+    }
+
+    /**
+     * Process a single job
      *
      * @param Job $job The job to be processed.
-     * @return void
+     * @throws InvalidJobException
      */
     public function perform(Job $job)
     {
@@ -315,7 +370,7 @@ class Worker
             $jobInstance = $this->jobFactory->createJob($job);
 
             if (false === ($jobInstance instanceof JobInterface)) {
-                throw new Exception\InvalidJobException(
+                throw new InvalidJobException(
                     'Job ' . $job . ' "' . get_class($jobInstance) . '" needs to implement Resque\JobInterface'
                 );
             }
@@ -331,7 +386,7 @@ class Worker
             );
         } catch (\Exception $exception) {
             $this->logger->error(
-                '{job} has failed, {stack}', // @todo improve error message.
+                'Perform failure on {job}, {stack}',
                 array(
                     'job' => $job,
                     'stack' => $exception->getMessage()
@@ -418,11 +473,14 @@ class Worker
     /**
      * Perform necessary actions to start a worker.
      */
-    private function startup()
+    protected function startup()
     {
+        $this->updateProcTitle('Starting');
         $this->registerSigHandlers();
-        // $this->pruneDeadWorkers(); @todo not a workers problem, Foremans.
-        //Resque_Event::trigger('beforeFirstFork', $this);
+
+        $this->eventDispatcher->dispatch(
+            new WorkerStartupEvent($this)
+        );
     }
 
     /**
@@ -535,39 +593,6 @@ class Worker
             $this->logger->log(LogLevel::INFO, 'Child {child} not found, restarting.', array('child' => $this->childPid));
             $this->shutdown();
         }
-    }
-
-    /**
-     * Tell Redis which job we're currently working on.
-     *
-     * @param Job $job The job we're working on.
-     */
-    protected function workingOn(Job $job)
-    {
-        //$job->worker = $this;
-        $this->currentJob = $job;
-        $job->updateStatus(Status::STATUS_RUNNING);
-        $data = json_encode(
-            array(
-                'queue' => $job->queue,
-                'run_at' => strftime('%a %b %d %H:%M:%S %Z %Y'),
-                'payload' => $job->jsonSerialize()
-            )
-        );
-
-        Resque::redis()->set('worker:' . $this, $data);
-    }
-
-    /**
-     * Notify Redis that we've finished working on a job, clearing the working
-     * state and incrementing the job stats.
-     */
-    protected function doneWorking()
-    {
-        $this->currentJob = null;
-        Stat::incr('processed');
-        Stat::incr('processed:' . (string) $this);
-        Resque::redis()->del('worker:' . (string)$this);
     }
 
     /**

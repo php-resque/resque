@@ -11,7 +11,7 @@
 >
 	<testsuites>
 		<testsuite name="Resque Test Suite">
-			<directory>./test/Resque</directory>
+			<directory>./src/Resque/Tests</directory>
 		</testsuite>
 	</testsuites>
 

@@ -2,6 +2,8 @@
 
 namespace Resque;
 
+use Predis\ClientInterface;
+
 /**
  * Resque Queue
  *
@@ -15,11 +17,27 @@ class Queue implements QueueInterface
     protected $name;
 
     /**
+     * @var ClientInterface Redis connection.
+     */
+    protected $redis;
+
+    /**
      * @param $name
      */
     public function __construct($name)
     {
         $this->name = $name;
+    }
+
+    /**
+     * @param ClientInterface $redis
+     * @return $this
+     */
+    public function setRedisBackend(ClientInterface $redis)
+    {
+        $this->redis = $redis;
+
+        return $this;
     }
 
     /**
@@ -33,9 +51,9 @@ class Queue implements QueueInterface
      */
     public function push(Job $job)
     {
-        Resque::redis()->sadd('queues', $this->name);
+        $this->redis->sadd('queues', $this->name);
 
-        $length = Resque::redis()->rpush(
+        $length = $this->redis->rpush(
             'queue:' . $this->name,
             json_encode($job->jsonSerialize())
         );
@@ -54,7 +72,7 @@ class Queue implements QueueInterface
      */
     public function pop()
     {
-        $item = Resque::redis()->lpop('queue:' . $this);
+        $item = $this->redis->lpop('queue:' . $this);
 
         if (!$item) {
             return null;
@@ -69,7 +87,6 @@ class Queue implements QueueInterface
         $job->setQueue($this);
 
         return $job;
-
     }
 
     /**
@@ -89,7 +106,7 @@ class Queue implements QueueInterface
             $list[] = 'queue:' . $queue;
         }
 
-        $item = Resque::redis()->blpop($list, (int)$timeout);
+        $item = $this->redis->blpop($list, (int)$timeout);
 
         if (!$item) {
             return;
@@ -100,7 +117,7 @@ class Queue implements QueueInterface
          * But the blpop is a bit different. It returns the name as prefix:queue:name
          * So we need to strip off the prefix:queue: part
          */
-        $queue = substr($item[0], strlen(Resque::redis()->getPrefix() . 'queue:'));
+        $queue = substr($item[0], strlen($this->redis->getPrefix() . 'queue:'));
 
         return array(
             'queue' => $queue,
@@ -117,7 +134,7 @@ class Queue implements QueueInterface
      */
     public function size($queue)
     {
-        return Resque::redis()->llen('queue:' . $queue);
+        return $this->redis->llen('queue:' . $queue);
     }
 
     /**
@@ -156,7 +173,7 @@ class Queue implements QueueInterface
      */
     public function queues()
     {
-        $queues = Resque::redis()->smembers('queues');
+        $queues = $this->redis->smembers('queues');
         if (!is_array($queues)) {
             $queues = array();
         }

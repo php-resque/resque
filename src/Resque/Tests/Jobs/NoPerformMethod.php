@@ -1,6 +1,6 @@
 <?php
 
-namespace Resque\Tests\Job;
+namespace Resque\Tests\Jobs;
 
 class NoPerformMethod
 {

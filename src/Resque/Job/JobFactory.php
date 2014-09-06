@@ -10,7 +10,6 @@ class JobFactory implements JobFactoryInterface
      * Create JobInterface class
      *
      * @throws Exception\JobNotFoundException When the job class could not be found.
-     * @throws Exception\InvalidJobException When the constructed object does not implement JobInterface.
      *
      * @param JobPayload $payload
      * @return JobInterface The instance of the Job that will perform.
