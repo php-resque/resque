@@ -337,7 +337,7 @@ class Worker
             )
         );
 
-        Resque::redis()->set('worker:' . $this, $data);
+        $this->redis->set('worker:' . $this, $data);
     }
 
     /**
@@ -351,7 +351,7 @@ class Worker
         $this->currentJob = null;
         Stat::incr('processed');
         Stat::incr('processed:' . (string) $this);
-        Resque::redis()->del('worker:' . (string)$this);
+        $this->redis->del('worker:' . (string)$this);
     }
 
     /**

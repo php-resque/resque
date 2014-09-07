@@ -8,15 +8,26 @@ use Resque\Worker;
 
 class ForemanTest extends ResqueTestCase
 {
+    /**
+     * @var Foreman
+     */
+    protected $foreman;
+
+    public function setUp()
+    {
+        parent::setUp();
+
+        $this->foreman = new Foreman();
+        $this->foreman->setRedisBackend($this->redis);
+    }
+
     public function testForemanRegistersWorkerInRedisSet()
     {
         $worker = new Worker(
             new Queue('foo')
         );
 
-        $foreman = new Foreman();
-        $foreman->setRedisBackend($this->redis);
-        $foreman->registerWorker($worker);
+        $this->foreman->registerWorker($worker);
 
         // Make sure the worker is in the list
         $this->assertCount(1, $this->redis->smembers('workers'));
@@ -25,19 +36,16 @@ class ForemanTest extends ResqueTestCase
 
     public function testGetAllWorkers()
     {
-        $foreman = new Foreman();
-        $foreman->setRedisBackend($this->redis);
-
         $count = 3;
         // Register a few workers
         for ($i = 0; $i < $count; ++$i) {
             $queue = new Queue('queue_' . $i);
             $worker = new Worker($queue);
-            $foreman->registerWorker($worker);
+            $this->foreman->registerWorker($worker);
         }
 
         // Now try to get them
-        $this->assertEquals($count, count($foreman->all()));
+        $this->assertEquals($count, count($this->foreman->all()));
     }
 
     public function testForemanCanUnregisterWorker()
@@ -46,32 +54,41 @@ class ForemanTest extends ResqueTestCase
             new Queue('baz')
         );
 
-        $foreman = new Foreman();
-        $foreman->setRedisBackend($this->redis);
-
-        $foreman
-            ->registerWorker($worker);
+        $this->foreman->registerWorker($worker);
 
         // Make sure the worker is in the list
         $this->assertTrue((bool)$this->redis->sismember('workers', $worker));
-        $this->assertTrue($foreman->isRegistered($worker));
+        $this->assertTrue($this->foreman->isRegistered($worker));
 
-        $foreman
-            ->unregisterWorker($worker);
+        $this->foreman->unregisterWorker($worker);
 
-        $this->assertFalse($foreman->isRegistered($worker));
-        $this->assertCount(0, $foreman->all());
+        $this->assertFalse($this->foreman->isRegistered($worker));
+        $this->assertCount(0, $this->foreman->all());
         $this->assertCount(0, $this->redis->smembers('workers'));
     }
 
     public function testUnregisteredWorkerDoesNotExistInRedis()
     {
-        $foreman = new Foreman();
-        $foreman->setRedisBackend($this->redis);
-
         $worker = new Worker(array());
+        $this->assertFalse($this->foreman->isRegistered($worker));
+    }
 
-        $this->assertFalse($foreman->isRegistered($worker));
+    public function testGetWorkerById()
+    {
+        $worker = new Worker();
+
+        $this->foreman->registerWorker($worker);
+
+        $newWorker = $this->foreman->findWorkerById((string)$worker);
+        $this->assertEquals((string)$worker, (string)$newWorker);
+    }
+
+    public function testGetWorkerByNonExistentId()
+    {
+        $worker = new Worker();
+        $this->foreman->registerWorker($worker);
+
+        $this->assertNull($this->foreman->findWorkerById('hopefully-not-real'));
     }
 
     public function testForking()
@@ -88,9 +105,6 @@ class ForemanTest extends ResqueTestCase
             ->method('work')
             ->will($this->returnValue(null));
 
-        $foreman = new Foreman();
-        $foreman->setRedisBackend($this->redis);
-
         $workers = array(
             clone $mockWorker,
             clone $mockWorker,
@@ -99,7 +113,7 @@ class ForemanTest extends ResqueTestCase
             clone $mockWorker,
         );
 
-        $foreman->work($workers);
+        $this->foreman->work($workers);
 
         // Check the workers hold different PIDs
         foreach ($workers as $worker) {
@@ -110,30 +124,27 @@ class ForemanTest extends ResqueTestCase
 
     public function testWorkerCleansUpDeadWorkersOnStartup()
     {
-        $foreman = new Foreman();
-        $foreman->setRedisBackend($this->redis);
-
         // Register a real worker
         $realWorker = new Worker();
-        $foreman->registerWorker($realWorker);
+        $this->foreman->registerWorker($realWorker);
 
         $workerId = explode(':', $realWorker);
 
         // Register some dead workers
         $worker = new Worker();
         $worker->setId($workerId[0] . ':1:jobs');
-        $foreman->registerWorker($worker);
+        $this->foreman->registerWorker($worker);
 
         $worker = new Worker();
         $worker->setId($workerId[0] . ':2:high,low');
-        $foreman->registerWorker($worker);
+        $this->foreman->registerWorker($worker);
 
-        $this->assertEquals(3, count($foreman->all()));
+        $this->assertEquals(3, count($this->foreman->all()));
 
-        $foreman->pruneDeadWorkers();
+        $this->foreman->pruneDeadWorkers();
 
         // There should only be $realWorker left now
-        $this->assertEquals(1, count($foreman->all()));
+        $this->assertEquals(1, count($this->foreman->all()));
         $this->assertTrue((bool)$this->redis->sismember('workers', $realWorker));
     }
 

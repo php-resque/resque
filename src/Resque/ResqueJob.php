@@ -29,11 +29,6 @@ class ResqueJob
 	public $payload;
 
 	/**
-	 * @var object Instance of the class performing work for this job.
-	 */
-	private $instance;
-
-	/**
 	 * Instantiate a new instance of a job.
 	 *
 	 * @param Queue $queue The queue that the job belongs to.

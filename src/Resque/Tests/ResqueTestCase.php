@@ -13,7 +13,7 @@ use Resque\Resque;
  * @author Chris Boulton <chris@bigcommerce.com>
  * @license http://www.opensource.org/licenses/mit-license.php
  */
-class ResqueTestCase extends PHPUnit_Framework_TestCase
+abstract class ResqueTestCase extends PHPUnit_Framework_TestCase
 {
     /**
      * @var Resque

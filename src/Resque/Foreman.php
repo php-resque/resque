@@ -61,9 +61,10 @@ class Foreman
      * @param string $workerId The ID of the worker.
      * @return Worker Instance of the worker. null if the worker does not exist.
      */
-    public function find($workerId)
+    public function findWorkerById($workerId)
     {
         if (false /** === $this->exists($workerId) */ || false === strpos($workerId, ":")) {
+
             return null;
         }
 
@@ -94,7 +95,7 @@ class Foreman
 
         $instances = array();
         foreach ($workers as $workerId) {
-            $instances[] = $this->find($workerId);
+            $instances[] = $this->findWorkerById($workerId);
         }
 
         return $instances;

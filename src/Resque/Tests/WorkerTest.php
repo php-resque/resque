@@ -10,17 +10,6 @@ use Resque\Worker;
 
 class WorkerTest extends ResqueTestCase
 {
-	public function testGetWorkerById()
-	{
-        return self::markTestSkipped();
-
-        $worker = new Worker('*');
-		$worker->setLogger(new Resque_Log());
-		$worker->registerWorker();
-
-		$newWorker = Worker::find((string)$worker);
-		$this->assertEquals((string)$worker, (string)$newWorker);
-	}
 
 	public function testPausedWorkerDoesNotPickUpJobs()
 	{
