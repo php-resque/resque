@@ -13,7 +13,7 @@ interface QueueInterface
      * Push a job to the end of a specific queue. If the queue does not
      * exist, then create it as well.
      *
-     * @param Job $job The Job to enqueue.
+     * @param Job $job The Job to enqueue/push.
      * @return bool True if successful, false otherwise.
      */
     public function push(Job $job);

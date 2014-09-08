@@ -9,9 +9,6 @@ use Resque\Exception\ResqueRuntimeException;
 /**
  * Resque Foreman
  *
- * @todo storage... this class is mostly storage things.
- * @deprecated once storage complete the remain functions here remain in Resque.
- *
  * Handles creating, pruning, forking, killing and general management of workers.
  */
 class Foreman

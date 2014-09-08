@@ -4,9 +4,9 @@ The following is a step-by-step breakdown of how php-resque operates.
 
 ## Enqueue Job ##
 
-What happens when you call `Resque::enqueue()`?
+What happens when you call `Resque::push()`?
 
-1. `Resque::enqueue()` calls `Job::create()` with the same arguments it
+1. `Resque::push()` calls `Job::create()` with the same arguments it
    received.
 2. `Job::create()` checks that your `$args` (the third argument) are
    either `null` or in an array
@@ -19,9 +19,9 @@ What happens when you call `Resque::enqueue()`?
 6. `Resque_Job_Status::create()` creates a key in Redis with the job ID in its
    name, and the current status (as well as a couple of timestamps) as its
    value, then returns control to `Job::create()`
-7. `Job::create()` returns control to `Resque::enqueue()`, with the job
+7. `Job::create()` returns control to `Resque::push()`, with the job
    ID as a return value
-8. `Resque::enqueue()` triggers the `afterEnqueue` event, then returns control
+8. `Resque::push()` triggers the `afterEnqueue` event, then returns control
    to your application, again with the job ID as its return value
 
 ## Workers At Work ##

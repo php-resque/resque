@@ -10,6 +10,12 @@ use Resque\Worker;
 
 class WorkerTest extends ResqueTestCase
 {
+    public function testSetId()
+    {
+        $worker = new Worker();
+        $worker->setId('fiddle-sticks');
+        $this->assertSame('fiddle-sticks', (string)$worker);
+    }
 
 	public function testPausedWorkerDoesNotPickUpJobs()
 	{
@@ -56,8 +62,8 @@ class WorkerTest extends ResqueTestCase
         $jobOne = new Job('Test_Job_1');
         $jobTwo = new Job('Test_Job_2');
 
-        $queueOne->enqueue($jobOne);
-        $queueTwo->enqueue($jobTwo);
+        $queueOne->push($jobOne);
+        $queueTwo->push($jobTwo);
 
 		$job = $worker->reserve();
 		$this->assertEquals($queueOne, $job->queue);
@@ -84,9 +90,9 @@ class WorkerTest extends ResqueTestCase
         );
 
 		// Queue the jobs in a different order
-        $queueLow->enqueue(new Job('Test_Job_1'));
-        $queueHigh->enqueue(new Job('Test_Job_2'));
-        $queueMedium->enqueue(new Job('Test_Job_3'));
+        $queueLow->push(new Job('Test_Job_1'));
+        $queueHigh->push(new Job('Test_Job_2'));
+        $queueMedium->push(new Job('Test_Job_3'));
 
 		// Now check we get the jobs back in the right queue order
 		$job = $worker->reserve();
@@ -120,7 +126,7 @@ class WorkerTest extends ResqueTestCase
         $queueTwo = new Queue('queue2');
         $queueTwo->setRedisBackend($this->redis);
 
-        $queueTwo->enqueue(new Job('Test_Job'));
+        $queueTwo->push(new Job('Test_Job'));
 
 		$worker = new Worker($queueOne);
 		$this->assertNull($worker->reserve());
@@ -166,11 +172,13 @@ class WorkerTest extends ResqueTestCase
         return self::markTestSkipped();
 
         $queue = new Queue('jobs');
+        $queue->setRedisBackend($this->redis);
 
-        $queue->enqueue(new Job('Resque\Tests\Job\Simple'));
-        $queue->enqueue(new Job('Invalid_Job'));
+        $queue->push(new Job('Resque\Tests\Job\Simple'));
+        $queue->push(new Job('Invalid_Job'));
 
 		$worker = new Worker($queue);
+        $worker->setRedisBackend($this->redis);
         $worker->setForkOnPerform(false);
 
 		$worker->work(0);

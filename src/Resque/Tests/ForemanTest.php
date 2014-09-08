@@ -139,39 +139,35 @@ class ForemanTest extends ResqueTestCase
         $worker->setId($workerId[0] . ':2:high,low');
         $this->foreman->registerWorker($worker);
 
-        $this->assertEquals(3, count($this->foreman->all()));
+        $this->assertCount(3, $this->foreman->all());
 
         $this->foreman->pruneDeadWorkers();
 
         // There should only be $realWorker left now
-        $this->assertEquals(1, count($this->foreman->all()));
+        $this->assertCount(1, $this->foreman->all());
         $this->assertTrue((bool)$this->redis->sismember('workers', $realWorker));
     }
 
     public function testDeadWorkerCleanUpDoesNotCleanUnknownWorkers()
     {
-        return self::markTestSkipped();
-
         // Register a bad worker on this machine
-        $worker = new Worker('jobs');
-        $worker->setLogger(new Resque_Log());
-        $workerId = explode(':', $worker);
-        $worker->setId($workerId[0] . ':1:jobs');
-        $worker->registerWorker();
+        $localWorker = new Worker();
+        $workerId = explode(':', $localWorker);
+        $localWorker->setId($workerId[0] . ':1:jobs');
+        $this->foreman->registerWorker($localWorker);
 
         // Register some other false workers
-        $worker = new Worker('jobs');
-        $worker->setLogger(new Resque_Log());
-        $worker->setId('my.other.host:1:jobs');
-        $worker->registerWorker();
+        $remoteWorker = new Worker();
+        $remoteWorker->setId('my.other.host:1:jobs');
+        $this->foreman->registerWorker($remoteWorker);
 
-        $this->assertEquals(2, count(Worker::all()));
+        $this->assertCount(2, $this->foreman->all());
 
-        $worker->pruneDeadWorkers();
+        $this->foreman->pruneDeadWorkers();
 
         // my.other.host should be left
-        $workers = Worker::all();
-        $this->assertEquals(1, count($workers));
-        $this->assertEquals((string)$worker, (string)$workers[0]);
+        $workers = $this->foreman->all();
+        $this->assertCount(1, $workers);
+        $this->assertEquals((string)$remoteWorker, (string)$workers[0]);
     }
 }

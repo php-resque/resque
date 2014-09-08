@@ -24,12 +24,13 @@ class QueueTest extends ResqueTestCase
 
     public function testJobCanBeEnqueued()
     {
-        $this->assertTrue($this->queue->enqueue(new Job('Test_Job')));
+        $this->assertTrue($this->queue->push(new Job('Test_Job')));
     }
 
     public function testQueuedJobCanBePopped()
     {
-        $this->queue->enqueue(new Job('Test_Job'));
+        $this->queue->push(new Job('Test_Job'));
+        $this->assertSame(1, $this->queue->size());
 
         $job = $this->queue->pop();
 
@@ -43,8 +44,32 @@ class QueueTest extends ResqueTestCase
 
     public function testAfterJobIsPoppedItIsRemoved()
     {
-        $this->queue->enqueue(new Job('Test_Job'));
+        $this->queue->push(new Job('Test_Job'));
+        $this->assertSame(1, $this->queue->size());
         $this->assertNotNull($this->queue->pop());
         $this->assertNull($this->queue->pop());
+    }
+
+    public function testAllReturnsRegisteredQueues()
+    {
+        $queues = $this->queue->all();
+        $this->assertCount(0, $queues);
+
+        $foo = new Queue('foo');
+        $foo->setRedisBackend($this->redis);
+        $foo->register();
+
+        $queues = $this->queue->all();
+        $this->assertCount(1, $queues);
+        $this->assertEquals('foo', (string)$queues[0]);
+
+        $bar = new Queue('bar');
+        $bar->setRedisBackend($this->redis);
+        $bar->register();
+
+        $queues = $this->queue->all();
+        $this->assertCount(2, $queues);
+        $this->assertNotContains($foo, $queues);
+        $this->assertNotContains($bar, $queues);
     }
 }

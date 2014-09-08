@@ -86,7 +86,7 @@ class JobTest extends ResqueTestCase
             $args
         );
 
-        $this->queue->enqueue($insertedJob);
+        $this->queue->push($insertedJob);
 
         $poppedJob = $this->queue->pop();
 

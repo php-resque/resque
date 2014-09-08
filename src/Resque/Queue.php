@@ -41,17 +41,30 @@ class Queue implements QueueInterface
     }
 
     /**
-     * Push a job to the end of a specific queue. If the queue does not
-     * exist, then create it as well.
+     * Registers this queue in redis
      *
-     * // @todo throw a exception when it fails!
+     * @return $this
+     */
+    public function register()
+    {
+        $this->redis->sadd('queues', $this->name);
+
+        return $this;
+    }
+
+    /**
+     * Push a job into the queue
+     *
+     * If the queue does not exist, then create it as well.
+     *
+     * @todo throw a exception when it fails!
      *
      * @param Job $job The Job to enqueue.
      * @return bool True if successful, false otherwise.
      */
     public function push(Job $job)
     {
-        $this->redis->sadd('queues', $this->name);
+        $this->register();
 
         $length = $this->redis->rpush(
             'queue:' . $this->name,
@@ -62,11 +75,23 @@ class Queue implements QueueInterface
             return false;
         }
 
+//        if ($result) {
+//            Resque_Event::trigger(
+//                'afterEnqueue',
+//                array(
+//                    'class' => $class,
+//                    'args' => $args,
+//                    'queue' => $queue,
+//                    'id' => $result,
+//                )
+//            );
+//        }
+
         return true;
     }
 
     /**
-     * Pop a job off the end of the specified queue, decode it and return it.
+     * Pop a job from the front of the queue
      *
      * @return Job|null Decoded job from the queue, or null if no jobs.
      */
@@ -126,57 +151,29 @@ class Queue implements QueueInterface
     }
 
     /**
-     * Return the size (number of pending jobs) of the specified queue.
-     *
-     * @param string $queue name of the queue to be checked for pending jobs
+     * Return the number of pending jobs in the queue
      *
      * @return int The size of the queue.
      */
-    public function size($queue)
+    public function size()
     {
-        return $this->redis->llen('queue:' . $queue);
-    }
-
-    /**
-     * Enqueues a job
-     *
-     * @param Job $job The job to enqueue
-     * @param string $class The name of the class that contains the code to execute the job.
-     * @param array $args Any optional arguments that should be passed when the job is executed.
-     * @param boolean $trackStatus Set to true to be able to monitor the status of a job.
-     *
-     * @return string
-     */
-    public function enqueue(Job $job)
-    {
-        return $this->push($job);
-        $result = Job::create($queue, $class, $args, $trackStatus);
-        if ($result) {
-            Resque_Event::trigger(
-                'afterEnqueue',
-                array(
-                    'class' => $class,
-                    'args' => $args,
-                    'queue' => $queue,
-                    'id' => $result,
-                )
-            );
-        }
-
-        return $result;
+        return $this->redis->llen('queue:' . $this);
     }
 
     /**
      * Get an array of all known queues.
      *
-     * @return array Array of queues.
+     * @return self[] Array of queues.
      */
-    public function queues()
+    public function all()
     {
-        $queues = $this->redis->smembers('queues');
-        if (!is_array($queues)) {
-            $queues = array();
+        $queuesNames = $this->redis->smembers('queues');
+        $queues = array();
+
+        foreach ($queuesNames as $queueName) {
+            $queues[] = new self($queueName);
         }
+
         return $queues;
     }
 

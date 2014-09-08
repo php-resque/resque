@@ -3,18 +3,31 @@
 namespace Resque;
 
 /**
- * Resque Queue
+ * Resque Wildcard Queue
  *
- * Provides the ability to push and pull jobs from a queue, along side other utility functions.
+ * Provides the ability to pull jobs from all known queues.
  */
-class QueueWildcard implements QueueInterface
+class QueueWildcard extends Queue
 {
+    public function __construct()
+    {
+        $this->name = '*';
+    }
+
     /**
      * {@inheritdoc}
      */
     public function push(Job $job)
     {
-        throw new \Exception('Wild card Queue does not support pushing.');
+        throw new \Exception('Wild card queue does not support pushing');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function register()
+    {
+        throw new \Exception('Wild card queue can not be registered');
     }
 
     /**
@@ -22,11 +35,13 @@ class QueueWildcard implements QueueInterface
      */
     public function pop()
     {
-       return null;
-    }
+        foreach ($this->all() as $queue) {
+            if (null !== $job = $queue->pop()) {
 
-    public function __toString()
-    {
-        return '*';
+                return $job;
+            }
+        }
+
+        return null;
     }
 }
