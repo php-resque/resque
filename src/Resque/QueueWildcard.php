@@ -36,6 +36,9 @@ class QueueWildcard extends Queue
     public function pop()
     {
         foreach ($this->all() as $queue) {
+
+            $queue->setRedisBackend($this->redis);
+
             if (null !== $job = $queue->pop()) {
 
                 return $job;

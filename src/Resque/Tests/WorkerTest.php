@@ -2,7 +2,9 @@
 
 namespace Resque\Tests;
 
+use Resque\Event\EventDispatcher;
 use Resque\Job;
+use Resque\QueueWildcard;
 use Resque\Resque;
 use Resque\Foreman;
 use Resque\Queue;
@@ -16,34 +18,6 @@ class WorkerTest extends ResqueTestCase
         $worker->setId('fiddle-sticks');
         $this->assertSame('fiddle-sticks', (string)$worker);
     }
-
-	public function testPausedWorkerDoesNotPickUpJobs()
-	{
-        return self::markTestSkipped();
-
-        $worker = new Worker('*');
-		$worker->setLogger(new Resque_Log());
-		$worker->pauseProcessing();
-		Resque::enqueue('jobs', 'Test_Job');
-		$worker->work(0);
-		$worker->work(0);
-		$this->assertEquals(0, Resque_Stat::get('processed'));
-	}
-
-	public function testResumedWorkerPicksUpJobs()
-	{
-        return self::markTestSkipped();
-
-        $worker = new Worker('*');
-		$worker->setLogger(new Resque_Log());
-		$worker->pauseProcessing();
-		Resque::enqueue('jobs', 'Test_Job');
-		$worker->work(0);
-		$this->assertEquals(0, Resque_Stat::get('processed'));
-		$worker->unPauseProcessing();
-		$worker->work(0);
-		$this->assertEquals(1, Resque_Stat::get('processed'));
-	}
 
 	public function testWorkerCanWorkOverMultipleQueues()
 	{
@@ -103,24 +77,28 @@ class WorkerTest extends ResqueTestCase
 		$this->assertSame($queueLow, $job->queue);
 	}
 
-	public function testWildcardQueueWorkerWorksAllQueues()
-	{
-        return self::markTestSkipped();
+    public function testWildcardQueueWorkerWorksAllQueues()
+    {
+        $queue = new Queue('notastar');
+        $queue->setRedisBackend($this->redis);
 
-        $worker = new Worker('*');
+        $wildcardQueue = new QueueWildcard();
+        $wildcardQueue->setRedisBackend($this->redis);
 
-		Resque::enqueue('queue1', 'Test_Job_1');
-		Resque::enqueue('queue2', 'Test_Job_2');
+        $worker = new Worker(
+            $wildcardQueue
+        );
 
-		$job = $worker->reserve();
-		$this->assertEquals('queue1', $job->queue);
+        // Queue the jobs in a different order
+        $queue->push(new Job('Test_Job_1'));
 
-		$job = $worker->reserve();
-		$this->assertEquals('queue2', $job->queue);
-	}
+        $job = $worker->reserve();
+        // The job should come from the original queue.
+        $this->assertEquals($queue, $job->queue);
+    }
 
-	public function testWorkerDoesNotWorkOnUnknownQueues()
-	{
+    public function testWorkerDoesNotWorkOnUnknownQueues()
+    {
         $queueOne = new Queue('queue1');
         $queueOne->setRedisBackend($this->redis);
         $queueTwo = new Queue('queue2');
@@ -128,9 +106,74 @@ class WorkerTest extends ResqueTestCase
 
         $queueTwo->push(new Job('Test_Job'));
 
-		$worker = new Worker($queueOne);
-		$this->assertNull($worker->reserve());
-	}
+        $worker = new Worker($queueOne);
+        $this->assertNull($worker->reserve());
+    }
+
+    /**
+     * @dataProvider dataProviderWorkerPerformEvents
+     */
+    public function testWorkerPerformEmitsCorrectEvents($eventName, $jobClass)
+    {
+        $eventDispatch = new EventDispatcher();
+        $callbackTriggered = false;
+        $eventDispatch->addListener(
+            $eventName,
+            function () use (&$callbackTriggered) {
+                $callbackTriggered = true;
+            }
+        );
+
+        $worker = new Worker(null, null, $eventDispatch);
+        $worker->perform(new Job($jobClass));
+
+        $this->assertTrue(
+            $callbackTriggered,
+            sprintf(
+                'Worker->perform() expected %s event for job class %s',
+                $eventName,
+                $jobClass
+            )
+        );
+    }
+
+    public function dataProviderWorkerPerformEvents()
+    {
+        return array(
+            array('resque.job.failed',         'Resque\Tests\Jobs\NoPerformMethod'),
+            array('resque.job.before_perform', 'Resque\Tests\Jobs\Simple'),
+            array('resque.job.after_perform',  'Resque\Tests\Jobs\Simple'),
+            array('resque.job.performed',      'Resque\Tests\Jobs\Simple'),
+        );
+    }
+
+    public function testPausedWorkerDoesNotPickUpJobs()
+    {
+        return self::markTestSkipped();
+
+        $worker = new Worker('*');
+        $worker->setLogger(new Resque_Log());
+        $worker->pauseProcessing();
+        Resque::enqueue('jobs', 'Test_Job');
+        $worker->work(0);
+        $worker->work(0);
+        $this->assertEquals(0, Resque_Stat::get('processed'));
+    }
+
+    public function testResumedWorkerPicksUpJobs()
+    {
+        return self::markTestSkipped();
+
+        $worker = new Worker('*');
+        $worker->setLogger(new Resque_Log());
+        $worker->pauseProcessing();
+        Resque::enqueue('jobs', 'Test_Job');
+        $worker->work(0);
+        $this->assertEquals(0, Resque_Stat::get('processed'));
+        $worker->unPauseProcessing();
+        $worker->work(0);
+        $this->assertEquals(1, Resque_Stat::get('processed'));
+    }
 
 	public function testWorkerClearsItsStatusWhenNotWorking()
 	{

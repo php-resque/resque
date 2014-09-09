@@ -97,11 +97,12 @@ class Worker
      *
      * @param Queue|Queue[] $queues String with a single queue name, array with multiple.
      * @param null $jobFactory
+     * @param null $eventDispatcher
      */
-    public function __construct($queues = null, $jobFactory = null)
+    public function __construct($queues = null, $jobFactory = null, $eventDispatcher = null)
     {
         $this->jobFactory = $jobFactory ?: new JobFactory();
-        $this->eventDispatcher = new EventDispatcher();
+        $this->eventDispatcher = $eventDispatcher ?: new EventDispatcher();
         $this->logger = new NullLogger();
 
         if (false === (null === $queues)) {
@@ -461,13 +462,7 @@ class Worker
      */
     public function queues($fetch = true)
     {
-        if (!in_array('*', $this->queues) || $fetch == false) {
-            return $this->queues;
-        }
-
-        $queues = Resque::queues();
-        sort($queues);
-        return $queues;
+        return $this->queues;
     }
 
     /**
