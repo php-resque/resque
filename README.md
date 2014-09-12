@@ -275,50 +275,64 @@ A sample plugin is included in the `extras` directory.
 
 ### Events
 
-In php-resque each event is an object with a name, and optionally other various properties depending on the situation.
+In php-resque each event is an object with a name, and optionally other properties depending on the situation.
 The following list shows each of the event names and corresponding objects that come with them. At a minimum all event
 objects will implement the `Resque\Event\EventInterface` interface.
 
 #### beforeFirstFork
 
-Called once, as a worker initializes. Argument passed is the instance of `Worker`
-that was just initialized.
+Dispatched once, as a worker initializes. Argument passed is the instance of `Worker` that was just initialized.
 
-#### beforeFork
+#### resque.job.before_fork
 
-Called before php-resque forks to run a job. Argument passed contains the instance of
-`Job` for the job about to be run.
+`@see Resque\Event\JobBeforeForkEvent`
 
-`beforeFork` is triggered in the **parent** process. Any changes made will be permanent
+Dispatched before `Resque\Worker` forks to run a job. The event contains the instance of `Resque\Job` that is about to
+perform.
+
+`resque.job.before_fork` is triggered in the **parent** process. Any changes made will be permanent
 for as long as the **worker** lives.
 
-#### afterFork ####
+#### resque.job.before_fork
 
-Called after php-resque forks to run a job (but before the job is run). Argument
-passed contains the instance of `Job` for the job about to be run.
+@see `Resque\Event\JobAfterForkEvent`
 
-`afterFork` is triggered in the **child** process after forking out to complete a job. Any
+Dispatched from the child, after `Resque\Worker` has forked to run a job (but before the job is run). The event
+contains the instance of `Resque\Job` that is about to perform.
+
+**Note:** `resque.job.before_fork` is triggered in the **child** process after forking out to complete a job. Any
 changes made will only live as long as the **job** is being processed.
 
-#### beforePerform ####
+#### resque.job.before_perform
 
-Called before the `perform` methods on a job are run. Argument passed
-contains the instance of `Job` for the job about to be run.
+@see `Resque\Event\JobBeforePerformEvent`
 
-#### afterPerform ####
+Dispatched just before the `perform` method on a job is called. The event contains the instance of `Resque\Job` that
+is about to perform, and the instance of the target class on whom the `perform` method will be called.
 
-Called after the `perform` methods on a job are run. Argument passed
-contains the instance of the `Job` and job instance that was just run.
+Any exceptions thrown will be treated as if they were thrown in a job, causing the job to be marked as failed.
 
-Any exceptions thrown will be treated as if they were thrown in a job, causing the job
-to be marked as having failed.
+#### resque.job.after_perform
 
-#### onFailure ####
+`@see Resque\Event\JobAfterForkEvent`
 
-Called whenever a job fails. Arguments passed (in this order) include:
+Dispatched immediately after a job has successfully performed. The event contains the instance of `Resque\Job` and the
+instance of the target class that just performed.
 
-* Exception - The exception that was thrown when the job failed
-* Job - The job that failed
+Any exceptions thrown will be treated as if they were thrown in a job, causing the job to be marked as failed.
+
+#### resque.job.failed
+
+`@see Resque\Event\JobFailedEvent`
+
+Dispatched whenever a job fails to perform. That is when a job throws an Exception, or when a Worker's child fails
+to exit cleanly.
+
+The event contains the following:
+
+* `Resque\Job` The job that just failed.
+* `Resque\Worker` The worker that the job just failed in.
+* `\Exception` The exception that was thrown when the job failed, if one was thrown to cause it to fail.
 
 #### afterEnqueue ####
 

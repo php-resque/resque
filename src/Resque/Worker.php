@@ -397,7 +397,7 @@ class Worker
             // $job->fail($e); @todo Restore failure behaviour.
 
             $this->eventDispatcher->dispatch(
-                new JobFailedEvent($job, $exception)
+                new JobFailedEvent($job, $this, $exception)
             );
 
             return;

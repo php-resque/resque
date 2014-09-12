@@ -169,5 +169,6 @@ class ForemanTest extends ResqueTestCase
         $workers = $this->foreman->all();
         $this->assertCount(1, $workers);
         $this->assertEquals((string)$remoteWorker, (string)$workers[0]);
+        $this->assertSame('my.other.host:1:jobs', (string)$workers[0]);
     }
 }

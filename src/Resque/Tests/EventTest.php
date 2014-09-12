@@ -44,32 +44,7 @@ class EventTest extends ResqueTestCase
 		$job->worker = $this->worker;
 		return $job;
 	}
-	
-	public function eventCallbackProvider()
-	{
-		return array(
-			array('beforePerform', 'beforePerformEventCallback'),
-			array('afterPerform', 'afterPerformEventCallback'),
-			array('afterFork', 'afterForkEventCallback'),
-		);
-	}
-	
-	/**
-	 * @dataProvider eventCallbackProvider
-	 */
-	public function testEventCallbacksFire($event, $callback)
-	{
-        return self::markTestSkipped();
 
-        \Resque\Event::listen($event, array($this, $callback));
-
-		$job = $this->getEventTestJob();
-		$this->worker->perform($job);
-		$this->worker->work(0);
-		
-		$this->assertContains($callback, $this->callbacksHit, $event . ' callback (' . $callback .') was not called');
-	}
-	
 	public function testBeforeForkEventCallbackFires()
 	{
         return self::markTestSkipped();
