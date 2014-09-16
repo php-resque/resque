@@ -63,6 +63,14 @@ class Job
     }
 
     /**
+     * @param string $id
+     */
+    public function setId($id)
+    {
+        $this->id = $id;
+    }
+
+    /**
      * @return object|string
      */
     public function getJobClass()
@@ -177,5 +185,15 @@ class Job
     public function __toString()
     {
         return 'Job' . json_encode($this->jsonSerialize(), true);
+    }
+
+    /**
+     * Clone
+     *
+     * On clone, remove the id. This allows recreation of a job via $queue->push(clone $job);
+     */
+    public function __clone()
+    {
+        $this->id = null;
     }
 }

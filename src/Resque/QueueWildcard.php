@@ -19,7 +19,7 @@ class QueueWildcard extends Queue
      */
     public function push(Job $job)
     {
-        throw new \Exception('Wild card queue does not support pushing');
+        throw new \Exception('Wildcard queue does not support pushing');
     }
 
     /**
@@ -27,7 +27,7 @@ class QueueWildcard extends Queue
      */
     public function register()
     {
-        throw new \Exception('Wild card queue can not be registered');
+        throw new \Exception('Wildcard queue can not be registered');
     }
 
     /**

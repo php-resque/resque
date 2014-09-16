@@ -81,18 +81,19 @@ class JobTest extends ResqueTestCase
             ),
         );
 
-        $insertedJob = new Job(
+        $pushedJob = new Job(
             'Test_Job',
             $args
         );
 
-        $this->queue->push($insertedJob);
+        $this->queue->push($pushedJob);
 
         $poppedJob = $this->queue->pop();
 
         $this->assertNotNull($poppedJob);
-        $this->assertEquals($insertedJob->getJobClass(), $poppedJob->getJobClass());
-        $this->assertEquals($insertedJob->getArguments(), $poppedJob->getArguments());
+        $this->assertEquals($pushedJob->getId(), $poppedJob->getId());
+        $this->assertEquals($pushedJob->getJobClass(), $poppedJob->getJobClass());
+        $this->assertEquals($pushedJob->getArguments(), $poppedJob->getArguments());
         $this->assertNull($this->queue->pop());
     }
 

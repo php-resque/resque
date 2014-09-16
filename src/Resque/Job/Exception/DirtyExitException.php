@@ -1,6 +1,6 @@
 <?php
 
-namespace Resque\Job;
+namespace Resque\Job\Exception;
 
 use Resque\Exception\ResqueRuntimeException;
 

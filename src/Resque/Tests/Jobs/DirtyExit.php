@@ -4,12 +4,10 @@ namespace Resque\Tests\Jobs;
 
 use Resque\Job\JobInterface;
 
-class Simple implements JobInterface
+class DirtyExit implements JobInterface
 {
-    public static  $called = false;
-
     public function perform()
     {
-        self::$called = true;
+        exit(1);
     }
 }

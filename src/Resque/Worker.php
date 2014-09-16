@@ -13,8 +13,7 @@ use Resque\Event\JobAfterPerformEvent;
 use Resque\Event\JobPerformedEvent;
 use Resque\Event\JobBeforeForkEvent;
 use Resque\Event\WorkerStartupEvent;
-use Resque\Job\DirtyExitException;
-use Resque\Job\Exception\DontPerformException;
+use Resque\Job\Exception\DirtyExitException;
 use Resque\Job\Exception\InvalidJobException;
 use Resque\Job\JobFactory;
 use Resque\Job\JobInterface;
@@ -27,47 +26,47 @@ use Resque\Job\Status;
  */
 class Worker
 {
-    public $pid;
+    protected $pid;
 
     /**
-     * @var LoggerInterface Logging object that impliments the PSR-3 LoggerInterface
+     * @var LoggerInterface Logging object that implements the PSR-3 LoggerInterface
      */
-    public $logger;
+    protected $logger;
 
     /**
      * @var array Array of all associated queues for this worker.
      */
-    private $queues = array();
+    protected $queues = array();
 
     /**
      * @var string The hostname of this worker.
      */
-    private $hostname;
+    protected $hostname;
 
     /**
      * @var boolean True if on the next iteration, the worker should shutdown.
      */
-    private $shutdown = false;
+    protected $shutdown = false;
 
     /**
      * @var boolean True if this worker is paused.
      */
-    private $paused = false;
+    protected $paused = false;
 
     /**
      * @var string String identifying this worker.
      */
-    private $id;
+    protected $id;
 
     /**
      * @var Job Current job, if any, being processed by this worker.
      */
-    private $currentJob = null;
+    protected $currentJob = null;
 
     /**
      * @var int Process ID of child worker processes.
      */
-    private $childPid = null;
+    protected $childPid = null;
 
     /**
      * @var Event\EventDispatcher
@@ -143,32 +142,37 @@ class Worker
     }
 
     /**
+     * @return mixed
+     */
+    public function getPid()
+    {
+        return $this->pid;
+    }
+
+    /**
      * @param QueueInterface $queue
-     * @param null $alias
      * @return $this
      */
-    public function addQueue(QueueInterface $queue, $alias = null)
+    public function addQueue(QueueInterface $queue)
     {
-        $this->queues[$alias] = $queue;
+        $this->queues[(string)$queue] = $queue;
 
         return $this;
     }
 
     public function addQueues($queues)
     {
-        foreach ($queues as $alias => $queue) {
-            $this->addQueue($queue, $alias);
+        foreach ($queues as $queue) {
+            $this->addQueue($queue);
         }
 
         return $this;
     }
 
-    public function getQueue($alias = null)
-    {
-        return $this->queues[$alias];
-    }
-
-    public function getAllQueues()
+    /**
+     * @return QueueInterface[] Array of queues this worker is dealing with.
+     */
+    public function getQueues()
     {
         return $this->queues;
     }
@@ -183,6 +187,11 @@ class Worker
         $this->id = $id;
     }
 
+    /**
+     * Worker ID
+     *
+     * @return string
+     */
     public function getId()
     {
         if (null === $this->id) {
@@ -291,10 +300,16 @@ class Worker
                     pcntl_wait($status);
                     $exitStatus = pcntl_wexitstatus($status);
                     if ($exitStatus !== 0) {
+                        $exception = new DirtyExitException(
+                            'Job exited with exit code ' . $exitStatus
+                        );
+
                         $job->fail(
-                            new DirtyExitException(
-                                'Job exited with exit code ' . $exitStatus
-                            )
+                            $exception
+                        );
+
+                        $this->eventDispatcher->dispatch(
+                            new JobFailedEvent($job, $this, $exception)
                         );
                     }
                 }
@@ -327,8 +342,8 @@ class Worker
             )
         );
 
-        //$job->worker = $this;
         $this->currentJob = $job;
+
         $job->updateStatus(Status::STATUS_RUNNING);
         $data = json_encode(
             array(
@@ -624,9 +639,9 @@ class Worker
     /**
      * Inject the logging object into the worker
      *
-     * @param \Psr\Log\LoggerInterface $logger
+     * @param LoggerInterface $logger
      */
-    public function setLogger(\Psr\Log\LoggerInterface $logger)
+    public function setLogger(LoggerInterface $logger)
     {
         $this->logger = $logger;
     }

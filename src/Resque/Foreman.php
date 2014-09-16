@@ -164,7 +164,7 @@ class Foreman
         /** @var Worker $worker */
         foreach ($workers as $worker) {
             $worker->setPid(self::fork());
-            if (!$worker->pid) {
+            if (!$worker->getPid()) {
                 // This is child process, it will work and then die.
                 $this->registerWorker($worker);
                 $worker->work(0);
@@ -177,8 +177,8 @@ class Foreman
         // wait for slaves
         foreach ($workers as $worker) {
             $status = 0;
-            if ($worker->pid != pcntl_waitpid($worker->pid, $status)) {
-                die("Error with wait pid $worker->pid.\n");
+            if ($worker->getPid() != pcntl_waitpid($worker->getPid(), $status)) {
+                die("Error with wait pid $worker->getPid().\n");
             } else {
                 $this->unregisterWorker($worker);
             }
@@ -186,13 +186,7 @@ class Foreman
     }
 
     /**
-     * fork() helper method for php-resque that handles issues PHP socket
-     * and phpredis have with passing around sockets between child/parent
-     * processes.
-     *
-     * Will close connection to Redis before forking.
-     *
-     * This will probably not be static.
+     * fork() helper method for php-resque
      *
      * @see pcntl_fork()
      *
@@ -206,12 +200,6 @@ class Foreman
             //       it is failing.
             throw new ResqueRuntimeException('pcntl_fork is not available');
         }
-
-        // Close the connection to Redis before forking.
-        // This is a workaround for issues phpredis has.
-        //self::$redis = null;
-        // @todo change to this $this->backend->disconnect();, which means making non static.
-        // Maybe throw a pre fork event?
 
         $pid = pcntl_fork();
 

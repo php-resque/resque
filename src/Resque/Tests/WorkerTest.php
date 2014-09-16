@@ -6,7 +6,6 @@ use Resque\Event\EventDispatcher;
 use Resque\Job;
 use Resque\QueueWildcard;
 use Resque\Resque;
-use Resque\Foreman;
 use Resque\Queue;
 use Resque\Worker;
 
@@ -113,18 +112,18 @@ class WorkerTest extends ResqueTestCase
     /**
      * @dataProvider dataProviderWorkerPerformEvents
      */
-    public function testWorkerPerformEmitsCorrectEvents($eventName, $jobClass)
+    public function testWorkerPerformEmitsExpectedEvents($eventName, $jobClass)
     {
-        $eventDispatch = new EventDispatcher();
+        $eventDispatcher = new EventDispatcher();
         $callbackTriggered = false;
-        $eventDispatch->addListener(
+        $eventDispatcher->addListener(
             $eventName,
             function () use (&$callbackTriggered) {
                 $callbackTriggered = true;
             }
         );
 
-        $worker = new Worker(null, null, $eventDispatch);
+        $worker = new Worker(null, null, $eventDispatcher);
         $worker->perform(new Job($jobClass));
 
         $this->assertTrue(
@@ -144,7 +143,64 @@ class WorkerTest extends ResqueTestCase
             array('resque.job.before_perform', 'Resque\Tests\Jobs\Simple'),
             array('resque.job.after_perform',  'Resque\Tests\Jobs\Simple'),
             array('resque.job.performed',      'Resque\Tests\Jobs\Simple'),
+            array('resque.job.failed',         'Resque\Tests\Jobs\Failure'),
         );
+    }
+
+    public function testWorkerTracksCurrentJobCorrectly()
+    {
+        $queue = new Queue('jobs');
+        $queue->setRedisBackend($this->redis);
+
+        $job = new Job('Resque\Tests\Jobs\Simple');
+        $queue->push($job);
+
+        $mockWorker = $this->getMock(
+            'Resque\Worker',
+            array('workComplete'),
+            array(array($queue))
+        );
+        $mockWorker
+            ->expects($this->once())
+            ->method('workComplete')
+            ->will($this->returnValue(null));
+        $mockWorker->setRedisBackend($this->redis);
+        $mockWorker->work(0);
+
+        $currentJob = $mockWorker->getCurrentJob();
+
+        $this->assertNotNull($currentJob);
+        $this->assertEquals($job->getId(), $currentJob->getId());
+        $this->assertTrue($this->redis->exists('worker:'.$mockWorker));
+        $redisCurrentJob = json_decode($this->redis->get('worker:'.$mockWorker), true);
+        $this->assertEquals($job->getId(), $redisCurrentJob['payload']['id']);
+    }
+
+    public function testWorkerRecoversFromChildDirtyExit()
+    {
+        $queue = new Queue('jobs');
+        $queue->setRedisBackend($this->redis);
+
+        $job = new Job('Resque\Tests\Jobs\DirtyExit');
+        $queue->push($job);
+
+        $eventDispatcher = new EventDispatcher();
+        $callbackTriggered = false;
+        $eventDispatcher->addListener(
+            'resque.job.failed',
+            function ($event) use (&$callbackTriggered) {
+                $callbackTriggered = true;
+                $this->assertInstanceOf('Resque\Job\Exception\DirtyExitException', $event->getException());
+            }
+        );
+
+        $worker = new Worker($queue, null, $eventDispatcher);
+        $worker->setRedisBackend($this->redis);
+        $worker->work(0);
+
+        $this->assertTrue($callbackTriggered);
+
+        // @todo test redis failure storage is set, maybe just test failure system is called?
     }
 
     public function testPausedWorkerDoesNotPickUpJobs()

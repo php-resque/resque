@@ -53,7 +53,7 @@ class Queue implements QueueInterface
     }
 
     /**
-     * Push a job into the queue
+     * Push a job into the queue.
      *
      * If the queue does not exist, then create it as well.
      *
@@ -66,14 +66,10 @@ class Queue implements QueueInterface
     {
         $this->register();
 
-        $length = $this->redis->rpush(
+        $this->redis->rpush(
             'queue:' . $this->name,
             json_encode($job->jsonSerialize())
         );
-
-        if ($length < 1) {
-            return false;
-        }
 
 //        if ($result) {
 //            Resque_Event::trigger(
@@ -108,7 +104,7 @@ class Queue implements QueueInterface
         // @todo check for json_decode error, if error throw an exception.
 
         $job = new Job($payload['class'], $payload['args'][0]);
-
+        $job->setId($payload['id']);
         $job->setQueue($this);
 
         return $job;
@@ -118,7 +114,7 @@ class Queue implements QueueInterface
      * Pop an item off the end of the specified queues, using blocking list pop,
      * decode it and return it.
      *
-     * @deprecated
+     * @deprecated should just pop() but queue might have setBlocking()?
      *
      * @param array $queues
      * @param int $timeout
