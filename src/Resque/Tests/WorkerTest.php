@@ -184,13 +184,14 @@ class WorkerTest extends ResqueTestCase
         $job = new Job('Resque\Tests\Jobs\DirtyExit');
         $queue->push($job);
 
+        $that = $this;
         $eventDispatcher = new EventDispatcher();
         $callbackTriggered = false;
         $eventDispatcher->addListener(
             'resque.job.failed',
-            function ($event) use (&$callbackTriggered) {
+            function ($event) use (&$callbackTriggered, $that) {
                 $callbackTriggered = true;
-                $this->assertInstanceOf('Resque\Job\Exception\DirtyExitException', $event->getException());
+                $that->assertInstanceOf('Resque\Job\Exception\DirtyExitException', $event->getException());
             }
         );
 
