@@ -71,28 +71,28 @@ if (!empty($PREFIX)) {
 //                $logger->log(Psr\Log\LogLevel::NOTICE, 'Starting worker {worker}', array('worker' => $worker));
 //                $worker->work($interval, $BLOCKING);
 //                break;
-//            }
+//            
 //        }
 //    }
 //} // Start a single worker
 //else {
-    $queues = explode(',', $QUEUE);
+$queues = explode(',', $QUEUE);
 
-    $foreman = new \Resque\Foreman();
+$foreman = new \Resque\Foreman();
 
-    $worker = new \Resque\Worker(
-        array(
-            new \Resque\Queue('foo')
-        )
-    );
+$worker = new \Resque\Worker(
+    array(
+        new \Resque\Queue('foo')
+    )
+);
 
-    $foreman
-        ->registerWorker($worker);
+$foreman
+    ->registerWorker($worker);
 
-  //  $worker->setLogger($logger);
+//  $worker->setLogger($logger);
 
-  //  $logger->log(Psr\Log\LogLevel::NOTICE, 'Starting worker {worker}', array('worker' => $worker));
-  //  $worker->work($interval, $BLOCKING);
+//  $logger->log(Psr\Log\LogLevel::NOTICE, 'Starting worker {worker}', array('worker' => $worker));
+//  $worker->work($interval, $BLOCKING);
 
-    $foreman->work();
+$foreman->work();
 //}

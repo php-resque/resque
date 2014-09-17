@@ -100,8 +100,8 @@ class Worker
      */
     public function __construct($queues = null, $jobFactory = null, $eventDispatcher = null)
     {
-        $this->jobFactory = $jobFactory ?: new JobFactory();
-        $this->eventDispatcher = $eventDispatcher ?: new EventDispatcher();
+        $this->jobFactory = $jobFactory ? : new JobFactory();
+        $this->eventDispatcher = $eventDispatcher ? : new EventDispatcher();
         $this->logger = new NullLogger();
 
         if (false === (null === $queues)) {
@@ -195,10 +195,10 @@ class Worker
     public function getId()
     {
         if (null === $this->id) {
-            $this->id =  $this->hostname . ':' . getmypid() . ':' . implode(',', $this->queues);
+            $this->id = $this->hostname . ':' . getmypid() . ':' . implode(',', $this->queues);
         }
 
-       return $this->id;
+        return $this->id;
     }
 
     /**
@@ -366,7 +366,7 @@ class Worker
     {
         $this->currentJob = null;
         Stat::incr('processed');
-        Stat::incr('processed:' . (string) $this);
+        Stat::incr('processed:' . (string)$this);
         $this->redis->del('worker:' . (string)$this);
     }
 
@@ -600,7 +600,11 @@ class Worker
             posix_kill($this->childPid, SIGKILL);
             $this->childPid = null;
         } else {
-            $this->logger->log(LogLevel::INFO, 'Child {child} not found, restarting.', array('child' => $this->childPid));
+            $this->logger->log(
+                LogLevel::INFO,
+                'Child {child} not found, restarting.',
+                array('child' => $this->childPid)
+            );
             $this->shutdown();
         }
     }
@@ -648,6 +652,6 @@ class Worker
 
     public function setForkOnPerform($fork)
     {
-        $this->fork = (bool) $fork;
+        $this->fork = (bool)$fork;
     }
 }

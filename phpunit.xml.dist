@@ -1,26 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit backupGlobals="false"
-	bootstrap="test/bootstrap.php"
-	backupStaticAttributes="false"
-	convertErrorsToExceptions="true"
-	convertNoticesToExceptions="true"
-	convertWarningsToExceptions="true"
-	processIsolation="false"
-	stopOnFailure="false"
-	syntaxCheck="false"
->
-	<testsuites>
-		<testsuite name="Resque Test Suite">
-			<directory>./src/Resque/Tests</directory>
-		</testsuite>
-	</testsuites>
+         bootstrap="test/bootstrap.php"
+         backupStaticAttributes="false"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+         processIsolation="false"
+         stopOnFailure="false"
+         syntaxCheck="false"
+        >
+    <testsuites>
+        <testsuite name="Resque Test Suite">
+            <directory>./src/Resque/Tests</directory>
+        </testsuite>
+    </testsuites>
 
-	<filter>
-		<whitelist>
-			<directory suffix=".php">./src/Resque</directory>
+    <filter>
+        <whitelist>
+            <directory suffix=".php">./src/Resque</directory>
             <exclude>
                 <directory suffix=".php">./src/Resque/Tests</directory>
             </exclude>
-		</whitelist>
-	</filter>
+        </whitelist>
+    </filter>
 </phpunit>

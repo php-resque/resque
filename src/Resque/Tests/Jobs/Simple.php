@@ -6,7 +6,7 @@ use Resque\Job\JobInterface;
 
 class Simple implements JobInterface
 {
-    public static  $called = false;
+    public static $called = false;
 
     public function perform()
     {

@@ -11,25 +11,6 @@ use Resque\Worker;
 class JobTest extends ResqueTestCase
 {
     /**
-     * @var Queue
-     */
-    protected $queue;
-
-    /**
-     * @var Worker
-     */
-    protected $worker;
-
-    public function setUp()
-    {
-        parent::setUp();
-
-        $this->queue = new Queue('jobs');
-        $this->queue->setRedisBackend($this->redis);
-        $this->worker = new Worker($this->queue);
-    }
-
-    /**
      * @expectedException \InvalidArgumentException
      */
     public function testObjectArgumentsCannotBePassedToJob()
@@ -40,67 +21,29 @@ class JobTest extends ResqueTestCase
         new Job('Test_Job', $args);
     }
 
-    public function testEnqueuedJobReturnsExactSamePassedInArguments()
+    public function testHoldsId()
     {
-        $args = array(
-            'int' => 123,
-            'numArray' => array(
-                1,
-                2,
-            ),
-            'assocArray' => array(
-                'key1' => 'value1',
-                'key2' => 'value2'
-            ),
-        );
-
-        $this->queue->push(
-            new Job(
-                'Test_Job',
-                $args
-            )
-        );
-
-        $job = $this->queue->pop();
-
-        $this->assertNotNull($job);
-        $this->assertEquals($args, $job->getArguments());
+        $job = new Job('bar');
+        $id = $job->getId();
+        $this->assertNotNull($id);
+        $this->assertEquals($id, $job->getId());
     }
 
-    public function testRecreatedJobMatchesExistingJob()
+    public function testCloneDropsId()
     {
-        $args = array(
-            'int' => 123,
-            'numArray' => array(
-                1,
-                2,
-            ),
-            'assocArray' => array(
-                'key1' => 'value1',
-                'key2' => 'value2'
-            ),
+        $job = new Job(
+            'foo',
+            array('arg' => 'bar')
         );
-
-        $pushedJob = new Job(
-            'Test_Job',
-            $args
-        );
-
-        $this->queue->push($pushedJob);
-
-        $poppedJob = $this->queue->pop();
-
-        $this->assertNotNull($poppedJob);
-        $this->assertEquals($pushedJob->getId(), $poppedJob->getId());
-        $this->assertEquals($pushedJob->getJobClass(), $poppedJob->getJobClass());
-        $this->assertEquals($pushedJob->getArguments(), $poppedJob->getArguments());
-        $this->assertNull($this->queue->pop());
+        $this->assertNotNull($job->getId());
+        $clone = clone $job;
+        $this->assertNotSame($job->getId(), $clone->getId());
+        $this->assertNotNull($clone->getId());
     }
 
     public function testFailedJobExceptionsAreCaught()
     {
         return self::markTestSkipped();
-
 
         $payload = array(
             'class' => 'Failing_Job',

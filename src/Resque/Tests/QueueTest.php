@@ -22,6 +22,11 @@ class QueueTest extends ResqueTestCase
         $this->queue->setRedisBackend($this->redis);
     }
 
+    public function testNameIsSet()
+    {
+        $this->assertSame('jobs', $this->queue->getName());
+    }
+
     public function testJobCanBeEnqueued()
     {
         $this->assertTrue($this->queue->push(new Job('Test_Job')));
@@ -71,5 +76,62 @@ class QueueTest extends ResqueTestCase
         $this->assertCount(2, $queues);
         $this->assertNotContains($foo, $queues);
         $this->assertNotContains($bar, $queues);
+    }
+
+    public function testEnqueuedJobReturnsExactSamePassedInArguments()
+    {
+        $args = array(
+            'int' => 123,
+            'numArray' => array(
+                1,
+                2,
+            ),
+            'assocArray' => array(
+                'key1' => 'value1',
+                'key2' => 'value2'
+            ),
+        );
+
+        $this->queue->push(
+            new Job(
+                'Test_Job',
+                $args
+            )
+        );
+
+        $job = $this->queue->pop();
+
+        $this->assertNotNull($job);
+        $this->assertEquals($args, $job->getArguments());
+    }
+
+    public function testRecreatedJobMatchesExistingJob()
+    {
+        $args = array(
+            'int' => 123,
+            'numArray' => array(
+                1,
+                2,
+            ),
+            'assocArray' => array(
+                'key1' => 'value1',
+                'key2' => 'value2'
+            ),
+        );
+
+        $pushedJob = new Job(
+            'Test_Job',
+            $args
+        );
+
+        $this->queue->push($pushedJob);
+
+        $poppedJob = $this->queue->pop();
+
+        $this->assertNotNull($poppedJob);
+        $this->assertEquals($pushedJob->getId(), $poppedJob->getId());
+        $this->assertEquals($pushedJob->getJobClass(), $poppedJob->getJobClass());
+        $this->assertEquals($pushedJob->getArguments(), $poppedJob->getArguments());
+        $this->assertNull($this->queue->pop());
     }
 }

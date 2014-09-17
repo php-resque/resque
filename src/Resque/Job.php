@@ -41,7 +41,7 @@ class Job
      *
      * Instantiate a new instance of a job.
      *
-     * @param string $jobClass The fully quantified class name of the target job to run.
+     * @param string $jobClass The fully quantified class name of the target job to run
      * @param array $arguments An array of arguments/parameters for the job.
      */
     public function __construct($jobClass, $arguments = array())

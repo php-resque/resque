@@ -151,7 +151,7 @@ class Foreman
      */
     public function isRegistered(Worker $worker)
     {
-        return (bool) $this->redis->sismember('workers', (string) $worker);
+        return (bool)$this->redis->sismember('workers', (string)$worker);
     }
 
     public function work($workers)
@@ -223,7 +223,7 @@ class Foreman
     {
         $workerPids = $this->getLocalWorkerPids();
         $workers = $this->all();
-        foreach($workers as $worker) {
+        foreach ($workers as $worker) {
             if (is_object($worker)) {
                 list($host, $pid, $queues) = explode(':', (string)$worker, 3);
                 if ($host != $this->hostname || in_array($pid, $workerPids) || $pid == getmypid()) {

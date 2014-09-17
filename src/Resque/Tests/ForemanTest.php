@@ -150,7 +150,7 @@ class ForemanTest extends ResqueTestCase
 
     public function testDeadWorkerCleanUpDoesNotCleanUnknownWorkers()
     {
-        // Register a bad worker on this machine
+        // Register a dead worker on this machine
         $localWorker = new Worker();
         $workerId = explode(':', $localWorker);
         $localWorker->setId($workerId[0] . ':1:jobs');
