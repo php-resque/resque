@@ -1,0 +1,130 @@
+#!/usr/bin/env php
+<?php
+
+// Find and initialize Composer
+$files = array(
+    __DIR__ . '/../../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+    __DIR__ . '/../../../../autoload.php',
+    __DIR__ . '/../vendor/autoload.php',
+);
+
+foreach ($files as $file) {
+    if (file_exists($file)) {
+        require_once $file;
+        break;
+    }
+}
+
+if (!class_exists('Composer\Autoload\ClassLoader', false)) {
+    die(
+        'You need to set up the project dependencies using the following commands:' . PHP_EOL .
+        'curl -s http://getcomposer.org/installer | php' . PHP_EOL .
+        'php composer.phar install' . PHP_EOL
+    );
+}
+
+$QUEUE = getenv('QUEUE');
+if (empty($QUEUE)) {
+    die("Set QUEUE env var containing the list of queues to work.\n");
+}
+
+$APP_INCLUDE = getenv('APP_INCLUDE');
+if ($APP_INCLUDE) {
+    if (!file_exists($APP_INCLUDE)) {
+        die('APP_INCLUDE (' . $APP_INCLUDE . ") does not exist.\n");
+    }
+
+    require_once $APP_INCLUDE;
+}
+
+$logLevel = false;
+$LOGGING = getenv('LOGGING');
+$VERBOSE = getenv('VERBOSE');
+$VVERBOSE = getenv('VVERBOSE');
+if (!empty($LOGGING) || !empty($VERBOSE)) {
+    $logLevel = true;
+} else {
+    if (!empty($VVERBOSE)) {
+        $logLevel = true;
+    }
+}
+
+// See if the APP_INCLUDE containes a logger object,
+// If none exists, fallback to internal logger
+if (!isset($logger) || !is_object($logger)) {
+    // $logger = new Resque_Log($logLevel); // @todo restore
+}
+
+$BLOCKING = getenv('BLOCKING') !== false;
+
+$interval = 5;
+$INTERVAL = getenv('INTERVAL');
+if (!empty($INTERVAL)) {
+    $interval = $INTERVAL;
+}
+
+$count = 1;
+$COUNT = getenv('COUNT');
+if (!empty($COUNT) && $COUNT > 1) {
+    $count = $COUNT;
+}
+
+$PREFIX = getenv('PREFIX');
+if (!empty($PREFIX)) {
+    $logger->log(Psr\Log\LogLevel::INFO, 'Prefix set to {prefix}', array('prefix' => $PREFIX));
+    Resque_Redis::prefix($PREFIX);
+}
+
+
+$redis = new \Predis\Client(
+    getenv('REDIS_BACKEND'), // @todo
+    array(
+        'prefix' => 'resque:'
+    )
+);
+
+$queues = array();
+$configQueues = explode(',', $QUEUE);
+
+if (in_array('*', $configQueues)) {
+    $wildcard = new \Resque\QueueWildcard();
+    $wildcard->setRedisBackend($redis);
+    $queues[] = $wildcard;
+} else {
+    foreach ($configQueues as $configQueue) {
+        $q = new \Resque\Queue($configQueue);
+        $q->setRedisBackend($redis);
+        $queues[] = $q;
+
+    }
+    unset($configQueue, $q);
+}
+
+$foreman = new \Resque\Foreman();
+$foreman->setRedisBackend($redis);
+
+$workers = array();
+
+for ($i = 0; $i < $count; ++$i) {
+    $worker = new \Resque\Worker(
+        $queues // This can actually be customised per worker.
+    );
+    $worker->setRedisBackend($redis);
+    //  $worker->setLogger($logger);
+
+    $workers[] = $worker;
+
+    unset($worker);
+}
+
+// clean up before we begin.
+$foreman->pruneDeadWorkers();
+
+$foreman->work($workers);
+
+echo sprintf(
+    "%d workers attached to the %s queues successfully started.\n",
+    count($workers),
+    implode($queues, ', ')
+);

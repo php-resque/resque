@@ -3,15 +3,15 @@
 namespace Resque;
 
 use Predis\ClientInterface;
-use Psr\Log\LogLevel;
 use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
 use Resque\Event\EventDispatcher;
+use Resque\Event\JobAfterPerformEvent;
+use Resque\Event\JobBeforeForkEvent;
 use Resque\Event\JobBeforePerformEvent;
 use Resque\Event\JobFailedEvent;
-use Resque\Event\JobAfterPerformEvent;
 use Resque\Event\JobPerformedEvent;
-use Resque\Event\JobBeforeForkEvent;
 use Resque\Event\WorkerStartupEvent;
 use Resque\Job\Exception\DirtyExitException;
 use Resque\Job\Exception\InvalidJobException;
@@ -26,6 +26,14 @@ use Resque\Job\Status;
  */
 class Worker
 {
+    /**
+     * @var string String identifying this worker.
+     */
+    protected $id;
+
+    /**
+     * @var int Process id, used by Foreman.
+     */
     protected $pid;
 
     /**
@@ -52,11 +60,6 @@ class Worker
      * @var boolean True if this worker is paused.
      */
     protected $paused = false;
-
-    /**
-     * @var string String identifying this worker.
-     */
-    protected $id;
 
     /**
      * @var Job Current job, if any, being processed by this worker.
@@ -100,8 +103,8 @@ class Worker
      */
     public function __construct($queues = null, $jobFactory = null, $eventDispatcher = null)
     {
-        $this->jobFactory = $jobFactory ? : new JobFactory();
-        $this->eventDispatcher = $eventDispatcher ? : new EventDispatcher();
+        $this->jobFactory = $jobFactory ?: new JobFactory();
+        $this->eventDispatcher = $eventDispatcher ?: new EventDispatcher();
         $this->logger = new NullLogger();
 
         if (false === (null === $queues)) {
@@ -117,36 +120,6 @@ class Worker
         } else {
             $this->hostname = php_uname('n');
         }
-    }
-
-    /**
-     * @param ClientInterface $redis
-     * @return $this
-     */
-    public function setRedisBackend(ClientInterface $redis)
-    {
-        $this->redis = $redis;
-
-        return $this;
-    }
-
-    /**
-     * @param int $pid
-     * @return $this
-     */
-    public function setPid($pid)
-    {
-        $this->pid = $pid;
-
-        return $this;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getPid()
-    {
-        return $this->pid;
     }
 
     /**
@@ -170,35 +143,41 @@ class Worker
     }
 
     /**
+     * @param ClientInterface $redis
+     * @return $this
+     */
+    public function setRedisBackend(ClientInterface $redis)
+    {
+        $this->redis = $redis;
+
+        return $this;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getPid()
+    {
+        return $this->pid;
+    }
+
+    /**
+     * @param int $pid
+     * @return $this
+     */
+    public function setPid($pid)
+    {
+        $this->pid = $pid;
+
+        return $this;
+    }
+
+    /**
      * @return QueueInterface[] Array of queues this worker is dealing with.
      */
     public function getQueues()
     {
         return $this->queues;
-    }
-
-    /**
-     * Set the ID of this worker to a given ID string.
-     *
-     * @param string $id ID for the worker.
-     */
-    public function setId($id)
-    {
-        $this->id = $id;
-    }
-
-    /**
-     * Worker ID
-     *
-     * @return string
-     */
-    public function getId()
-    {
-        if (null === $this->id) {
-            $this->id = $this->hostname . ':' . getmypid() . ':' . implode(',', $this->queues);
-        }
-
-        return $this->id;
     }
 
     /**
@@ -294,11 +273,12 @@ class Worker
                     // Forked and we're the parent, sit and wait
                     $status = 'Forked ' . $this->childPid . ' at ' . strftime('%F %T');
                     $this->updateProcTitle($status);
-                    $this->logger->log(LogLevel::DEBUG, $status);
+                    $this->logger->debug($status);
 
                     // Wait until the child process finishes before continuing
-                    pcntl_wait($status);
-                    $exitStatus = pcntl_wexitstatus($status);
+                    pcntl_wait($waitStatus);
+                    $exitStatus = pcntl_wexitstatus($waitStatus);
+
                     if ($exitStatus !== 0) {
                         $exception = new DirtyExitException(
                             'Job exited with exit code ' . $exitStatus
@@ -321,163 +301,6 @@ class Worker
 
             $this->workComplete($job);
         }
-    }
-
-    /**
-     * Tell Redis which job we're currently working on.
-     *
-     * @todo storage
-     *
-     * @param Job $job The job we're working on.
-     */
-    protected function workingOn(Job $job)
-    {
-        $this->logger->notice(
-            sprintf(
-                'Starting work on %s',
-                $job
-            ),
-            array(
-                'job' => $job
-            )
-        );
-
-        $this->currentJob = $job;
-
-        $job->updateStatus(Status::STATUS_RUNNING);
-        $data = json_encode(
-            array(
-                'queue' => $job->queue,
-                'run_at' => strftime('%a %b %d %H:%M:%S %Z %Y'),
-                'payload' => $job->jsonSerialize()
-            )
-        );
-
-        $this->redis->set('worker:' . $this, $data);
-    }
-
-    /**
-     * Notify Redis that we've finished working on a job, clearing the working
-     * state and incrementing the job stats.
-     *
-     * @todo storage
-     */
-    protected function workComplete()
-    {
-        $this->currentJob = null;
-        Stat::incr('processed');
-        Stat::incr('processed:' . (string)$this);
-        $this->redis->del('worker:' . (string)$this);
-    }
-
-    /**
-     * Process a single job
-     *
-     * @param Job $job The job to be processed.
-     * @throws InvalidJobException
-     */
-    public function perform(Job $job)
-    {
-        $status = 'Performing Job ' . $job;
-        $this->updateProcTitle($status);
-        $this->logger->log(LogLevel::INFO, $status);
-
-        try {
-            $jobInstance = $this->jobFactory->createJob($job);
-
-            if (false === ($jobInstance instanceof JobInterface)) {
-                throw new InvalidJobException(
-                    'Job ' . $job . ' "' . get_class($jobInstance) . '" needs to implement Resque\JobInterface'
-                );
-            }
-
-            $this->eventDispatcher->dispatch(
-                new JobBeforePerformEvent($job, $jobInstance)
-            );
-
-            $jobInstance->perform();
-
-            $this->eventDispatcher->dispatch(
-                new JobAfterPerformEvent($job)
-            );
-        } catch (\Exception $exception) {
-            $this->logger->error(
-                'Perform failure on {job}, {stack}',
-                array(
-                    'job' => $job,
-                    'stack' => $exception->getMessage()
-                )
-            );
-
-            // $job->fail($e); @todo Restore failure behaviour.
-
-            $this->eventDispatcher->dispatch(
-                new JobFailedEvent($job, $this, $exception)
-            );
-
-            return;
-        }
-
-        // $job->updateStatus(Status::STATUS_COMPLETE); @todo update status behaviour
-
-        $this->logger->notice('{job} has successfully processed', array('job' => $job));
-
-        $this->eventDispatcher->dispatch(
-            new JobPerformedEvent($job)
-        );
-    }
-
-    /**
-     * @todo The name reserve doesn't sit well, all it's doing is asking queues for jobs. Change it.
-     *
-     * @param  bool $blocking
-     * @param  int $timeout
-     * @return Job|null Instance of Job if a job is found, null if not.
-     */
-    public function reserve($blocking = false, $timeout = null)
-    {
-        $queues = $this->queues();
-
-        if (!is_array($queues)) {
-            return null;
-        }
-
-        if ($blocking === true) {
-            $payload = Job::reserveBlocking($queues, $timeout);
-            if ($payload) {
-                $this->logger->log(LogLevel::INFO, 'Found job on {queue}', array('queue' => $payload->queue));
-
-                return $payload;
-            }
-        } else {
-            foreach ($queues as $queue) {
-                $this->logger->log(LogLevel::DEBUG, 'Checking {queue} for jobs', array('queue' => $queue));
-                $payload = $queue->pop();
-                if ($payload) {
-                    $this->logger->log(LogLevel::INFO, 'Found job on {queue}', array('queue' => $queue));
-
-                    return $payload;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Return an array containing all of the queues that this worker should use
-     * when searching for jobs.
-     *
-     * If * is found in the list of queues, every queue will be searched in
-     * alphabetic order. (@see $fetch)
-     *
-     * @param boolean $fetch If true, and the queue is set to *, will fetch
-     * all queue names from redis.
-     * @return array Array of associated queues.
-     */
-    public function queues($fetch = true)
-    {
-        return $this->queues;
     }
 
     /**
@@ -545,6 +368,163 @@ class Worker
     }
 
     /**
+     * @todo The name reserve doesn't sit well, all it's doing is asking queues for jobs. Change it.
+     *
+     * @param  bool $blocking
+     * @param  int $timeout
+     * @return Job|null Instance of Job if a job is found, null if not.
+     */
+    public function reserve($blocking = false, $timeout = null)
+    {
+        $queues = $this->queues();
+
+        if (!is_array($queues)) {
+            return null;
+        }
+
+        if ($blocking === true) {
+            $payload = Job::reserveBlocking($queues, $timeout);
+            if ($payload) {
+                $this->logger->log(LogLevel::INFO, 'Found job on {queue}', array('queue' => $payload->queue));
+
+                return $payload;
+            }
+        } else {
+            foreach ($queues as $queue) {
+                $this->logger->log(LogLevel::DEBUG, 'Checking {queue} for jobs', array('queue' => $queue));
+                $payload = $queue->pop();
+                if ($payload) {
+                    $this->logger->log(LogLevel::INFO, 'Found job on {queue}', array('queue' => $queue));
+
+                    return $payload;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Return an array containing all of the queues that this worker should use
+     * when searching for jobs.
+     *
+     * If * is found in the list of queues, every queue will be searched in
+     * alphabetic order. (@see $fetch)
+     *
+     * @param boolean $fetch If true, and the queue is set to *, will fetch
+     * all queue names from redis.
+     * @return array Array of associated queues.
+     */
+    public function queues($fetch = true)
+    {
+        return $this->queues;
+    }
+
+    /**
+     * Tell Redis which job we're currently working on.
+     *
+     * @todo storage
+     *
+     * @param Job $job The job we're working on.
+     */
+    protected function workingOn(Job $job)
+    {
+        $this->logger->notice(
+            sprintf(
+                'Starting work on %s',
+                $job
+            ),
+            array(
+                'job' => $job
+            )
+        );
+
+        $this->currentJob = $job;
+
+        $job->updateStatus(Status::STATUS_RUNNING);
+        $data = json_encode(
+            array(
+                'queue' => $job->queue,
+                'run_at' => strftime('%a %b %d %H:%M:%S %Z %Y'),
+                'payload' => $job->jsonSerialize()
+            )
+        );
+
+        $this->redis->set('worker:' . $this, $data);
+    }
+
+    /**
+     * Process a single job
+     *
+     * @param Job $job The job to be processed.
+     * @throws InvalidJobException
+     */
+    public function perform(Job $job)
+    {
+        $status = 'Performing Job ' . $job;
+        $this->updateProcTitle($status);
+        $this->logger->log(LogLevel::INFO, $status);
+
+        try {
+            $jobInstance = $this->jobFactory->createJob($job);
+
+            if (false === ($jobInstance instanceof JobInterface)) {
+                throw new InvalidJobException(
+                    'Job ' . $job . ' "' . get_class($jobInstance) . '" needs to implement Resque\JobInterface'
+                );
+            }
+
+            $this->eventDispatcher->dispatch(
+                new JobBeforePerformEvent($job, $jobInstance)
+            );
+
+            $jobInstance->perform();
+
+            $this->eventDispatcher->dispatch(
+                new JobAfterPerformEvent($job)
+            );
+        } catch (\Exception $exception) {
+            $this->logger->error(
+                'Perform failure on {job}, {stack}',
+                array(
+                    'job' => $job,
+                    'stack' => $exception->getMessage()
+                )
+            );
+
+            // $job->fail($e); @todo Restore failure behaviour.
+
+            $this->eventDispatcher->dispatch(
+                new JobFailedEvent($job, $this, $exception)
+            );
+
+            return;
+        }
+
+        // $job->updateStatus(Status::STATUS_COMPLETE); @todo update status behaviour
+
+        $this->logger->notice('{job} has successfully processed', array('job' => $job));
+
+        $this->eventDispatcher->dispatch(
+            new JobPerformedEvent($job)
+        );
+    }
+
+    /**
+     * Notify Redis that we've finished working on a job, clearing the working
+     * state and incrementing the job stats.
+     *
+     * @todo storage
+     */
+    protected function workComplete()
+    {
+        $this->currentJob = null;
+        Stat::incr('processed');
+        Stat::incr('processed:' . (string)$this);
+        $this->redis->del('worker:' . (string)$this);
+    }
+
+    /**
      * Signal handler callback for USR2, pauses processing of new jobs.
      */
     public function pauseProcessing()
@@ -564,16 +544,6 @@ class Worker
     }
 
     /**
-     * Schedule a worker for shutdown. Will finish processing the current job
-     * and when the timeout interval is reached, the worker will shut down.
-     */
-    public function shutdown()
-    {
-        $this->shutdown = true;
-        $this->logger->log(LogLevel::NOTICE, 'Shutting down');
-    }
-
-    /**
      * Force an immediate shutdown of the worker, killing any child jobs
      * currently running.
      */
@@ -581,6 +551,16 @@ class Worker
     {
         $this->shutdown();
         $this->killChild();
+    }
+
+    /**
+     * Schedule a worker for shutdown. Will finish processing the current job
+     * and when the timeout interval is reached, the worker will shut down.
+     */
+    public function shutdown()
+    {
+        $this->shutdown = true;
+        $this->logger->log(LogLevel::NOTICE, 'Shutting down');
     }
 
     /**
@@ -617,6 +597,30 @@ class Worker
     public function __toString()
     {
         return $this->getId();
+    }
+
+    /**
+     * Worker ID
+     *
+     * @return string
+     */
+    public function getId()
+    {
+        if (null === $this->id) {
+            $this->id = $this->hostname . ':' . getmypid() . ':' . implode(',', $this->queues);
+        }
+
+        return $this->id;
+    }
+
+    /**
+     * Set the ID of this worker to a given ID string.
+     *
+     * @param string $id ID for the worker.
+     */
+    public function setId($id)
+    {
+        $this->id = $id;
     }
 
     /**

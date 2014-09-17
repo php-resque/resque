@@ -113,7 +113,7 @@ class ForemanTest extends ResqueTestCase
             clone $mockWorker,
         );
 
-        $this->foreman->work($workers);
+        $this->foreman->work($workers, true);
 
         // Check the workers hold different PIDs
         foreach ($workers as $worker) {

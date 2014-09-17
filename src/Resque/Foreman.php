@@ -154,7 +154,12 @@ class Foreman
         return (bool)$this->redis->sismember('workers', (string)$worker);
     }
 
-    public function work($workers)
+    /**
+     * @param Worker[] $workers An array of workers you would like forked into child processes and set on their way.
+     * @param bool $wait If true, this Foreman will wait for the workers to complete. This will guarantee workers are
+     *                   cleaned up after correctly, however this is not really practical for most purposes.
+     */
+    public function work($workers, $wait = false)
     {
         // @todo Guard multiple calls. Expect ->work() ->halt() ->work() etc
         // @todo Check workers are instanceof Worker.
@@ -167,20 +172,29 @@ class Foreman
             if (!$worker->getPid()) {
                 // This is child process, it will work and then die.
                 $this->registerWorker($worker);
-                $worker->work(0);
+                $worker->work();
                 $this->unregisterWorker($worker);
 
-                exit();
+                exit(0);
             }
+
+            $this->logger->info(
+                sprintf(
+                    'Successfully started worker %s with pid %d',
+                    $worker,
+                    $worker->getPid()
+                )
+            );
         }
 
-        // wait for slaves
-        foreach ($workers as $worker) {
-            $status = 0;
-            if ($worker->getPid() != pcntl_waitpid($worker->getPid(), $status)) {
-                die("Error with wait pid $worker->getPid().\n");
-            } else {
-                $this->unregisterWorker($worker);
+        if (true) {
+            foreach ($workers as $worker) {
+                $status = 0;
+                if ($worker->getPid() != pcntl_waitpid($worker->getPid(), $status)) {
+                    die("Error with worker wait on pid $worker->getPid().\n"); // @todo Exception?
+                } else {
+                    $this->unregisterWorker($worker);
+                }
             }
         }
     }
