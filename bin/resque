@@ -104,13 +104,17 @@ if (in_array('*', $configQueues)) {
 $foreman = new \Resque\Foreman();
 $foreman->setRedisBackend($redis);
 
+$failureBackend = new \Resque\Failure\Resque($redis);
+
 $workers = array();
 
 for ($i = 0; $i < $count; ++$i) {
-    $worker = new \Resque\Worker(
-        $queues // This can actually be customised per worker.
-    );
+    $worker = new \Resque\Worker();
     $worker->setRedisBackend($redis);
+    $worker->setFailureBackend($failureBackend);
+    foreach ($queues as $queue) {
+        $worker->addQueue($queue);
+    }
     //  $worker->setLogger($logger);
 
     $workers[] = $worker;

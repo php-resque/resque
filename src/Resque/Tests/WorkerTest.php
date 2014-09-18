@@ -8,6 +8,7 @@ use Resque\QueueWildcard;
 use Resque\Resque;
 use Resque\Queue;
 use Resque\Worker;
+use Resque\Failure\Null;
 
 class WorkerTest extends ResqueTestCase
 {
@@ -111,6 +112,9 @@ class WorkerTest extends ResqueTestCase
 
     /**
      * @dataProvider dataProviderWorkerPerformEvents
+     *
+     * @param $eventName
+     * @param $jobClass
      */
     public function testWorkerPerformEmitsExpectedEvents($eventName, $jobClass)
     {
@@ -124,7 +128,12 @@ class WorkerTest extends ResqueTestCase
         );
 
         $worker = new Worker(null, null, $eventDispatcher);
-        $worker->perform(new Job($jobClass));
+        $worker->setFailureBackend(new Null());
+
+        $job = new Job($jobClass);
+        $job->setQueue(new Queue('foo'));
+
+        $worker->perform($job);
 
         $this->assertTrue(
             $callbackTriggered,
@@ -196,6 +205,7 @@ class WorkerTest extends ResqueTestCase
         );
 
         $worker = new Worker($queue, null, $eventDispatcher);
+        $worker->setFailureBackend(new Null());
         $worker->setRedisBackend($this->redis);
         $worker->work(0);
 
@@ -289,25 +299,6 @@ class WorkerTest extends ResqueTestCase
 
 //		$this->assertEquals(0, $worker->getStat('processed'));
 //		$this->assertEquals(0, $worker->getStat('failed'));
-    }
-
-    public function testWorkerFailsUncompletedJobsOnExit()
-    {
-        return self::markTestSkipped();
-
-        $worker = new Worker('jobs');
-        $worker->setLogger(new Resque_Log());
-        $worker->registerWorker();
-
-        $payload = array(
-            'class' => 'Test_Job'
-        );
-        $job = new Resque_Job('jobs', $payload);
-
-        $worker->workingOn($job);
-        $worker->unregisterWorker();
-
-        $this->assertEquals(1, Resque_Stat::get('failed'));
     }
 
     public function testBlockingListPop()

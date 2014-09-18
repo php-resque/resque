@@ -171,4 +171,23 @@ class ForemanTest extends ResqueTestCase
         $this->assertEquals((string)$remoteWorker, (string)$workers[0]);
         $this->assertSame('my.other.host:1:jobs', (string)$workers[0]);
     }
+
+    public function testWorkerFailsUncompletedJobsOnExit()
+    {
+        return self::markTestSkipped();
+
+        $foreman = new Foreman();
+        $foreman->setRedisBackend($this->redis);
+
+        $worker = new Worker();
+        $worker->setRedisBackend($this->redis);
+
+        $job = new Job('jobs');
+
+        $worker->workingOn($job);
+
+        $foreman->unregisterWorker($worker);
+
+        $this->assertEquals(1, Resque_Stat::get('failed'));
+    }
 }

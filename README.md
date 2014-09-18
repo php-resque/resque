@@ -22,7 +22,6 @@ This PHP port provides much the same features as the Ruby version:
 
 It also supports the following additional features:
 
-* Has the ability to track the status of jobs
 * Will mark a job as failed, if a forked child running a job does
 not exit with a status code as 0
 * Avoids singletons

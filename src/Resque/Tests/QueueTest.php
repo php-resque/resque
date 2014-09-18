@@ -66,7 +66,7 @@ class QueueTest extends ResqueTestCase
 
         $queues = $this->queue->all();
         $this->assertCount(1, $queues);
-        $this->assertEquals('foo', (string)$queues[0]);
+        $this->assertEquals('foo', (string)$queues['foo']);
 
         $bar = new Queue('bar');
         $bar->setRedisBackend($this->redis);

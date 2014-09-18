@@ -32,11 +32,16 @@ class QueueWildcard extends Queue
 
     /**
      * {@inheritdoc}
+     *
+     * Queues will be searched in alphabetic order.
      */
     public function pop()
     {
-        foreach ($this->all() as $queue) {
+        $queues = $this->all();
 
+        ksort($queues);
+
+        foreach ($queues as $queue) {
             $queue->setRedisBackend($this->redis);
 
             if (null !== $job = $queue->pop()) {

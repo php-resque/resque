@@ -167,7 +167,7 @@ class Queue implements QueueInterface
         $queues = array();
 
         foreach ($queuesNames as $queueName) {
-            $queues[] = new self($queueName);
+            $queues[$queueName] = new self($queueName);
         }
 
         return $queues;

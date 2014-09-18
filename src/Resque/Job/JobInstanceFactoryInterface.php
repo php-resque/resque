@@ -7,7 +7,7 @@ use Resque\Job as JobPayload;
 /**
  *
  */
-interface JobFactoryInterface
+interface JobInstanceFactoryInterface
 {
     /**
      * Create PerformantJobInterface class

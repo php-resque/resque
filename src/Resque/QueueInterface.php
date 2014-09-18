@@ -10,6 +10,11 @@ namespace Resque;
 interface QueueInterface
 {
     /**
+     * @return string The name of the queue.
+     */
+    public function getName();
+
+    /**
      * Push a job to the end of a specific queue. If the queue does not
      * exist, then create it as well.
      *

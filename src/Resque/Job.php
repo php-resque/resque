@@ -30,6 +30,11 @@ class Job
     protected $class;
 
     /**
+     * @var string The current known status of this Job.
+     */
+    protected $status;
+
+    /**
      * @var Queue
      *
      * @todo remove public, and make it obvious this is the queue of origin.
@@ -152,29 +157,6 @@ class Job
         }
 
         $this->arguments = $args;
-    }
-
-    /**
-     * Mark the current job as having failed.
-     *
-     * @param $exception
-     */
-    public function fail($exception)
-    {
-//        Event::trigger('onFailure', array(
-//                'exception' => $exception,
-//                'job' => $this,
-//            ));
-//
-//        $this->updateStatus(Status::STATUS_FAILED);
-//        Failure::create(
-//            $this->payload,
-//            $exception,
-//            $this->worker,
-//            $this->queue
-//        );
-//        Stat::incr('failed');
-//        Stat::incr('failed:' . $this->worker);
     }
 
     /**

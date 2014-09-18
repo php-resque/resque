@@ -4,7 +4,7 @@ namespace Resque\Job;
 
 use Resque\Job as JobPayload;
 
-class JobFactory implements JobFactoryInterface
+class JobInstanceFactory implements JobInstanceFactoryInterface
 {
     /**
      * Create PerformantJobInterface class

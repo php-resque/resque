@@ -15,16 +15,17 @@ use Resque\Event\JobPerformedEvent;
 use Resque\Event\WorkerStartupEvent;
 use Resque\Job\Exception\DirtyExitException;
 use Resque\Job\Exception\InvalidJobException;
-use Resque\Job\JobFactory;
+use Resque\Job\JobInstanceFactory;
 use Resque\Job\PerformantJobInterface;
 use Resque\Job\Status;
+use Resque\Failure\FailureInterface;
 
 /**
  * Resque Worker
  *
  * The worker handles querying it issued queues for jobs, running them and handling the result.
  */
-class Worker
+class Worker implements WorkerInterface
 {
     /**
      * @var string String identifying this worker.
@@ -77,6 +78,11 @@ class Worker
     protected $eventDispatcher;
 
     /**
+     * @var Failure\FailureInterface
+     */
+    protected $failureBackend;
+
+    /**
      * @var bool if the worker should fork to perform.
      */
     protected $fork = true;
@@ -103,7 +109,7 @@ class Worker
      */
     public function __construct($queues = null, $jobFactory = null, $eventDispatcher = null)
     {
-        $this->jobFactory = $jobFactory ?: new JobFactory();
+        $this->jobFactory = $jobFactory ?: new JobInstanceFactory();
         $this->eventDispatcher = $eventDispatcher ?: new EventDispatcher();
         $this->logger = new NullLogger();
 
@@ -149,6 +155,17 @@ class Worker
     public function setRedisBackend(ClientInterface $redis)
     {
         $this->redis = $redis;
+
+        return $this;
+    }
+
+    /**
+     * @param FailureInterface $failureBackend
+     * @return $this
+     */
+    public function setFailureBackend(FailureInterface $failureBackend)
+    {
+        $this->failureBackend = $failureBackend;
 
         return $this;
     }
@@ -284,13 +301,7 @@ class Worker
                             'Job exited with exit code ' . $exitStatus
                         );
 
-                        $job->fail(
-                            $exception
-                        );
-
-                        $this->eventDispatcher->dispatch(
-                            new JobFailedEvent($job, $this, $exception)
-                        );
+                        $this->handleFailedJob($job, $exception);
                     }
                 }
 
@@ -408,14 +419,9 @@ class Worker
      * Return an array containing all of the queues that this worker should use
      * when searching for jobs.
      *
-     * If * is found in the list of queues, every queue will be searched in
-     * alphabetic order. (@see $fetch)
-     *
-     * @param boolean $fetch If true, and the queue is set to *, will fetch
-     * all queue names from redis.
      * @return array Array of associated queues.
      */
-    public function queues($fetch = true)
+    public function queues()
     {
         return $this->queues;
     }
@@ -427,7 +433,7 @@ class Worker
      *
      * @param Job $job The job we're working on.
      */
-    protected function workingOn(Job $job)
+    public function workingOn(Job $job)
     {
         $this->logger->notice(
             sprintf(
@@ -461,6 +467,8 @@ class Worker
      */
     public function perform(Job $job)
     {
+        $queue = null;
+
         $status = 'Performing Job ' . $job;
         $this->updateProcTitle($status);
         $this->logger->log(LogLevel::INFO, $status);
@@ -484,19 +492,8 @@ class Worker
                 new JobAfterPerformEvent($job)
             );
         } catch (\Exception $exception) {
-            $this->logger->error(
-                'Perform failure on {job}, {stack}',
-                array(
-                    'job' => $job,
-                    'stack' => $exception->getMessage()
-                )
-            );
 
-            // $job->fail($e); @todo Restore failure behaviour.
-
-            $this->eventDispatcher->dispatch(
-                new JobFailedEvent($job, $this, $exception)
-            );
+            $this->handleFailedJob($job, $exception);
 
             return;
         }
@@ -510,6 +507,27 @@ class Worker
         );
     }
 
+    protected function handleFailedJob(Job $job, \Exception $exception)
+    {
+        $this->logger->error(
+            'Perform failure on {job}, {message}',
+            array(
+                'job' => $job,
+                'message' => $exception->getMessage()
+            )
+        );
+
+        $this->failureBackend->save($job, $exception, $job->queue, $this);
+
+        // $job->updateStatus(Status::STATUS_FAILED);
+        // Stat::incr('failed');
+        // Stat::incr('failed:' . $this->worker);
+
+        $this->eventDispatcher->dispatch(
+            new JobFailedEvent($job, $exception, null, $this)
+        );
+    }
+
     /**
      * Notify Redis that we've finished working on a job, clearing the working
      * state and incrementing the job stats.
@@ -520,8 +538,8 @@ class Worker
     {
         $this->currentJob = null;
         Stat::incr('processed');
-        Stat::incr('processed:' . (string)$this);
-        $this->redis->del('worker:' . (string)$this);
+        Stat::incr('processed:' . $this->getId());
+        $this->redis->del('worker:' . $this->getId());
     }
 
     /**
@@ -529,7 +547,7 @@ class Worker
      */
     public function pauseProcessing()
     {
-        $this->logger->log(LogLevel::NOTICE, 'USR2 received; pausing job processing');
+        $this->logger->notice('USR2 received; pausing job processing');
         $this->paused = true;
     }
 
@@ -539,7 +557,7 @@ class Worker
      */
     public function resumeProcessing()
     {
-        $this->logger->log(LogLevel::NOTICE, 'CONT received; resuming job processing');
+        $this->logger->notice('CONT received; resuming job processing');
         $this->paused = false;
     }
 
@@ -560,7 +578,7 @@ class Worker
     public function shutdown()
     {
         $this->shutdown = true;
-        $this->logger->log(LogLevel::NOTICE, 'Shutting down');
+        $this->logger->notice('Shutting down');
     }
 
     /**
@@ -570,21 +588,28 @@ class Worker
     public function killChild()
     {
         if (!$this->childPid) {
-            $this->logger->log(LogLevel::DEBUG, 'No child to kill.');
+            $this->logger->debug('No child to kill.');
             return;
         }
 
-        $this->logger->log(LogLevel::INFO, 'Killing child at {child}', array('child' => $this->childPid));
+        $this->logger->debug(
+            'Killing child at {child}',
+            array('child' => $this->childPid)
+        );
+
         if (exec('ps -o pid,state -p ' . $this->childPid, $output, $returnCode) && $returnCode != 1) {
-            $this->logger->log(LogLevel::DEBUG, 'Child {child} found, killing.', array('child' => $this->childPid));
+            $this->logger->debug(
+                'Child {child} found, killing.',
+                array('child' => $this->childPid)
+            );
             posix_kill($this->childPid, SIGKILL);
             $this->childPid = null;
         } else {
-            $this->logger->log(
-                LogLevel::INFO,
+            $this->logger->warning(
                 'Child {child} not found, restarting.',
                 array('child' => $this->childPid)
             );
+
             $this->shutdown();
         }
     }
@@ -654,6 +679,11 @@ class Worker
         $this->logger = $logger;
     }
 
+    /**
+     * "Will fork for food"
+     *
+     * @param bool $fork If the worker should fork to do work
+     */
     public function setForkOnPerform($fork)
     {
         $this->fork = (bool)$fork;

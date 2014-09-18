@@ -80,7 +80,7 @@ class Foreman
 
     /**
      * Return all workers known to Resque as instantiated instances.
-     * @return Worker[]
+     * @return WorkerInterface[]
      */
     public function all()
     {
@@ -103,10 +103,10 @@ class Foreman
      *
      * @throws \Exception
      *
-     * @param Worker $worker
+     * @param WorkerInterface $worker
      * @return $this
      */
-    public function registerWorker(Worker $worker)
+    public function registerWorker(WorkerInterface $worker)
     {
         if (in_array($worker, $this->registeredWorkers, true)) {
             throw new \Exception('Cannot double register a worker, call unregister(), or halt() to clear');
@@ -123,9 +123,11 @@ class Foreman
     }
 
     /**
-     * Unregisters the given worker from Redis.
+     * Unregister the given worker from Redis.
+     *
+     * @param WorkerInterface $worker
      */
-    public function unregisterWorker(Worker $worker)
+    public function unregisterWorker(WorkerInterface $worker)
     {
         $id = $worker->getId();
         // @todo Restore.
@@ -146,12 +148,12 @@ class Foreman
     /**
      * Given a worker ID, check if it is registered/valid.
      *
-     * @param Worker $worker The worker.
+     * @param WorkerInterface $worker The worker.
      * @return boolean True if the worker exists in redis, false if not.
      */
-    public function isRegistered(Worker $worker)
+    public function isRegistered(WorkerInterface $worker)
     {
-        return (bool)$this->redis->sismember('workers', (string)$worker);
+        return (bool)$this->redis->sismember('workers', $worker->getId());
     }
 
     /**
@@ -187,11 +189,11 @@ class Foreman
             );
         }
 
-        if (true) {
+        if ($wait) {
             foreach ($workers as $worker) {
                 $status = 0;
                 if ($worker->getPid() != pcntl_waitpid($worker->getPid(), $status)) {
-                    die("Error with worker wait on pid $worker->getPid().\n"); // @todo Exception?
+                    die("Error with worker wait on pid {$worker->getPid()}.\n"); // @todo Exception?
                 } else {
                     $this->unregisterWorker($worker);
                 }
@@ -238,13 +240,14 @@ class Foreman
         $workerPids = $this->getLocalWorkerPids();
         $workers = $this->all();
         foreach ($workers as $worker) {
-            if (is_object($worker)) {
-                list($host, $pid, $queues) = explode(':', (string)$worker, 3);
+            if ($worker instanceof WorkerInterface) {
+                $id = $worker->getId();
+                list($host, $pid, $queues) = explode(':', $id, 3);
                 if ($host != $this->hostname || in_array($pid, $workerPids) || $pid == getmypid()) {
 
                     continue;
                 }
-                $this->logger->warning('Pruning dead worker {worker}', array('worker' => (string)$worker));
+                $this->logger->warning('Pruning dead worker {worker}', array('worker' => $id));
                 $this->unregisterWorker($worker);
             }
         }

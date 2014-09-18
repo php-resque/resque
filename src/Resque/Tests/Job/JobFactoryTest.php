@@ -3,14 +3,14 @@
 namespace Resque\Tests\Job;
 
 use PHPUnit_Framework_TestCase;
-use Resque\Job\JobFactory;
+use Resque\Job\JobInstanceFactory;
 use Resque\Job;
 
 class JobFactoryTest extends PHPUnit_Framework_TestCase
 {
     public function testCanConstructObject()
     {
-        $factory = new JobFactory();
+        $factory = new JobInstanceFactory();
 
         $instance = $factory->createJob(
             new Job(
@@ -26,7 +26,7 @@ class JobFactoryTest extends PHPUnit_Framework_TestCase
      */
     public function testConstructionOnNonExistentClass()
     {
-        $factory = new JobFactory();
+        $factory = new JobInstanceFactory();
 
         $factory->createJob(
             new Job(
