@@ -2,9 +2,9 @@
 
 namespace Resque\Tests\Jobs;
 
-use Resque\Job\JobInterface;
+use Resque\Job\PerformantJobInterface;
 
-class Failure implements JobInterface
+class Failure implements PerformantJobInterface
 {
     public function perform()
     {

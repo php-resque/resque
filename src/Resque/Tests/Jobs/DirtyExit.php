@@ -2,9 +2,9 @@
 
 namespace Resque\Tests\Jobs;
 
-use Resque\Job\JobInterface;
+use Resque\Job\PerformantJobInterface;
 
-class DirtyExit implements JobInterface
+class DirtyExit implements PerformantJobInterface
 {
     public function perform()
     {

@@ -2,9 +2,9 @@
 
 namespace Resque\Tests\Jobs;
 
-use Resque\Job\JobInterface;
+use Resque\Job\PerformantJobInterface;
 
-class Simple implements JobInterface
+class Simple implements PerformantJobInterface
 {
     public static $called = false;
 

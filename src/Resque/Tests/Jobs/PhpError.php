@@ -2,9 +2,9 @@
 
 namespace Resque\Tests\Jobs;
 
-use Resque\Job\JobInterface;
+use Resque\Job\PerformantJobInterface;
 
-class PhpError implements JobInterface
+class PhpError implements PerformantJobInterface
 {
     public function perform()
     {

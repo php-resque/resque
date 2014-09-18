@@ -52,21 +52,22 @@ composer require zomble/php-resque:dev-master
 Jobs are queued as follows:
 
 ```php
-// Required if redis is located elsewhere
-Resque::setBackend('localhost:6379');
-
 $args = array(
-        'name' => 'Chris'
-        );
-Resque::push('default', 'My_Job', $args);
+    'name' => 'Chris'
+);
+Resque::push('default', 'Acme\My\Job', $args);
 ```
 
 ### Defining Jobs ###
 
-Each job should be in its own class, and include a `perform` method.
+Each job should be in its own class, and implement the `Resque\Job\PerformantJobInterface` interface.
 
 ```php
-class My_Job
+namespace Acme\My;
+
+use Resque\Job\PerformantJobInterface;
+
+class Job implements PerformantJobInterface
 {
     public function perform()
     {

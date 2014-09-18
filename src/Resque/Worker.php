@@ -16,7 +16,7 @@ use Resque\Event\WorkerStartupEvent;
 use Resque\Job\Exception\DirtyExitException;
 use Resque\Job\Exception\InvalidJobException;
 use Resque\Job\JobFactory;
-use Resque\Job\JobInterface;
+use Resque\Job\PerformantJobInterface;
 use Resque\Job\Status;
 
 /**
@@ -230,7 +230,7 @@ class Worker
 
             if (null === $job) {
                 // For an interval of 0, break now - helps with unit testing etc
-                // @todo remove with some method, which I can mock.
+                // @todo replace with some method, which can be mocked... an interval of 0 should be considered valid
                 if ($interval == 0) {
 
                     break;
@@ -468,7 +468,7 @@ class Worker
         try {
             $jobInstance = $this->jobFactory->createJob($job);
 
-            if (false === ($jobInstance instanceof JobInterface)) {
+            if (false === ($jobInstance instanceof PerformantJobInterface)) {
                 throw new InvalidJobException(
                     'Job ' . $job . ' "' . get_class($jobInstance) . '" needs to implement Resque\JobInterface'
                 );

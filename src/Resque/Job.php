@@ -4,7 +4,7 @@ namespace Resque;
 
 use Resque\Exception\ResqueException;
 use Resque\Job\Exception\JobNotFoundException;
-use Resque\Job\JobInterface;
+use Resque\Job\PerformantJobInterface;
 use Resque\Job\Status;
 
 /**
