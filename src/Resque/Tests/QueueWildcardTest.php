@@ -3,7 +3,6 @@
 namespace Resque\Tests;
 
 use Resque\Job;
-use Resque\Queue;
 use Resque\QueueWildcard;
 
 class QueueWildcardTest extends ResqueTestCase

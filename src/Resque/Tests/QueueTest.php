@@ -3,9 +3,7 @@
 namespace Resque\Tests;
 
 use Resque\Job;
-use Resque\Resque;
 use Resque\Queue;
-use Resque\Worker;
 
 class QueueTest extends ResqueTestCase
 {

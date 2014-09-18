@@ -2,10 +2,9 @@
 
 namespace Resque\Tests\Event;
 
-use PHPUnit_Framework_TestCase;
 use Resque\Event\EventDispatcher;
 
-class EventDispatcherTest extends PHPUnit_Framework_TestCase
+class EventDispatcherTest extends \PHPUnit_Framework_TestCase
 {
     public function testEventsCanBeDispatched()
     {

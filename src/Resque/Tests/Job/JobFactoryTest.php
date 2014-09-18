@@ -2,11 +2,10 @@
 
 namespace Resque\Tests\Job;
 
-use PHPUnit_Framework_TestCase;
 use Resque\Job\JobInstanceFactory;
 use Resque\Job;
 
-class JobFactoryTest extends PHPUnit_Framework_TestCase
+class JobFactoryTest extends \PHPUnit_Framework_TestCase
 {
     public function testCanConstructObject()
     {

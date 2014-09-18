@@ -104,7 +104,7 @@ if (in_array('*', $configQueues)) {
 $foreman = new \Resque\Foreman();
 $foreman->setRedisBackend($redis);
 
-$failureBackend = new \Resque\Failure\Resque($redis);
+$failureBackend = new \Resque\Failure\Redis($redis);
 
 $workers = array();
 
