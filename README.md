@@ -22,8 +22,8 @@ This PHP port provides much the same features as the Ruby version:
 
 It also supports the following additional features:
 
-* Will mark a job as failed, if a forked child running a job does
-not exit with a status code as 0
+* Will mark a job as failed when a forked child running a job does not exit cleanly
+* Uses Redis transactions when appropriate
 * Avoids singletons
 
 ## Requirements
@@ -279,26 +279,28 @@ In php-resque each event is an object with a name, and optionally other properti
 The following list shows each of the event names and corresponding objects that come with them. At a minimum all event
 objects will implement the `Resque\Event\EventInterface` interface.
 
-#### beforeFirstFork
+#### resque.worker.start_up
 
-Dispatched once, as a worker initializes. Argument passed is the instance of `Worker` that was just initialized.
+`@see Resque\Event\WorkerStartupEvent`
 
-#### resque.job.before_fork
+Dispatched once, as a worker initializes. Argument passed is the instance of the `Worker` that was just initialized.
 
-`@see Resque\Event\JobBeforeForkEvent`
+#### resque.worker.before_fork
 
-Dispatched before `Resque\Worker` forks to run a job. The event contains the instance of `Resque\Job` that is about to
-perform.
+`@see Resque\Event\WorkerBeforeForkEvent`
 
-`resque.job.before_fork` is triggered in the **parent** process. Any changes made will be permanent
-for as long as the **worker** lives.
+Dispatched before `Resque\Worker` forks to run a job. The event contains the `Worker` and the `Resque\Job` that is
+about to perform.
 
-#### resque.job.before_fork
+`resque.job.before_fork` is triggered in the **parent** process. Any changes made will be permanent for as long as
+the **worker** lives.
 
-@see `Resque\Event\JobAfterForkEvent`
+#### resque.worker.after_fork
+
+@see `Resque\Event\WorkerAfterForkEvent`
 
 Dispatched from the child, after `Resque\Worker` has forked to run a job (but before the job is run). The event
-contains the instance of `Resque\Job` that is about to perform.
+contains the the `Worker` and the `Resque\Job` that is about to perform.
 
 **Note:** `resque.job.before_fork` is triggered in the **child** process after forking out to complete a job. Any
 changes made will only live as long as the **job** is being processed.
@@ -314,7 +316,7 @@ Any exceptions thrown will be treated as if they were thrown in a job, causing t
 
 #### resque.job.after_perform
 
-`@see Resque\Event\JobAfterForkEvent`
+`@see Resque\Event\WorkerAfterForkEvent`
 
 Dispatched immediately after a job has successfully performed. The event contains the instance of `Resque\Job` and the
 instance of the target class that just performed.

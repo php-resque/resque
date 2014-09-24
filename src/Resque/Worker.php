@@ -4,21 +4,21 @@ namespace Resque;
 
 use Predis\ClientInterface;
 use Psr\Log\LoggerInterface;
-use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
 use Resque\Event\EventDispatcher;
 use Resque\Event\JobAfterPerformEvent;
-use Resque\Event\JobBeforeForkEvent;
 use Resque\Event\JobBeforePerformEvent;
 use Resque\Event\JobFailedEvent;
 use Resque\Event\JobPerformedEvent;
+use Resque\Event\WorkerAfterForkEvent;
+use Resque\Event\WorkerBeforeForkEvent;
 use Resque\Event\WorkerStartupEvent;
+use Resque\Failure\FailureInterface;
 use Resque\Job\Exception\DirtyExitException;
 use Resque\Job\Exception\InvalidJobException;
 use Resque\Job\JobInstanceFactory;
 use Resque\Job\PerformantJobInterface;
 use Resque\Job\Status;
-use Resque\Failure\FailureInterface;
 
 /**
  * Resque Worker
@@ -255,7 +255,7 @@ class Worker implements WorkerInterface
 
                 if ($blocking === false) {
                     // If no job was found, we sleep for $interval before continuing and checking again
-                    $this->logger->log(LogLevel::DEBUG, 'Sleeping for {interval}', array('interval' => $interval));
+                    $this->logger->debug('Sleeping for {interval}', array('interval' => $interval));
                     if ($this->paused) {
                     } else {
                         $this->updateProcTitle('Waiting for ' . implode(',', $this->queues));
@@ -271,7 +271,7 @@ class Worker implements WorkerInterface
 
             if ($this->fork) {
                 $this->eventDispatcher->dispatch(
-                    new JobBeforeForkEvent($job)
+                    new WorkerBeforeForkEvent($this, $job)
                 );
 
                 $this->redis->disconnect();
@@ -280,6 +280,9 @@ class Worker implements WorkerInterface
 
                 if (0 === $this->childPid) {
                     // Forked and we're the child
+                    $this->eventDispatcher->dispatch(
+                        new WorkerAfterForkEvent($this, $job)
+                    );
 
                     $this->perform($job);
 
@@ -375,17 +378,15 @@ class Worker implements WorkerInterface
         pcntl_signal(SIGUSR1, array($this, 'killChild'));
         pcntl_signal(SIGUSR2, array($this, 'pauseProcessing'));
         pcntl_signal(SIGCONT, array($this, 'resumeProcessing'));
-        $this->logger->log(LogLevel::DEBUG, 'Registered signals');
+        $this->logger->debug('Registered signals');
     }
 
     /**
      * @todo The name reserve doesn't sit well, all it's doing is asking queues for jobs. Change it.
      *
-     * @param  bool $blocking
-     * @param  int $timeout
      * @return Job|null Instance of Job if a job is found, null if not.
      */
-    public function reserve($blocking = false, $timeout = null)
+    public function reserve()
     {
         $queues = $this->queues();
 
@@ -393,22 +394,13 @@ class Worker implements WorkerInterface
             return null;
         }
 
-        if ($blocking === true) {
-            $payload = Job::reserveBlocking($queues, $timeout);
+        foreach ($queues as $queue) {
+            $this->logger->debug('Checking {queue} for jobs', array('queue' => $queue));
+            $payload = $queue->pop();
             if ($payload) {
-                $this->logger->log(LogLevel::INFO, 'Found job on {queue}', array('queue' => $payload->queue));
+                $this->logger->info('Found job on {queue}', array('queue' => $queue));
 
                 return $payload;
-            }
-        } else {
-            foreach ($queues as $queue) {
-                $this->logger->log(LogLevel::DEBUG, 'Checking {queue} for jobs', array('queue' => $queue));
-                $payload = $queue->pop();
-                if ($payload) {
-                    $this->logger->log(LogLevel::INFO, 'Found job on {queue}', array('queue' => $queue));
-
-                    return $payload;
-                }
             }
         }
 
@@ -419,7 +411,7 @@ class Worker implements WorkerInterface
      * Return an array containing all of the queues that this worker should use
      * when searching for jobs.
      *
-     * @return array Array of associated queues.
+     * @return QueueInterface[] Array of associated queues.
      */
     public function queues()
     {
@@ -471,7 +463,7 @@ class Worker implements WorkerInterface
 
         $status = 'Performing Job ' . $job;
         $this->updateProcTitle($status);
-        $this->logger->log(LogLevel::INFO, $status);
+        $this->logger->info($status);
 
         try {
             $jobInstance = $this->jobFactory->createJob($job);
@@ -540,6 +532,30 @@ class Worker implements WorkerInterface
         Stat::incr('processed');
         Stat::incr('processed:' . $this->getId());
         $this->redis->del('worker:' . $this->getId());
+    }
+
+    /**
+     * Worker ID
+     *
+     * @return string
+     */
+    public function getId()
+    {
+        if (null === $this->id) {
+            $this->id = $this->hostname . ':' . getmypid() . ':' . implode(',', $this->queues);
+        }
+
+        return $this->id;
+    }
+
+    /**
+     * Set the ID of this worker to a given ID string.
+     *
+     * @param string $id ID for the worker.
+     */
+    public function setId($id)
+    {
+        $this->id = $id;
     }
 
     /**
@@ -622,30 +638,6 @@ class Worker implements WorkerInterface
     public function __toString()
     {
         return $this->getId();
-    }
-
-    /**
-     * Worker ID
-     *
-     * @return string
-     */
-    public function getId()
-    {
-        if (null === $this->id) {
-            $this->id = $this->hostname . ':' . getmypid() . ':' . implode(',', $this->queues);
-        }
-
-        return $this->id;
-    }
-
-    /**
-     * Set the ID of this worker to a given ID string.
-     *
-     * @param string $id ID for the worker.
-     */
-    public function setId($id)
-    {
-        $this->id = $id;
     }
 
     /**

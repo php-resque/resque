@@ -14,31 +14,9 @@ namespace Resque;
 class ResqueJob
 {
     /**
-     * @var Queue The name of the queue that this job belongs to.
-     */
-    public $queue;
-
-    /**
-     * @var Worker Instance of the Resque worker running this job.
-     */
-    public $worker;
-
-    /**
      * @var object Object containing details of the job.
      */
     public $payload;
-
-    /**
-     * Instantiate a new instance of a job.
-     *
-     * @param Queue $queue The queue that the job belongs to.
-     * @param array $payload array containing details of the job.
-     */
-    public function __construct(Queue $queue, $payload)
-    {
-        $this->queue = $queue;
-        $this->payload = $payload;
-    }
 
     /**
      * Create a new job and save it to the specified queue.
@@ -52,16 +30,6 @@ class ResqueJob
      */
     public function create($queue, $class, $args = null, $monitor = false)
     {
-        $id = md5(uniqid('', true));
-        Resque::push(
-            $queue,
-            array(
-                'class' => $class,
-                'args' => array($args),
-                'id' => $id,
-                'queue_time' => microtime(true),
-            )
-        );
 
         if ($monitor) {
             Resque_Job_Status::create($id);
@@ -94,20 +62,5 @@ class ResqueJob
     {
         $status = new Resque_Job_Status($this->payload['id']);
         return $status->get();
-    }
-
-    /**
-     * Re-queue the current job.
-     * @return string
-     */
-    public function recreate()
-    {
-        $status = new Resque_Job_Status($this->payload['id']);
-        $monitor = false;
-        if ($status->isTracking()) {
-            $monitor = true;
-        }
-
-        return self::create($this->queue, $this->payload['class'], $this->getArguments(), $monitor);
     }
 }
