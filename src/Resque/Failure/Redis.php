@@ -37,16 +37,11 @@ class Redis implements FailureInterface
 
     public function count()
     {
-
-    }
-
-    public function all()
-    {
-
+        return $this->redis->llen('failed');
     }
 
     public function clear()
     {
-
+        $this->redis->del('failed');
     }
 }
