@@ -53,6 +53,21 @@ class Queue implements QueueInterface
     }
 
     /**
+     * Removes the queue and the jobs with in it.
+     *
+     * @return integer The number of jobs removed
+     */
+    public function unregister()
+    {
+        $this->redis->multi();
+        $this->redis->llen('queue:' . $this->name);
+        $this->redis->del('queue:' . $this->name);
+        $this->redis->srem('queues', $this->name);
+        $responses = $this->redis->exec();
+        return isset($responses[0]) ? $responses[0] : null;
+    }
+
+    /**
      * Push a job into the queue.
      *
      * If the queue does not exist, then create it as well.
@@ -130,7 +145,7 @@ class Queue implements QueueInterface
         $item = $this->redis->blpop($list, (int)$timeout);
 
         if (!$item) {
-            return;
+            return null;
         }
 
         /**

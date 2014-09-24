@@ -25,6 +25,25 @@ class QueueTest extends ResqueTestCase
         $this->assertSame('jobs', $this->queue->getName());
     }
 
+    public function testUnregister()
+    {
+        $this->queue->register();
+        $this->assertTrue($this->redis->sismember('queues', 'jobs'));
+        $this->assertEquals(0, $this->queue->unregister());
+        $this->assertFalse($this->redis->exists('queue:jobs'));
+    }
+
+    public function testUnregisterWithQueuedJobs()
+    {
+        $this->queue->push(new Job('Foo'));
+        $this->queue->push(new Job('Foo'));
+
+        $this->assertEquals(2, $this->queue->size());
+        $this->assertEquals(2, $this->queue->unregister());
+        $this->assertEquals(0, $this->queue->size());
+        $this->assertFalse($this->redis->exists('queue:jobs'));
+    }
+
     public function testJobCanBeEnqueued()
     {
         $this->assertTrue($this->queue->push(new Job('Test_Job')));
