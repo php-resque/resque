@@ -166,7 +166,7 @@ class Queue implements QueueInterface
      *
      * @return int The size of the queue.
      */
-    public function size()
+    public function count()
     {
         return $this->redis->llen('queue:' . $this);
     }

@@ -38,9 +38,9 @@ class QueueTest extends ResqueTestCase
         $this->queue->push(new Job('Foo'));
         $this->queue->push(new Job('Foo'));
 
-        $this->assertEquals(2, $this->queue->size());
+        $this->assertEquals(2, $this->queue->count());
         $this->assertEquals(2, $this->queue->unregister());
-        $this->assertEquals(0, $this->queue->size());
+        $this->assertEquals(0, $this->queue->count());
         $this->assertFalse($this->redis->exists('queue:jobs'));
     }
 
@@ -52,7 +52,7 @@ class QueueTest extends ResqueTestCase
     public function testQueuedJobCanBePopped()
     {
         $this->queue->push(new Job('Test_Job'));
-        $this->assertSame(1, $this->queue->size());
+        $this->assertSame(1, $this->queue->count());
 
         $job = $this->queue->pop();
 
@@ -67,7 +67,7 @@ class QueueTest extends ResqueTestCase
     public function testAfterJobIsPoppedItIsRemoved()
     {
         $this->queue->push(new Job('Test_Job'));
-        $this->assertSame(1, $this->queue->size());
+        $this->assertSame(1, $this->queue->count());
         $this->assertNotNull($this->queue->pop());
         $this->assertNull($this->queue->pop());
     }
