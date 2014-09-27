@@ -163,7 +163,7 @@ class Job implements JobInterface
      */
     public function __toString()
     {
-        return 'Job' . json_encode($this::encode($this));
+        return 'Job' . $this::encode($this);
     }
 
     /**
@@ -230,9 +230,9 @@ class Job implements JobInterface
         );
     }
 
-    public static function decode($item)
+    public static function decode($payload)
     {
-        $payload = json_decode($item, true);
+        $payload = json_decode($payload, true);
 
         // @todo check for json_decode error, if error throw an exception. Though json_encode is an assumed behaviour
         //       what if they wanted to serialise objects?

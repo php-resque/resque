@@ -118,13 +118,13 @@ class Queue implements QueueInterface
      */
     public function pop()
     {
-        $item = $this->redis->lpop('queue:' . $this);
+        $payload = $this->redis->lpop('queue:' . $this);
 
-        if (!$item) {
+        if (!$payload) {
             return null;
         }
 
-        $job = Job::decode($item);
+        $job = Job::decode($payload);
         $job->setQueue($this);
 
         return $job;
@@ -178,7 +178,7 @@ class Queue implements QueueInterface
     /**
      * Get an array of all known queues.
      *
-     * @deprecated should be named something, possibly not exist here either.
+     * @deprecated Should be named something else like "allRegisterQueues", possibly not exist here either.
      *
      * @return self[] Array of queues.
      */
