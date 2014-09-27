@@ -120,4 +120,52 @@ class JobTest extends ResqueTestCase
 
         $this->assertTrue(Test_Job_With_TearDown::$called);
     }
+
+    /**
+     * @dataProvider dataProviderMatchFilter
+     */
+    public function testMatchFilter($job, $expected, $filter)
+    {
+        $this->assertEquals($expected, $job::matchFilter($job, $filter));
+    }
+
+    public function dataProviderMatchFilter()
+    {
+        $args = array(
+            'baz' => 'test'
+        );
+        $job = new Job('FooJob', $args);
+
+        $jobId = $job->getId();
+
+        return array(
+            array(
+                $job, false,  null
+            ),
+            array(
+                $job, false, array()
+            ),
+            array(
+                $job, true, array('id' => $jobId)
+            ),
+            array(
+                $job, false, array('id' => 'some-other-id')
+            ),
+            array(
+                $job, false, array('id' => $jobId, 'class' => 'FuzzJob')
+            ),
+            array(
+                $job, false, array('class' => 'FuzzJob')
+            ),
+            array(
+                $job, true, array('id' => $jobId, 'class' => 'FooJob')
+            ),
+            array(
+                $job, true, array('class' => 'FooJob')
+            ),
+            array(
+                $job, false, array('id' => '123', 'class' => 'FooJob')
+            ),
+        );
+    }
 }

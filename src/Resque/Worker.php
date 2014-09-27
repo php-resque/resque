@@ -18,6 +18,7 @@ use Resque\Job\Exception\DirtyExitException;
 use Resque\Job\Exception\InvalidJobException;
 use Resque\Job\JobInstanceFactory;
 use Resque\Job\PerformantJobInterface;
+use Resque\Job\JobInterface;
 use Resque\Job\Status;
 
 /**
@@ -63,7 +64,7 @@ class Worker implements WorkerInterface
     protected $paused = false;
 
     /**
-     * @var Job Current job, if any, being processed by this worker.
+     * @var JobInterface Current job, if any, being processed by this worker.
      */
     protected $currentJob = null;
 
@@ -384,7 +385,7 @@ class Worker implements WorkerInterface
     /**
      * @todo The name reserve doesn't sit well, all it's doing is asking queues for jobs. Change it.
      *
-     * @return Job|null Instance of Job if a job is found, null if not.
+     * @return JobInterface|null Instance of JobInterface if a job is found, null if not.
      */
     public function reserve()
     {
@@ -396,11 +397,11 @@ class Worker implements WorkerInterface
 
         foreach ($queues as $queue) {
             $this->logger->debug('Checking {queue} for jobs', array('queue' => $queue));
-            $payload = $queue->pop();
-            if ($payload) {
+            $job = $queue->pop();
+            if (false === (null === $job)) {
                 $this->logger->info('Found job on {queue}', array('queue' => $queue));
 
-                return $payload;
+                return $job;
             }
         }
 
@@ -423,9 +424,9 @@ class Worker implements WorkerInterface
      *
      * @todo storage
      *
-     * @param Job $job The job we're working on.
+     * @param JobInterface $job The job we're working on.
      */
-    public function workingOn(Job $job)
+    public function workingOn(JobInterface $job)
     {
         $this->logger->notice(
             sprintf(
@@ -444,7 +445,7 @@ class Worker implements WorkerInterface
             array(
                 'queue' => $job->queue,
                 'run_at' => strftime('%a %b %d %H:%M:%S %Z %Y'),
-                'payload' => $job->jsonSerialize()
+                'payload' => $job->jsonSerialize(),
             )
         );
 
@@ -454,10 +455,10 @@ class Worker implements WorkerInterface
     /**
      * Process a single job
      *
-     * @param Job $job The job to be processed.
+     * @param JobInterface $job The job to be processed.
      * @throws InvalidJobException
      */
-    public function perform(Job $job)
+    public function perform(JobInterface $job)
     {
         $queue = null;
 
@@ -499,7 +500,7 @@ class Worker implements WorkerInterface
         );
     }
 
-    protected function handleFailedJob(Job $job, \Exception $exception)
+    protected function handleFailedJob(JobInterface $job, \Exception $exception)
     {
         $this->logger->error(
             'Perform failure on {job}, {message}',

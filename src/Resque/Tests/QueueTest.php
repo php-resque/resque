@@ -151,4 +151,16 @@ class QueueTest extends ResqueTestCase
         $this->assertEquals($pushedJob->getArguments(), $poppedJob->getArguments());
         $this->assertNull($this->queue->pop());
     }
+
+    public function testRemove()
+    {
+        $job = new Job('JobToBeRemoved');
+
+        $this->queue->push($job);
+        $this->queue->push(new Job('JobToStay'));
+        $this->assertEquals(2, $this->queue->count());
+
+        $this->queue->remove(array('id' => $job->getId()));
+        $this->assertEquals(1, $this->queue->count());
+    }
 }

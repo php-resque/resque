@@ -84,6 +84,26 @@ Any exception thrown by a job will result in the job failing - be
 careful here and make sure you handle the exceptions that shouldn't
 result in a job failing.
 
+### Dequeueing/Removing Jobs
+
+A queue allows you to remove jobs from it in the following ways
+
+```php
+// Simply remove it by a job id
+$queue->remove(array('id' => $job->getId()));
+// remove jobs by matching the class
+$queue->remove(array('class' => 'Acme/Job'));
+```
+
+If no removal filters are given, no jobs are removed. However you may remove all the jobs in a queue, and the queue
+itself with the following
+
+```php
+$queue->unregister();
+```
+
+Both remove and unregister return the number of deleted jobs.
+
 ### Tracking Job Statuses ###
 
 php-resque has the ability to perform basic status tracking of a queued

@@ -2,17 +2,14 @@
 
 namespace Resque;
 
-use Resque\Exception\ResqueException;
-use Resque\Job\Exception\JobNotFoundException;
-use Resque\Job\PerformantJobInterface;
-use Resque\Job\Status;
+use Resque\Job\JobInterface;
 
 /**
  * Resque Job
  *
  * @todo Think of a better name for this object, as the Job is technically the class constructed by this. Payload? :s
  */
-class Job
+class Job implements JobInterface
 {
     /**
      * @var string Unique identifier of this job
@@ -67,6 +64,23 @@ class Job
         return $this->id;
     }
 
+    /*
+     * Data structure for json_encode
+     *
+     * Based off JsonSerializable with out actually implementing it.
+     *
+     * @see http://php.net/manual/en/jsonserializable.jsonserialize.php for more details.
+     */
+    public function jsonSerialize()
+    {
+        return array(
+            'class' => $this->getJobClass(),
+            'args' => array($this->getArguments()),
+            'id' => $this->getId(),
+            'queue_time' => microtime(true),
+        );
+    }
+
     /**
      * @param string $id
      */
@@ -91,23 +105,6 @@ class Job
     public function getArguments()
     {
         return $this->arguments;
-    }
-
-    /**
-     * Data structure for json_encode
-     *
-     * Based off JsonSerializable with out actually implementing it.
-     *
-     * @see http://php.net/manual/en/jsonserializable.jsonserialize.php for more details.
-     */
-    public function jsonSerialize()
-    {
-        return array(
-            'class' => $this->getJobClass(),
-            'args' => array($this->getArguments()),
-            'id' => $this->getId(),
-            'queue_time' => microtime(true),
-        );
     }
 
     /**
@@ -166,7 +163,7 @@ class Job
      */
     public function __toString()
     {
-        return 'Job' . json_encode($this->jsonSerialize(), true);
+        return 'Job' . json_encode($this::encode($this));
     }
 
     /**
@@ -177,5 +174,72 @@ class Job
     public function __clone()
     {
         $this->id = null;
+    }
+
+    /**
+     * @param JobInterface $job
+     * @param array $filter
+     * @return bool True if the the given job matches the filter or not.
+     */
+    public static function matchFilter(JobInterface $job, $filter = array())
+    {
+        $filters = array(
+            'id' => function (JobInterface $job, $filter) {
+                if (isset($filter['id'])) {
+
+                    return $filter['id'] === $job->getId();
+                }
+
+                return null;
+            },
+            'class' => function (JobInterface $job, $filter) {
+                if (isset($filter['class'])) {
+
+                    return $filter['class'] === $job->getJobClass();
+                }
+
+                return null;
+            },
+        );
+
+        $results = array();
+
+        foreach ($filters as $filterName => $filterCallback) {
+            $result = $filterCallback($job, $filter);
+            // Discard null results as that is the callback telling us it's conditional is not set.
+            if (null === $result) {
+
+                continue;
+            }
+
+            $results[$filterName] = $result;
+        }
+
+        return (count(array_unique($results)) === 1) && reset($results) === true;
+    }
+
+    /**
+     * Create Redis payload
+     *
+     * return string JSON object to store in redis.
+     */
+    public static function encode(JobInterface $job)
+    {
+        return json_encode(
+            $job->jsonSerialize()
+        );
+    }
+
+    public static function decode($item)
+    {
+        $payload = json_decode($item, true);
+
+        // @todo check for json_decode error, if error throw an exception. Though json_encode is an assumed behaviour
+        //       what if they wanted to serialise objects?
+
+        $job = new Job($payload['class'], $payload['args'][0]);
+        $job->setId($payload['id']);
+
+        return $job;
     }
 }

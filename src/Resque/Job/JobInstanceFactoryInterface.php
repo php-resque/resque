@@ -2,7 +2,7 @@
 
 namespace Resque\Job;
 
-use Resque\Job as JobPayload;
+use Resque\Job\JobInterface;
 
 /**
  *
@@ -14,8 +14,8 @@ interface JobInstanceFactoryInterface
      *
      * @throws Exception\JobNotFoundException When the job class/service could not be found.
      *
-     * @param JobPayload $payload
+     * @param JobInterface $job
      * @return PerformantJobInterface The instance of the Job that will perform.
      */
-    public function createJob(JobPayload $payload);
+    public function createJob(JobInterface $job);
 }

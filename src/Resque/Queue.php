@@ -40,6 +40,16 @@ class Queue implements QueueInterface
         return $this;
     }
 
+    public function getRedisKey()
+    {
+        return 'queue:' . $this->getName();
+    }
+
+    public function getName()
+    {
+        return $this->name;
+    }
+
     /**
      * Registers this queue in redis
      *
@@ -47,30 +57,30 @@ class Queue implements QueueInterface
      */
     public function register()
     {
-        $this->redis->sadd('queues', $this->name);
+        $this->redis->sadd('queues', $this->getName());
 
         return $this;
     }
 
     /**
-     * Removes the queue and the jobs with in it.
+     * Removes the queue and the jobs with in it
      *
      * @return integer The number of jobs removed
      */
     public function unregister()
     {
         $this->redis->multi();
-        $this->redis->llen('queue:' . $this->name);
-        $this->redis->del('queue:' . $this->name);
-        $this->redis->srem('queues', $this->name);
+        $this->redis->llen($this->getRedisKey());
+        $this->redis->del($this->getRedisKey());
+        $this->redis->srem('queues', $this->getName());
         $responses = $this->redis->exec();
         return isset($responses[0]) ? $responses[0] : null;
     }
 
     /**
-     * Push a job into the queue.
+     * Push a job into the queue
      *
-     * If the queue does not exist, then create it as well.
+     * It will also make sure the queue is registered.
      *
      * @todo throw a exception when it fails!
      *
@@ -82,8 +92,8 @@ class Queue implements QueueInterface
         $this->register();
 
         $this->redis->rpush(
-            'queue:' . $this->name,
-            json_encode($job->jsonSerialize())
+            $this->getRedisKey(),
+            $job::encode($job)
         );
 
 //        if ($result) {
@@ -102,7 +112,7 @@ class Queue implements QueueInterface
     }
 
     /**
-     * Pop a job from the front of the queue
+     * Pop a job from the queue
      *
      * @return Job|null Decoded job from the queue, or null if no jobs.
      */
@@ -114,29 +124,61 @@ class Queue implements QueueInterface
             return null;
         }
 
-        $payload = json_decode($item, true);
-
-        // @todo check for json_decode error, if error throw an exception.
-
-        $job = new Job($payload['class'], $payload['args'][0]);
-        $job->setId($payload['id']);
+        $job = Job::decode($item);
         $job->setQueue($this);
 
         return $job;
     }
 
     /**
-     * Return the number of pending jobs in the queue
+     * Remove jobs matching the filter
      *
-     * @return int The size of the queue.
+     *
+     *
+     * @param array $filter
+     * @return int The number of jobs removed
      */
-    public function count()
+    public function remove($filter = array())
     {
-        return $this->redis->llen('queue:' . $this);
+        $jobsRemoved = 0;
+
+        $queueKey = $this->getRedisKey();
+        $tmpKey = $queueKey . ':removal:' . time() . ':' . uniqid();
+        $enqueueKey = $tmpKey . ':enqueue';
+
+        // Move each job from original queue to a temporary list and process it
+        while (\true) {
+            $payload = $this->redis->rpoplpush($queueKey, $tmpKey);
+            if (!empty($payload)) {
+                $job = Job::decode($payload);
+                if (Job::matchFilter($job, $filter)) {
+                    $jobsRemoved++;
+                } else {
+                    $this->redis->rpoplpush($tmpKey, $enqueueKey);
+                }
+            } else {
+                break;
+            }
+        }
+
+        // Move back from enqueue list to original queue
+        while (\true) {
+            $payload = $this->redis->rpoplpush($enqueueKey, $queueKey);
+            if (empty($payload)) {
+                break;
+            }
+        }
+
+        $this->redis->del($tmpKey);
+        $this->redis->del($enqueueKey);
+
+        return $jobsRemoved;
     }
 
     /**
      * Get an array of all known queues.
+     *
+     * @deprecated should be named something, possibly not exist here either.
      *
      * @return self[] Array of queues.
      */
@@ -152,9 +194,14 @@ class Queue implements QueueInterface
         return $queues;
     }
 
-    public function getName()
+    /**
+     * Return the number of pending jobs in the queue
+     *
+     * @return int The size of the queue.
+     */
+    public function count()
     {
-        return $this->name;
+        return $this->redis->llen('queue:' . $this);
     }
 
     public function __toString()
