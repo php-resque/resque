@@ -53,6 +53,7 @@ class EventDispatcherTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(1, $dispatcher->getListeners());
 
         $dispatcher->removeListener('foo', $callable);
+        $dispatcher->removeListener('foo', $callable);
 
         $this->assertCount(0, $dispatcher->getListeners());
 
