@@ -164,7 +164,7 @@ class Foreman
     public function work($workers, $wait = false)
     {
         // @todo Guard multiple calls. Expect ->work() ->halt() ->work() etc
-        // @todo Check workers are instanceof Worker.
+        // @todo Check workers are instanceof WorkerInterface.
 
         $this->redis->disconnect();
 

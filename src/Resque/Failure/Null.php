@@ -2,19 +2,29 @@
 
 namespace Resque\Failure;
 
-use Resque\Job;
+use Resque\Job\JobInterface;
 use Resque\WorkerInterface;
 use Resque\QueueInterface;
 
 /**
- * Null job fail handler
+ * Null job failure handler
  *
  * Does nothing.
  */
 class Null implements FailureInterface
 {
-    public function save(Job $job, \Exception $exception, QueueInterface $queue, WorkerInterface $worker)
+    public function save(JobInterface $job, \Exception $exception, QueueInterface $queue, WorkerInterface $worker)
     {
         return;
+    }
+
+    public function count()
+    {
+        return 0;
+    }
+
+    public function clear()
+    {
+        return true;
     }
 }

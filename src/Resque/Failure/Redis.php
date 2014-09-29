@@ -3,7 +3,7 @@
 namespace Resque\Failure;
 
 use Predis\ClientInterface;
-use Resque\Job;
+use Resque\Job\JobInterface;
 use Resque\WorkerInterface;
 use Resque\QueueInterface;
 
@@ -12,12 +12,17 @@ use Resque\QueueInterface;
  */
 class Redis implements FailureInterface
 {
+    /**
+     * @var ClientInterface A redis client.
+     */
+    protected $redis;
+
     public function __construct(ClientInterface $redis)
     {
         $this->redis = $redis;
     }
 
-    public function save(Job $job, \Exception $exception, QueueInterface $queue, WorkerInterface $worker)
+    public function save(JobInterface $job, \Exception $exception, QueueInterface $queue, WorkerInterface $worker)
     {
         $this->redis->rpush(
             'failed',
