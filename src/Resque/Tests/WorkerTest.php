@@ -113,17 +113,18 @@ class WorkerTest extends ResqueTestCase
     /**
      * @dataProvider dataProviderWorkerPerformEvents
      *
-     * @param $eventName
-     * @param $jobClass
+     * @param int $expectedCount The number of times an event should have been triggered
+     * @param string $eventName The event name in question
+     * @param string $jobClass A job class to ask perform to do work on
      */
-    public function testWorkerPerformEmitsExpectedEvents($eventName, $jobClass)
+    public function testWorkerPerformEmitsCorrectEvents($expectedCount, $eventName, $jobClass)
     {
         $eventDispatcher = new EventDispatcher();
-        $callbackTriggered = false;
+        $eventTriggered = 0;
         $eventDispatcher->addListener(
             $eventName,
-            function () use (&$callbackTriggered) {
-                $callbackTriggered = true;
+            function () use (&$eventTriggered) {
+                $eventTriggered++;
             }
         );
 
@@ -135,11 +136,14 @@ class WorkerTest extends ResqueTestCase
 
         $worker->perform($job);
 
-        $this->assertTrue(
-            $callbackTriggered,
+        $this->assertEquals(
+            $expectedCount,
+            $eventTriggered,
             sprintf(
-                'Worker->perform() expected %s event for job class %s',
+                'Expected Worker->perform() to dispatch "%s" %d times, got %d for job class %s',
                 $eventName,
+                $expectedCount,
+                $eventTriggered,
                 $jobClass
             )
         );
@@ -148,12 +152,84 @@ class WorkerTest extends ResqueTestCase
     public function dataProviderWorkerPerformEvents()
     {
         return array(
-            array('resque.job.failed', 'Resque\Tests\Jobs\NoPerformMethod'),
-            array('resque.job.before_perform', 'Resque\Tests\Jobs\Simple'),
-            array('resque.job.after_perform', 'Resque\Tests\Jobs\Simple'),
-            array('resque.job.performed', 'Resque\Tests\Jobs\Simple'),
-            array('resque.job.failed', 'Resque\Tests\Jobs\Failure'),
+            // Job that doesn't implement "PerformantJobInterface".
+            array(0, 'resque.job.before_perform', 'Resque\Tests\Jobs\NoPerformMethod'),
+            array(0, 'resque.job.after_perform', 'Resque\Tests\Jobs\NoPerformMethod'),
+            array(0, 'resque.job.performed', 'Resque\Tests\Jobs\NoPerformMethod'),
+            array(1, 'resque.job.failed', 'Resque\Tests\Jobs\NoPerformMethod'),
+            // Normal, expected to work job.
+            array(1, 'resque.job.before_perform', 'Resque\Tests\Jobs\Simple'),
+            array(1, 'resque.job.after_perform', 'Resque\Tests\Jobs\Simple'),
+            array(1, 'resque.job.performed', 'Resque\Tests\Jobs\Simple'),
+            array(0, 'resque.job.failed', 'Resque\Tests\Jobs\Simple'),
+            // Job that will fail.
+            array(1, 'resque.job.before_perform', 'Resque\Tests\Jobs\Failure'),
+            array(0, 'resque.job.after_perform', 'Resque\Tests\Jobs\Failure'),
+            array(0, 'resque.job.performed', 'Resque\Tests\Jobs\Failure'),
+            array(1, 'resque.job.failed', 'Resque\Tests\Jobs\Failure'),
         );
+    }
+
+    public function testBeforePerformEventCanStopWork()
+    {
+        $eventDispatcher = new EventDispatcher();
+
+        $eventDispatcher->addListener(
+            'resque.job.before_perform',
+            function () {
+                throw new \Exception('Take a break');
+            }
+        );
+
+        $eventTriggered = 0;
+        $eventDispatcher->addListener(
+            'resque.job.failed',
+            function () use (&$eventTriggered) {
+                $eventTriggered++;
+            }
+        );
+
+        $worker = new Worker(null, null, $eventDispatcher);
+        $worker->setFailureBackend(new Null());
+
+        $job = new Job('Resque\Tests\Jobs\Simple');
+        $job->setQueue(new Queue('baz'));
+
+        $this->assertFalse(
+            $worker->perform($job),
+            'Job was still performed even though "resque.job.before_perform" throw an exception'
+        );
+        $this->assertEquals(
+            1,
+            $eventTriggered,
+            'Expected event "resque.job.failed" was triggered for thrown exception on "resque.job.before_perform"'
+        );
+    }
+
+    public function testBeforeForkEvent()
+    {
+        $eventDispatcher = new EventDispatcher();
+
+        $eventTriggered = 0;
+        $eventDispatcher->addListener(
+            'resque.worker.before_fork',
+            function () use (&$eventTriggered) {
+                $eventTriggered++;
+            }
+        );
+
+        $job = new Job('Resque\Tests\Jobs\Simple');
+
+        $queue = new Queue('baz');
+        $queue->setRedisBackend($this->redis);
+        $queue->push($job);
+
+        $worker = new Worker($queue, null, $eventDispatcher);
+        $worker->setRedisBackend($this->redis);
+
+        $worker->work(0);
+
+        $this->assertEquals(1, $eventTriggered);
     }
 
     public function testWorkerTracksCurrentJobCorrectly()

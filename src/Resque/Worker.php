@@ -455,8 +455,10 @@ class Worker implements WorkerInterface
     /**
      * Process a single job
      *
+     * @throws InvalidJobException if the given job cannot actually be asked to perform.
+     *
      * @param JobInterface $job The job to be processed.
-     * @throws InvalidJobException
+     * @return bool If job performed or not.
      */
     public function perform(JobInterface $job)
     {
@@ -488,7 +490,7 @@ class Worker implements WorkerInterface
 
             $this->handleFailedJob($job, $exception);
 
-            return;
+            return false;
         }
 
         // $job->updateStatus(Status::STATUS_COMPLETE); @todo update status behaviour
@@ -498,6 +500,8 @@ class Worker implements WorkerInterface
         $this->eventDispatcher->dispatch(
             new JobPerformedEvent($job)
         );
+
+        return true;
     }
 
     protected function handleFailedJob(JobInterface $job, \Exception $exception)
