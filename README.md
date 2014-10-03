@@ -99,10 +99,10 @@ If no removal filters are given, no jobs are removed. However you may remove all
 itself with the following
 
 ```php
-$queue->unregister();
+$queue->deregister();
 ```
 
-Both remove and unregister return the number of deleted jobs.
+Both remove and deregister return the number of deleted jobs.
 
 ### Tracking Job Statuses ###
 

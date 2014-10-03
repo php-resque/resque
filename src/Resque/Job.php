@@ -2,6 +2,7 @@
 
 namespace Resque;
 
+use Resque\Job\FilterAwareJobInterface;
 use Resque\Job\JobInterface;
 
 /**
@@ -9,7 +10,9 @@ use Resque\Job\JobInterface;
  *
  * @todo Think of a better name for this object, as the Job is technically the class constructed by this. Payload? :s
  */
-class Job implements JobInterface
+class Job implements
+    JobInterface,
+    FilterAwareJobInterface
 {
     /**
      * @var string Unique identifier of this job
@@ -46,10 +49,21 @@ class Job implements JobInterface
      * @param string $jobClass The fully quantified class name of the target job to run
      * @param array $arguments An array of arguments/parameters for the job.
      */
-    public function __construct($jobClass, $arguments = array())
+    public function __construct($jobClass = null, $arguments = array())
     {
         $this->class = $jobClass;
         $this->setArguments($arguments);
+    }
+
+    /**
+     * @param string $id
+     * @return $this
+     */
+    public function setId($id)
+    {
+        $this->id = $id;
+
+        return $this;
     }
 
     /**
@@ -65,10 +79,9 @@ class Job implements JobInterface
     }
 
     /*
-     * Data structure for json_encode
+     * Data structure for self::encode
      *
      * Based off JsonSerializable with out actually implementing it.
-     *
      * @see http://php.net/manual/en/jsonserializable.jsonserialize.php for more details.
      */
     public function jsonSerialize()
@@ -77,16 +90,19 @@ class Job implements JobInterface
             'class' => $this->getJobClass(),
             'args' => array($this->getArguments()),
             'id' => $this->getId(),
-            'queue_time' => microtime(true),
+            'queue_time' => microtime(true), // @todo this isn't queue time. $queue->push() is queue time.
         );
     }
 
     /**
-     * @param string $id
+     * @param string $class
+     * @return $this
      */
-    public function setId($id)
+    public function setJobClass($class)
     {
-        $this->id = $id;
+        $this->class = $class;
+
+        return $this;
     }
 
     /**
@@ -177,9 +193,7 @@ class Job implements JobInterface
     }
 
     /**
-     * @param JobInterface $job
-     * @param array $filter
-     * @return bool True if the the given job matches the filter or not.
+     * {@inheritdoc}
      */
     public static function matchFilter(JobInterface $job, $filter = array())
     {
@@ -221,7 +235,8 @@ class Job implements JobInterface
     /**
      * Create Redis payload
      *
-     * return string JSON object to store in redis.
+     * @param JobInterface $job
+     * @return string JSON object to store in redis.
      */
     public static function encode(JobInterface $job)
     {
@@ -234,10 +249,11 @@ class Job implements JobInterface
     {
         $payload = json_decode($payload, true);
 
-        // @todo check for json_decode error, if error throw an exception. Though json_encode is an assumed behaviour
-        //       what if they wanted to serialise objects?
+        // @todo check for json_decode error, if error throw an exception.
 
-        $job = new Job($payload['class'], $payload['args'][0]);
+        $job = new static();
+        $job->setJobClass($payload['class']);
+        $job->setArguments($payload['args'][0]);
         $job->setId($payload['id']);
 
         return $job;

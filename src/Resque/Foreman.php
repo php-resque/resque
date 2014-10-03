@@ -106,10 +106,10 @@ class Foreman
      * @param WorkerInterface $worker
      * @return $this
      */
-    public function registerWorker(WorkerInterface $worker)
+    public function register(WorkerInterface $worker)
     {
         if (in_array($worker, $this->registeredWorkers, true)) {
-            throw new \Exception('Cannot double register a worker, call unregister(), or halt() to clear');
+            throw new \Exception('Cannot double register a worker, call deregister(), or halt() to clear');
         }
 
         $id = $worker->getId();
@@ -123,11 +123,11 @@ class Foreman
     }
 
     /**
-     * Unregister the given worker from Redis.
+     * deregister the given worker from Redis.
      *
      * @param WorkerInterface $worker
      */
-    public function unregisterWorker(WorkerInterface $worker)
+    public function deregister(WorkerInterface $worker)
     {
         $id = $worker->getId();
         // @todo Restore.
@@ -146,7 +146,7 @@ class Foreman
     }
 
     /**
-     * Given a worker ID, check if it is registered/valid.
+     * Given a worker, check if it is registered/valid.
      *
      * @param WorkerInterface $worker The worker.
      * @return boolean True if the worker exists in redis, false if not.
@@ -173,9 +173,9 @@ class Foreman
             $worker->setPid(self::fork());
             if (!$worker->getPid()) {
                 // This is child process, it will work and then die.
-                $this->registerWorker($worker);
+                $this->register($worker);
                 $worker->work();
-                $this->unregisterWorker($worker);
+                $this->deregister($worker);
 
                 exit(0);
             }
@@ -195,7 +195,7 @@ class Foreman
                 if ($worker->getPid() != pcntl_waitpid($worker->getPid(), $status)) {
                     die("Error with worker wait on pid {$worker->getPid()}.\n"); // @todo Exception?
                 } else {
-                    $this->unregisterWorker($worker);
+                    $this->deregister($worker);
                 }
             }
         }
@@ -248,7 +248,7 @@ class Foreman
                     continue;
                 }
                 $this->logger->warning('Pruning dead worker {worker}', array('worker' => $id));
-                $this->unregisterWorker($worker);
+                $this->deregister($worker);
             }
         }
     }

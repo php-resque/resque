@@ -3,6 +3,7 @@
 namespace Resque;
 
 use Predis\ClientInterface;
+use Resque\Job\JobInterface;
 
 /**
  * Resque Queue
@@ -67,14 +68,14 @@ class Queue implements QueueInterface
      *
      * @return integer The number of jobs removed
      */
-    public function unregister()
+    public function deregister()
     {
         $this->redis->multi();
         $this->redis->llen($this->getRedisKey());
         $this->redis->del($this->getRedisKey());
         $this->redis->srem('queues', $this->getName());
         $responses = $this->redis->exec();
-        return isset($responses[0]) ? $responses[0] : null;
+        return isset($responses[0]) ? $responses[0] : 0;
     }
 
     /**
@@ -84,10 +85,10 @@ class Queue implements QueueInterface
      *
      * @todo throw a exception when it fails!
      *
-     * @param Job $job The Job to enqueue.
+     * @param JobInterface $job The Job to enqueue.
      * @return bool True if successful, false otherwise.
      */
-    public function push(Job $job)
+    public function push(JobInterface $job)
     {
         $this->register();
 
@@ -114,17 +115,17 @@ class Queue implements QueueInterface
     /**
      * Pop a job from the queue
      *
-     * @return Job|null Decoded job from the queue, or null if no jobs.
+     * @return JobInterface|null Decoded job from the queue, or null if no jobs.
      */
     public function pop()
     {
-        $payload = $this->redis->lpop('queue:' . $this);
+        $payload = $this->redis->lpop($this->getRedisKey());
 
         if (!$payload) {
             return null;
         }
 
-        $job = Job::decode($payload);
+        $job = Job::decode($payload); // @todo should be something like $this->jobEncoderThingy->decode()
         $job->setQueue($this);
 
         return $job;
@@ -132,8 +133,6 @@ class Queue implements QueueInterface
 
     /**
      * Remove jobs matching the filter
-     *
-     *
      *
      * @param array $filter
      * @return int The number of jobs removed
@@ -151,7 +150,7 @@ class Queue implements QueueInterface
             $payload = $this->redis->rpoplpush($queueKey, $tmpKey);
             if (!empty($payload)) {
                 $job = Job::decode($payload); // @todo should be something like $this->jobEncoderThingy->decode()
-                if ($job::matchFilter($job, $filter)) {
+                if ($job::matchFilter($job, $filter)) { // @todo check for FilterAwareJobInterface
                     $jobsRemoved++;
                 } else {
                     $this->redis->rpoplpush($tmpKey, $enqueueKey);
@@ -180,7 +179,7 @@ class Queue implements QueueInterface
      *
      * @deprecated Should be named something else like "allRegisterQueues", possibly not exist here either.
      *
-     * @return self[] Array of queues.
+     * @return self[] Array of queues, keyed by queue name.
      */
     public function all()
     {
@@ -201,7 +200,7 @@ class Queue implements QueueInterface
      */
     public function count()
     {
-        return $this->redis->llen('queue:' . $this);
+        return $this->redis->llen($this->getRedisKey());
     }
 
     public function __toString()

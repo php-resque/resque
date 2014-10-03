@@ -25,21 +25,21 @@ class QueueTest extends ResqueTestCase
         $this->assertSame('jobs', $this->queue->getName());
     }
 
-    public function testUnregister()
+    public function testDeregister()
     {
         $this->queue->register();
         $this->assertTrue($this->redis->sismember('queues', 'jobs'));
-        $this->assertEquals(0, $this->queue->unregister());
+        $this->assertEquals(0, $this->queue->deregister());
         $this->assertFalse($this->redis->exists('queue:jobs'));
     }
 
-    public function testUnregisterWithQueuedJobs()
+    public function testDeregisterWithQueuedJobs()
     {
         $this->queue->push(new Job('Foo'));
         $this->queue->push(new Job('Foo'));
 
         $this->assertEquals(2, $this->queue->count());
-        $this->assertEquals(2, $this->queue->unregister());
+        $this->assertEquals(2, $this->queue->deregister());
         $this->assertEquals(0, $this->queue->count());
         $this->assertFalse($this->redis->exists('queue:jobs'));
     }
@@ -95,33 +95,6 @@ class QueueTest extends ResqueTestCase
         $this->assertNotContains($bar, $queues);
     }
 
-    public function testEnqueuedJobReturnsExactSamePassedInArguments()
-    {
-        $args = array(
-            'int' => 123,
-            'numArray' => array(
-                1,
-                2,
-            ),
-            'assocArray' => array(
-                'key1' => 'value1',
-                'key2' => 'value2'
-            ),
-        );
-
-        $this->queue->push(
-            new Job(
-                'Test_Job',
-                $args
-            )
-        );
-
-        $job = $this->queue->pop();
-
-        $this->assertNotNull($job);
-        $this->assertEquals($args, $job->getArguments());
-    }
-
     public function testRecreatedJobMatchesExistingJob()
     {
         $args = array(
@@ -148,11 +121,11 @@ class QueueTest extends ResqueTestCase
         $this->assertNotNull($poppedJob);
         $this->assertEquals($pushedJob->getId(), $poppedJob->getId());
         $this->assertEquals($pushedJob->getJobClass(), $poppedJob->getJobClass());
-        $this->assertEquals($pushedJob->getArguments(), $poppedJob->getArguments());
+        $this->assertEquals($args, $poppedJob->getArguments());
         $this->assertNull($this->queue->pop());
     }
 
-    public function testRemove()
+    public function testJobRemoval()
     {
         $job = new Job('JobToBeRemoved');
 
@@ -161,6 +134,9 @@ class QueueTest extends ResqueTestCase
         $this->assertEquals(2, $this->queue->count());
 
         $this->queue->remove(array('id' => $job->getId()));
+        $this->assertEquals(1, $this->queue->count());
+
+        $this->queue->remove();
         $this->assertEquals(1, $this->queue->count());
     }
 }

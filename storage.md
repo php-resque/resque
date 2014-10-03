@@ -16,7 +16,7 @@ Creates worker in redis.
 sadd [workerId] to `workers`
 set `worker:[workerId]:started`
 
-### unRegister
+### deregister
 
 Removes worker from redis.
 
@@ -38,7 +38,7 @@ Registers the queue.
 
 sadd [queueName] into `queues`;
 
-### unRegister
+### deregister
 
 Removes the list, and all jobs.
 

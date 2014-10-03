@@ -8,11 +8,42 @@ namespace Resque\Job;
 interface JobInterface
 {
     /**
+     *
+     * @param string $id
+     * @return $this
+     */
+    public function setId($id);
+
+    /**
+     * @return string
+     */
+    public function getId();
+
+    /**
+     * @param $class
+     * @return $this
+     */
+    public function setJobClass($class);
+
+    /**
      * Get target job class
      *
      * @return string
      */
     public function getJobClass();
+
+    public function setArguments($args);
+    public function getArguments();
+
+    /**
+     * Data structure for self::encode, or other logging purposes
+     *
+     * Based off JsonSerializable with out actually implementing it.
+     * @see http://php.net/manual/en/jsonserializable.jsonserialize.php for more details.
+     *
+     * @return mixed
+     */
+    public function jsonSerialize();
 
     /**
      * Encode

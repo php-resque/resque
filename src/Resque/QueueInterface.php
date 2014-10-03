@@ -2,6 +2,8 @@
 
 namespace Resque;
 
+use Resque\Job\JobInterface;
+
 /**
  * Resque QueueInterface
  *
@@ -18,10 +20,10 @@ interface QueueInterface
      * Push a job to the end of a specific queue. If the queue does not
      * exist, then create it as well.
      *
-     * @param Job $job The Job to enqueue/push.
+     * @param JobInterface $job The Job to enqueue/push.
      * @return bool True if successful, false otherwise.
      */
-    public function push(Job $job);
+    public function push(JobInterface $job);
 
     /**
      * Pop a job off the end of the specified queue, decode it and return it.

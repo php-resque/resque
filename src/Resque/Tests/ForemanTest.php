@@ -27,7 +27,7 @@ class ForemanTest extends ResqueTestCase
             new Queue('foo')
         );
 
-        $this->foreman->registerWorker($worker);
+        $this->foreman->register($worker);
 
         // Make sure the worker is in the list
         $this->assertCount(1, $this->redis->smembers('workers'));
@@ -41,33 +41,33 @@ class ForemanTest extends ResqueTestCase
         for ($i = 0; $i < $count; ++$i) {
             $queue = new Queue('queue_' . $i);
             $worker = new Worker($queue);
-            $this->foreman->registerWorker($worker);
+            $this->foreman->register($worker);
         }
 
         // Now try to get them
         $this->assertEquals($count, count($this->foreman->all()));
     }
 
-    public function testForemanCanUnregisterWorker()
+    public function testForemanCanderegisterWorker()
     {
         $worker = new Worker(
             new Queue('baz')
         );
 
-        $this->foreman->registerWorker($worker);
+        $this->foreman->register($worker);
 
         // Make sure the worker is in the list
         $this->assertTrue((bool)$this->redis->sismember('workers', $worker));
         $this->assertTrue($this->foreman->isRegistered($worker));
 
-        $this->foreman->unregisterWorker($worker);
+        $this->foreman->deregister($worker);
 
         $this->assertFalse($this->foreman->isRegistered($worker));
         $this->assertCount(0, $this->foreman->all());
         $this->assertCount(0, $this->redis->smembers('workers'));
     }
 
-    public function testUnregisteredWorkerDoesNotExistInRedis()
+    public function testderegisteredWorkerDoesNotExistInRedis()
     {
         $worker = new Worker(array());
         $this->assertFalse($this->foreman->isRegistered($worker));
@@ -77,7 +77,7 @@ class ForemanTest extends ResqueTestCase
     {
         $worker = new Worker();
 
-        $this->foreman->registerWorker($worker);
+        $this->foreman->register($worker);
 
         $newWorker = $this->foreman->findWorkerById((string)$worker);
         $this->assertEquals((string)$worker, (string)$newWorker);
@@ -86,7 +86,7 @@ class ForemanTest extends ResqueTestCase
     public function testGetWorkerByNonExistentId()
     {
         $worker = new Worker();
-        $this->foreman->registerWorker($worker);
+        $this->foreman->register($worker);
 
         $this->assertNull($this->foreman->findWorkerById('hopefully-not-real'));
     }
@@ -126,18 +126,18 @@ class ForemanTest extends ResqueTestCase
     {
         // Register a real worker
         $realWorker = new Worker();
-        $this->foreman->registerWorker($realWorker);
+        $this->foreman->register($realWorker);
 
         $workerId = explode(':', $realWorker);
 
         // Register some dead workers
         $worker = new Worker();
         $worker->setId($workerId[0] . ':1:jobs');
-        $this->foreman->registerWorker($worker);
+        $this->foreman->register($worker);
 
         $worker = new Worker();
         $worker->setId($workerId[0] . ':2:high,low');
-        $this->foreman->registerWorker($worker);
+        $this->foreman->register($worker);
 
         $this->assertCount(3, $this->foreman->all());
 
@@ -154,12 +154,12 @@ class ForemanTest extends ResqueTestCase
         $localWorker = new Worker();
         $workerId = explode(':', $localWorker);
         $localWorker->setId($workerId[0] . ':1:jobs');
-        $this->foreman->registerWorker($localWorker);
+        $this->foreman->register($localWorker);
 
         // Register some other false workers
         $remoteWorker = new Worker();
         $remoteWorker->setId('my.other.host:1:jobs');
-        $this->foreman->registerWorker($remoteWorker);
+        $this->foreman->register($remoteWorker);
 
         $this->assertCount(2, $this->foreman->all());
 
@@ -186,7 +186,7 @@ class ForemanTest extends ResqueTestCase
 
         $worker->workingOn($job);
 
-        $foreman->unregisterWorker($worker);
+        $foreman->deregister($worker);
 
         $this->assertEquals(1, Resque_Stat::get('failed'));
     }

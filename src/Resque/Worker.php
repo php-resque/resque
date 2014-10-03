@@ -6,6 +6,7 @@ use Predis\ClientInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Resque\Event\EventDispatcher;
+use Resque\Event\EventDispatcherInterface;
 use Resque\Event\JobAfterPerformEvent;
 use Resque\Event\JobBeforePerformEvent;
 use Resque\Event\JobFailedEvent;
@@ -17,6 +18,7 @@ use Resque\Failure\FailureInterface;
 use Resque\Job\Exception\DirtyExitException;
 use Resque\Job\Exception\InvalidJobException;
 use Resque\Job\JobInstanceFactory;
+use Resque\Job\JobInstanceFactoryInterface;
 use Resque\Job\PerformantJobInterface;
 use Resque\Job\JobInterface;
 use Resque\Job\Status;
@@ -96,23 +98,25 @@ class Worker implements WorkerInterface
     /**
      * Constructor
      *
-     * Instantiate a new worker, given a list of queues that it should be working
-     * on. The list of queues should be supplied in the priority that they should
-     * be checked for jobs (first come, first served)
+     * Instantiate a new worker, given queues that it should be working on. The list of queues should be supplied in
+     * the priority that they should be checked for jobs (first come, first served)
      *
-     * Passing a single '*' allows the worker to work on all queues in alphabetical
-     * order. You can easily add new queues dynamically and have them worked on using
-     * this method.
-     *
-     * @param Queue|Queue[] $queues String with a single queue name, array with multiple.
-     * @param null $jobFactory
-     * @param null $eventDispatcher
+     * @param QueueInterface|QueueInterface[] $queues A QueueInterface, or an array with multiple.
+     * @param JobInstanceFactoryInterface|null $jobFactory
+     * @param EventDispatcherInterface|null $eventDispatcher
+     * @param LoggerInterface|null $logger A PSR-3 LoggerInterface object.
      */
-    public function __construct($queues = null, $jobFactory = null, $eventDispatcher = null)
-    {
+    public function __construct(
+        $queues = null,
+        // Redis?
+        JobInstanceFactoryInterface $jobFactory = null,
+        // FailureBackend?
+        EventDispatcherInterface $eventDispatcher = null,
+        LoggerInterface $logger = null
+    ) {
         $this->jobFactory = $jobFactory ?: new JobInstanceFactory();
         $this->eventDispatcher = $eventDispatcher ?: new EventDispatcher();
-        $this->logger = new NullLogger();
+        $this->logger = $logger ?: new NullLogger();
 
         if (false === (null === $queues)) {
             if (!is_array($queues)) {
@@ -464,7 +468,7 @@ class Worker implements WorkerInterface
     {
         $queue = null;
 
-        $status = 'Performing Job ' . $job;
+        $status = 'Performing Job ' . $job->getId();
         $this->updateProcTitle($status);
         $this->logger->info($status);
 
@@ -473,7 +477,7 @@ class Worker implements WorkerInterface
 
             if (false === ($jobInstance instanceof PerformantJobInterface)) {
                 throw new InvalidJobException(
-                    'Job ' . $job . ' "' . get_class($jobInstance) . '" needs to implement Resque\JobInterface'
+                    'Job ' . $job->getId(). ' "' . get_class($jobInstance) . '" needs to implement Resque\JobInterface'
                 );
             }
 
@@ -484,7 +488,7 @@ class Worker implements WorkerInterface
             $jobInstance->perform();
 
             $this->eventDispatcher->dispatch(
-                new JobAfterPerformEvent($job)
+                new JobAfterPerformEvent($job, $jobInstance)
             );
         } catch (\Exception $exception) {
 
