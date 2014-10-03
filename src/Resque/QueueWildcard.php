@@ -53,10 +53,11 @@ class QueueWildcard extends Queue
         $queues = $this->all();
 
         if (null !== $this->prefix) {
+            $self = $this;
             $queues = array_filter(
                 $queues,
-                function (QueueInterface $queue) {
-                    return (0 === strpos($queue->getName(), $this->prefix));
+                function (QueueInterface $queue) use ($self) {
+                    return (0 === strpos($queue->getName(), $self->prefix));
                 }
             );
         }
