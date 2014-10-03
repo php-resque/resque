@@ -2,22 +2,35 @@
 
 namespace Resque;
 
+use Resque\Job\JobInterface;
+
 /**
- * Resque Wildcard Queue
+ * Resque wildcard queue
  *
- * Provides the ability to pull jobs from all known queues.
+ * Provides the ability to pull jobs from all known queues. Optionally allows for a prefix, so foo* like filtering
+ * can be used, useful if you use a single redis instance that multiple projects talk too and you give projects queue
+ * prefixes.
  */
 class QueueWildcard extends Queue
 {
-    public function __construct()
+    /**
+     * @var null
+     */
+    protected $prefix;
+
+    /**
+     * @param string|null $prefix
+     */
+    public function __construct($prefix = null)
     {
-        $this->name = '*';
+        $this->name = $prefix . '*';
+        $this->prefix = $prefix;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function push(Job $job)
+    public function push(JobInterface $job)
     {
         throw new \Exception('Wildcard queue does not support pushing');
     }
@@ -39,10 +52,19 @@ class QueueWildcard extends Queue
     {
         $queues = $this->all();
 
+        if (null !== $this->prefix) {
+            $queues = array_filter(
+                $queues,
+                function (QueueInterface $queue) {
+                    return (0 === strpos($queue->getName(), $this->prefix));
+                }
+            );
+        }
+
         ksort($queues);
 
         foreach ($queues as $queue) {
-            $queue->setRedisBackend($this->redis);
+            $queue->setRedisBackend($this->redis); // @todo should I be doing this, or should static::all() ?
 
             if (null !== $job = $queue->pop()) {
 
