@@ -28,6 +28,14 @@ class QueueWildcard extends Queue
     }
 
     /**
+     * @return null|string The prefix assigned to this wildcard queue
+     */
+    public function getPrefix()
+    {
+        return $this->prefix;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function push(JobInterface $job)
@@ -53,11 +61,11 @@ class QueueWildcard extends Queue
         $queues = $this->all();
 
         if (null !== $this->prefix) {
-            $self = $this;
+            $wildcardQueue = $this;
             $queues = array_filter(
                 $queues,
-                function (QueueInterface $queue) use ($self) {
-                    return (0 === strpos($queue->getName(), $self->prefix));
+                function (QueueInterface $queue) use ($wildcardQueue) {
+                    return (0 === strpos($queue->getName(), $wildcardQueue->getPrefix()));
                 }
             );
         }
