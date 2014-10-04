@@ -27,7 +27,7 @@ class RedisBackend implements StatsInterface
      */
     public function get($stat)
     {
-		return (int)$this->redis->get('stat:' . $stat);
+        return (int)$this->redis->get('stat:' . $stat);
     }
 
     /**
@@ -39,7 +39,7 @@ class RedisBackend implements StatsInterface
      */
     public function increment($stat, $by = 1)
     {
-		return (bool)$this->redis->incrby('stat:' . $stat, $by);
+        return (bool)$this->redis->incrby('stat:' . $stat, $by);
     }
 
     /**
@@ -51,7 +51,7 @@ class RedisBackend implements StatsInterface
      */
     public function decrement($stat, $by = 1)
     {
-		return (bool)$this->redis->decrby('stat:' . $stat, $by);
+        return (bool)$this->redis->decrby('stat:' . $stat, $by);
     }
 
     /**
@@ -62,6 +62,6 @@ class RedisBackend implements StatsInterface
      */
     public function clear($stat)
     {
-		return (bool)$this->redis->del('stat:' . $stat);
+        return (bool)$this->redis->del('stat:' . $stat);
     }
 }
