@@ -2,6 +2,8 @@
 <?php
 
 // Find and initialize Composer
+use Psr\Log\NullLogger;
+
 $files = array(
     __DIR__ . '/../../vendor/autoload.php',
     __DIR__ . '/../../../autoload.php',
@@ -53,7 +55,7 @@ if (!empty($LOGGING) || !empty($VERBOSE)) {
 // See if the APP_INCLUDE containes a logger object,
 // If none exists, fallback to internal logger
 if (!isset($logger) || !is_object($logger)) {
-    // $logger = new Resque_Log($logLevel); // @todo restore
+    $logger = new NullLogger(); // @todo restore
 }
 
 $BLOCKING = getenv('BLOCKING') !== false;
@@ -105,17 +107,20 @@ $foreman = new \Resque\Foreman();
 $foreman->setRedisBackend($redis);
 
 $failureBackend = new \Resque\Failure\Redis($redis);
+$statisticBackend = new \Resque\Statistic\RedisBackend($redis);
 
 $workers = array();
-
 for ($i = 0; $i < $count; ++$i) {
     $worker = new \Resque\Worker();
-    $worker->setRedisBackend($redis);
-    $worker->setFailureBackend($failureBackend);
+    $worker
+        ->setRedisBackend($redis)
+        ->setFailureBackend($failureBackend)
+        ->setStatisticsBackend($statisticBackend)
+        ->setLogger($logger);
+
     foreach ($queues as $queue) {
         $worker->addQueue($queue);
     }
-    //  $worker->setLogger($logger);
 
     $workers[] = $worker;
 

@@ -19,9 +19,11 @@ use Resque\Job\Exception\DirtyExitException;
 use Resque\Job\Exception\InvalidJobException;
 use Resque\Job\JobInstanceFactory;
 use Resque\Job\JobInstanceFactoryInterface;
-use Resque\Job\PerformantJobInterface;
 use Resque\Job\JobInterface;
+use Resque\Job\PerformantJobInterface;
 use Resque\Job\Status;
+use Resque\Statistic\StatsInterface;
+use Resque\Statistic\BlackHoleBackend as BlackHoleStats;
 
 /**
  * Resque Worker
@@ -84,6 +86,11 @@ class Worker implements WorkerInterface
      * @var Failure\FailureInterface
      */
     protected $failureBackend;
+
+    /**
+     * @var StatsInterface
+     */
+    protected $statisticsBackend;
 
     /**
      * @var bool if the worker should fork to perform.
@@ -173,6 +180,31 @@ class Worker implements WorkerInterface
         $this->failureBackend = $failureBackend;
 
         return $this;
+    }
+
+    /**
+     * Set statistic backend
+     *
+     * @param StatsInterface $statisticsBackend
+     * @return $this
+     */
+    public function setStatisticsBackend(StatsInterface $statisticsBackend)
+    {
+        $this->statisticsBackend = $statisticsBackend;
+
+        return $this;
+    }
+
+    /**
+     * @return StatsInterface
+     */
+    public function getStatisticsBackend()
+    {
+        if (null === $this->statisticsBackend) {
+            $this->setStatisticsBackend(new BlackHoleStats());
+        }
+
+        return $this->statisticsBackend;
     }
 
     /**
@@ -521,8 +553,8 @@ class Worker implements WorkerInterface
         $this->failureBackend->save($job, $exception, $job->queue, $this);
 
         // $job->updateStatus(Status::STATUS_FAILED);
-        // Stat::incr('failed');
-        // Stat::incr('failed:' . $this->worker);
+        $this->getStatisticsBackend()->increment('failed');
+        $this->getStatisticsBackend()->increment('failed:' . $this->getId());
 
         $this->eventDispatcher->dispatch(
             new JobFailedEvent($job, $exception, null, $this)
@@ -538,8 +570,8 @@ class Worker implements WorkerInterface
     protected function workComplete()
     {
         $this->currentJob = null;
-        Stat::incr('processed');
-        Stat::incr('processed:' . $this->getId());
+        $this->getStatisticsBackend()->increment('processed');
+        $this->getStatisticsBackend()->increment('processed:' . $this->getId());
         $this->redis->del('worker:' . $this->getId());
     }
 
@@ -652,7 +684,7 @@ class Worker implements WorkerInterface
     /**
      * Return the Job this worker is currently working on.
      *
-     * @return Job|null The current Job this worker is processing, null if it is not processing a job currently.
+     * @return JobInterface|null The current Job this worker is processing, null if it is not processing a job currently.
      */
     public function getCurrentJob()
     {
@@ -667,7 +699,7 @@ class Worker implements WorkerInterface
      */
     public function getStat($stat)
     {
-        return Stat::get($stat . ':' . $this);
+        return $this->getStatisticsBackend()->get($stat . ':' . $this);
     }
 
     /**
