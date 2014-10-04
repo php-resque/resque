@@ -264,24 +264,6 @@ class Worker implements WorkerInterface
 
             $job = $this->reserve();
 
-            // Attempt to find and reserve a job
-            // @todo work out the worth of the block below
-//            $job = false;
-//            if (!$this->paused) {
-//                if ($blocking === true) {
-//                    $this->logger->log(
-//                        LogLevel::INFO,
-//                        'Starting blocking with timeout of {interval}',
-//                        array('interval' => $interval)
-//                    );
-//                    $this->updateProcTitle(
-//                        'Waiting for ' . implode(',', $this->queues) . ' with blocking timeout ' . $interval
-//                    );
-//                } else {
-//                    $this->updateProcTitle('Waiting for ' . implode(',', $this->queues) . ' with interval ' . $interval);
-//                }
-//            }
-
             if (null === $job) {
                 // For an interval of 0, break now - helps with unit testing etc
                 // @todo replace with some method, which can be mocked... an interval of 0 should be considered valid
@@ -458,26 +440,16 @@ class Worker implements WorkerInterface
     /**
      * Tell Redis which job we're currently working on.
      *
-     * @todo storage
-     *
      * @param JobInterface $job The job we're working on.
      */
     public function workingOn(JobInterface $job)
     {
-        $this->logger->notice(
-            sprintf(
-                'Starting work on %s',
-                $job
-            ),
-            array(
-                'job' => $job
-            )
-        );
+        $this->logger->notice('Starting work on {job}', array('job' => $job));
 
         $this->currentJob = $job;
-
         $job->updateStatus(Status::STATUS_RUNNING);
-        $data = json_encode(
+
+        $payload = json_encode(
             array(
                 'queue' => $job->queue,
                 'run_at' => strftime('%a %b %d %H:%M:%S %Z %Y'),
@@ -485,7 +457,7 @@ class Worker implements WorkerInterface
             )
         );
 
-        $this->redis->set('worker:' . $this, $data);
+        $this->redis->set('worker:' . $this, $payload);
     }
 
     /**
@@ -498,9 +470,7 @@ class Worker implements WorkerInterface
      */
     public function perform(JobInterface $job)
     {
-        $queue = null;
-
-        $status = 'Performing Job ' . $job->getId();
+        $status = 'Performing job ' . $job->getId();
         $this->updateProcTitle($status);
         $this->logger->info($status);
 
@@ -564,8 +534,6 @@ class Worker implements WorkerInterface
     /**
      * Notify Redis that we've finished working on a job, clearing the working
      * state and incrementing the job stats.
-     *
-     * @todo storage
      */
     protected function workComplete()
     {

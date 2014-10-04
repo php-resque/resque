@@ -2,8 +2,6 @@
 
 namespace Resque\Statistic;
 
-use Predis\ClientInterface;
-
 /**
  * Default redis backend for storing failed jobs.
  */

@@ -7,7 +7,9 @@ use Resque\WorkerInterface;
 use Resque\QueueInterface;
 
 /**
- * @todo name better
+ * Resque failure backend interface
+ *
+ * Defines how failed jobs are kept and managed.
  */
 interface FailureInterface
 {
@@ -23,7 +25,7 @@ interface FailureInterface
     public function save(JobInterface $job, \Exception $exception, QueueInterface $queue, WorkerInterface $worker);
 
     /**
-     * Number of failures
+     * Number of failed jobs
      *
      * @return mixed
      */

@@ -53,6 +53,9 @@ class Job implements
     {
         $this->class = $jobClass;
         $this->setArguments($arguments);
+//        if ($monitor) {
+//            Resque_Job_Status::create($id);
+//        }
     }
 
     /**
