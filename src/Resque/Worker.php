@@ -645,8 +645,8 @@ class Worker implements WorkerInterface
             throw new ResqueRuntimeException(
                 sprintf(
                     'Cannot set current job to %s when current job is not null, current job is %s',
-                    $this->getCurrentJob(),
-                    $job
+                    $job,
+                    $this->getCurrentJob()
                 )
             );
         }
