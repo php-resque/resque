@@ -3,15 +3,19 @@
 namespace Resque;
 
 use Predis\ClientInterface;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Resque\Exception\ResqueRuntimeException;
+use Resque\Statistic\StatsInterface;
+use Resque\Statistic\BlackHoleBackend as BlackHoleStats;
 
 /**
  * Resque Foreman
  *
  * Handles creating, pruning, forking, killing and general management of workers.
  */
-class Foreman
+class Foreman implements LoggerAwareInterface
 {
     /**
      * @var array
@@ -27,6 +31,16 @@ class Foreman
      * @var ClientInterface Redis connection.
      */
     protected $redis;
+
+    /**
+     * @var StatsInterface
+     */
+    protected $statisticsBackend;
+
+    /**
+     * @var LoggerInterface Logging object that implements the PSR-3 LoggerInterface
+     */
+    protected $logger;
 
     public function __construct()
     {
@@ -50,6 +64,42 @@ class Foreman
         $this->redis = $redis;
 
         return $this;
+    }
+
+    /**
+     * Set statistic backend
+     *
+     * @param StatsInterface $statisticsBackend
+     * @return $this
+     */
+    public function setStatisticsBackend(StatsInterface $statisticsBackend)
+    {
+        $this->statisticsBackend = $statisticsBackend;
+
+        return $this;
+    }
+
+    /**
+     * @return StatsInterface
+     */
+    public function getStatisticsBackend()
+    {
+        if (null === $this->statisticsBackend) {
+            $this->setStatisticsBackend(new BlackHoleStats());
+        }
+
+        return $this->statisticsBackend;
+    }
+
+    /**
+     * Inject a logging object into the worker
+     *
+     * @param LoggerInterface $logger
+     * @return null|void
+     */
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
     }
 
     /**
@@ -130,17 +180,14 @@ class Foreman
     public function deregister(WorkerInterface $worker)
     {
         $id = $worker->getId();
-        // @todo Restore.
-//        if(is_object($this->currentJob)) {
-//            $this->currentJob->fail(new Resque_Job_DirtyExitException);
-//        }
+
+        $worker->shutdownNow();
 
         $this->redis->srem('workers', $id);
         $this->redis->del('worker:' . $id);
         $this->redis->del('worker:' . $id . ':started');
-
-//        Stat::clear('processed:' . $id);
-//        Stat::clear('failed:' . $id);
+        $this->getStatisticsBackend()->clear('processed:' . $id);
+        $this->getStatisticsBackend()->clear('failed:' . $id);
 
         unset($this->registeredWorkers[$id]);
     }
@@ -207,21 +254,23 @@ class Foreman
      * @see pcntl_fork()
      *
      * @return int Return vars as per pcntl_fork()
-     * @throws ResqueRuntimeException when fork failed.
+     * @throws ResqueRuntimeException when cannot fork, or fork failed.
      */
     public static function fork()
     {
         if (!function_exists('pcntl_fork')) {
-            // @todo work out if this should throw an exception as -1 does below. Not having pcntl is just as bad as
-            //       it is failing.
             throw new ResqueRuntimeException('pcntl_fork is not available');
         }
 
         $pid = pcntl_fork();
 
         if ($pid === -1) {
-            // @todo better message, by using pcntl_get_last_error() then pcntl_strerror()
-            throw new ResqueRuntimeException('Unable to fork child worker.');
+            throw new ResqueRuntimeException(
+                sprintf(
+                    'Unable to fork child. %s',
+                    pcntl_strerror(pcntl_get_last_error())
+                )
+            );
         }
 
         return $pid;

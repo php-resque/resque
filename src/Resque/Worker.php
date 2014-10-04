@@ -3,6 +3,7 @@
 namespace Resque;
 
 use Predis\ClientInterface;
+use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Resque\Event\EventDispatcher;
@@ -15,6 +16,7 @@ use Resque\Event\WorkerAfterForkEvent;
 use Resque\Event\WorkerBeforeForkEvent;
 use Resque\Event\WorkerStartupEvent;
 use Resque\Failure\FailureInterface;
+use Resque\Failure\Null;
 use Resque\Job\Exception\DirtyExitException;
 use Resque\Job\Exception\InvalidJobException;
 use Resque\Job\JobInstanceFactory;
@@ -31,7 +33,7 @@ use Resque\Exception\ResqueRuntimeException;
  *
  * The worker handles querying it issued queues for jobs, running them and handling the result.
  */
-class Worker implements WorkerInterface
+class Worker implements WorkerInterface, LoggerAwareInterface
 {
     /**
      * @var string String identifying this worker.
@@ -69,7 +71,7 @@ class Worker implements WorkerInterface
     protected $paused = false;
 
     /**
-     * @var JobInterface Current job, if any, being processed by this worker.
+     * @var JobInterface Current job being processed by this worker.
      */
     protected $currentJob = null;
 
@@ -112,19 +114,16 @@ class Worker implements WorkerInterface
      * @param QueueInterface|QueueInterface[] $queues A QueueInterface, or an array with multiple.
      * @param JobInstanceFactoryInterface|null $jobFactory
      * @param EventDispatcherInterface|null $eventDispatcher
-     * @param LoggerInterface|null $logger A PSR-3 LoggerInterface object.
      */
     public function __construct(
         $queues = null,
         // Redis?
         JobInstanceFactoryInterface $jobFactory = null,
         // FailureBackend?
-        EventDispatcherInterface $eventDispatcher = null,
-        LoggerInterface $logger = null
+        EventDispatcherInterface $eventDispatcher = null
     ) {
         $this->jobFactory = $jobFactory ?: new JobInstanceFactory();
         $this->eventDispatcher = $eventDispatcher ?: new EventDispatcher();
-        $this->logger = $logger ?: new NullLogger();
 
         if (false === (null === $queues)) {
             if (!is_array($queues)) {
@@ -194,6 +193,18 @@ class Worker implements WorkerInterface
     }
 
     /**
+     * @return FailureInterface
+     */
+    public function getFailureBackend()
+    {
+        if (null === $this->failureBackend) {
+            $this->setFailureBackend(new Null());
+        }
+
+        return $this->failureBackend;
+    }
+
+    /**
      * Set statistic backend
      *
      * @param StatsInterface $statisticsBackend
@@ -216,6 +227,29 @@ class Worker implements WorkerInterface
         }
 
         return $this->statisticsBackend;
+    }
+
+    /**
+     * Inject a logging object into the worker
+     *
+     * @param LoggerInterface $logger
+     * @return null|void
+     */
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+    }
+
+    /**
+     * @return LoggerInterface
+     */
+    public function getLogger()
+    {
+        if (null === $this->logger) {
+            $this->setLogger(new NullLogger());
+        }
+
+        return $this->logger;
     }
 
     /**
@@ -277,7 +311,7 @@ class Worker implements WorkerInterface
 
                 if ($blocking === false) {
                     // If no job was found, we sleep for $interval before continuing and checking again
-                    $this->logger->debug('Sleeping for {interval}', array('interval' => $interval));
+                    $this->getLogger()->debug('Sleeping for {interval}', array('interval' => $interval));
                     if ($this->paused) {
                     } else {
                         $this->updateProcTitle('Waiting for ' . implode(',', $this->queues()));
@@ -315,7 +349,7 @@ class Worker implements WorkerInterface
                     // Forked and we're the parent, sit and wait
                     $status = 'Forked ' . $this->childPid . ' at ' . strftime('%F %T');
                     $this->updateProcTitle($status);
-                    $this->logger->debug($status);
+                    $this->getLogger()->debug($status);
 
                     // Wait until the child process finishes before continuing
                     pcntl_wait($waitStatus);
@@ -400,7 +434,7 @@ class Worker implements WorkerInterface
         pcntl_signal(SIGUSR1, array($this, 'killChild'));
         pcntl_signal(SIGUSR2, array($this, 'pauseProcessing'));
         pcntl_signal(SIGCONT, array($this, 'resumeProcessing'));
-        $this->logger->debug('Registered signals');
+        $this->getLogger()->debug('Registered signals');
     }
 
     /**
@@ -417,10 +451,10 @@ class Worker implements WorkerInterface
         }
 
         foreach ($queues as $queue) {
-            $this->logger->debug('Checking {queue} for jobs', array('queue' => $queue));
+            $this->getLogger()->debug('Checking {queue} for jobs', array('queue' => $queue));
             $job = $queue->pop();
             if (false === (null === $job)) {
-                $this->logger->info('Found job on {queue}', array('queue' => $queue));
+                $this->getLogger()->info('Found job on {queue}', array('queue' => $queue));
 
                 return $job;
             }
@@ -436,7 +470,7 @@ class Worker implements WorkerInterface
      */
     public function workingOn(JobInterface $job)
     {
-        $this->logger->notice('Starting work on {job}', array('job' => $job));
+        $this->getLogger()->notice('Starting work on {job}', array('job' => $job));
 
         $job->updateStatus(Status::STATUS_RUNNING);
         $this->setCurrentJob($job);
@@ -454,7 +488,7 @@ class Worker implements WorkerInterface
     {
         $status = 'Performing job ' . $job->getId();
         $this->updateProcTitle($status);
-        $this->logger->info($status);
+        $this->getLogger()->info($status);
 
         try {
             $jobInstance = $this->jobFactory->createJob($job);
@@ -483,7 +517,7 @@ class Worker implements WorkerInterface
 
         // $job->updateStatus(Status::STATUS_COMPLETE); @todo update status behaviour
 
-        $this->logger->notice('{job} has successfully processed', array('job' => $job));
+        $this->getLogger()->notice('{job} has successfully processed', array('job' => $job));
 
         $this->eventDispatcher->dispatch(
             new JobPerformedEvent($job)
@@ -494,7 +528,7 @@ class Worker implements WorkerInterface
 
     protected function handleFailedJob(JobInterface $job, \Exception $exception)
     {
-        $this->logger->error(
+        $this->getLogger()->error(
             'Perform failure on {job}, {message}',
             array(
                 'job' => $job,
@@ -502,7 +536,7 @@ class Worker implements WorkerInterface
             )
         );
 
-        $this->failureBackend->save($job, $exception, $job->queue, $this);
+        $this->getFailureBackend()->save($job, $exception, $job->queue, $this);
 
         // $job->updateStatus(Status::STATUS_FAILED);
         $this->getStatisticsBackend()->increment('failed');
@@ -522,7 +556,7 @@ class Worker implements WorkerInterface
         $this->getStatisticsBackend()->increment('processed');
         $this->getStatisticsBackend()->increment('processed:' . $this->getId());
         $this->setCurrentJob(null);
-        $this->logger->debug('Work complete on {job}', array('job' => $job));
+        $this->getLogger()->debug('Work complete on {job}', array('job' => $job));
     }
 
     /**
@@ -554,7 +588,7 @@ class Worker implements WorkerInterface
      */
     public function pauseProcessing()
     {
-        $this->logger->notice('USR2 received; pausing job processing');
+        $this->getLogger()->notice('USR2 received; pausing job processing');
         $this->paused = true;
     }
 
@@ -564,18 +598,25 @@ class Worker implements WorkerInterface
      */
     public function resumeProcessing()
     {
-        $this->logger->notice('CONT received; resuming job processing');
+        $this->getLogger()->notice('CONT received; resuming job processing');
         $this->paused = false;
     }
 
     /**
      * Force an immediate shutdown of the worker, killing any child jobs
-     * currently running.
+     * currently running, or the job it is currently working on.
      */
     public function shutdownNow()
     {
         $this->shutdown();
         $this->killChild();
+
+        $currentJob = $this->getCurrentJob();
+        if (null !== $currentJob) {
+            $this->handleFailedJob(
+                $currentJob,
+                new DirtyExitException('Worker forced shutdown killed job ' . $currentJob->getId()));
+        }
     }
 
     /**
@@ -585,7 +626,7 @@ class Worker implements WorkerInterface
     public function shutdown()
     {
         $this->shutdown = true;
-        $this->logger->notice('Shutting down');
+        $this->getLogger()->notice('Shutting down');
     }
 
     /**
@@ -595,24 +636,24 @@ class Worker implements WorkerInterface
     public function killChild()
     {
         if (!$this->childPid) {
-            $this->logger->debug('No child to kill.');
+            $this->getLogger()->debug('No child to kill.');
             return;
         }
 
-        $this->logger->debug(
+        $this->getLogger()->debug(
             'Killing child at {child}',
             array('child' => $this->childPid)
         );
 
         if (exec('ps -o pid,state -p ' . $this->childPid, $output, $returnCode) && $returnCode != 1) {
-            $this->logger->debug(
+            $this->getLogger()->debug(
                 'Child {child} found, killing.',
                 array('child' => $this->childPid)
             );
             posix_kill($this->childPid, SIGKILL);
             $this->childPid = null;
         } else {
-            $this->logger->warning(
+            $this->getLogger()->warning(
                 'Child {child} not found, restarting.',
                 array('child' => $this->childPid)
             );
@@ -673,7 +714,7 @@ class Worker implements WorkerInterface
     /**
      * Return the Job this worker is currently working on.
      *
-     * @return JobInterface|null The current Job this worker is processing, null if it is not processing a job currently.
+     * @return JobInterface|null The current Job this worker is processing, null if currently not processing a job
      */
     public function getCurrentJob()
     {
@@ -688,17 +729,7 @@ class Worker implements WorkerInterface
      */
     public function getStat($stat)
     {
-        return $this->getStatisticsBackend()->get($stat . ':' . $this);
-    }
-
-    /**
-     * Inject the logging object into the worker
-     *
-     * @param LoggerInterface $logger
-     */
-    public function setLogger(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
+        return $this->getStatisticsBackend()->get($stat . ':' . $this->getId());
     }
 
     /**

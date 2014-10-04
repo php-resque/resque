@@ -103,11 +103,13 @@ if (in_array('*', $configQueues)) {
     unset($configQueue, $q);
 }
 
-$foreman = new \Resque\Foreman();
-$foreman->setRedisBackend($redis);
-
 $failureBackend = new \Resque\Failure\Redis($redis);
 $statisticBackend = new \Resque\Statistic\RedisBackend($redis);
+
+$foreman = new \Resque\Foreman();
+$foreman->setRedisBackend($redis);
+$foreman->setLogger($logger);
+$foreman->setStatisticsBackend($statisticBackend);
 
 $workers = array();
 for ($i = 0; $i < $count; ++$i) {

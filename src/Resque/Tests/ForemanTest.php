@@ -5,6 +5,7 @@ namespace Resque\Tests;
 use Resque\Foreman;
 use Resque\Queue;
 use Resque\Worker;
+use Resque\Statistic\RedisBackend;
 
 class ForemanTest extends ResqueTestCase
 {
@@ -189,5 +190,33 @@ class ForemanTest extends ResqueTestCase
         $foreman->deregister($worker);
 
         $this->assertEquals(1, Resque_Stat::get('failed'));
+    }
+
+    public function testForemanErasesWorkerStats()
+    {
+        $stats = new RedisBackend($this->redis);
+
+        $foreman = new Foreman();
+        $foreman->setRedisBackend($this->redis);
+        $foreman->setStatisticsBackend($stats);
+
+        $worker = new Worker();
+        $worker->setStatisticsBackend($stats);
+
+        $foreman->register($worker);
+
+        $this->assertEquals(0, $worker->getStat('processed'));
+        $this->assertEquals(0, $worker->getStat('failed'));
+
+        $stats->increment('processed:' . $worker->getId(), 10);
+        $stats->increment('failed:' . $worker->getId(), 5);
+
+        $this->assertEquals(10, $worker->getStat('processed'));
+        $this->assertEquals(5, $worker->getStat('failed'));
+
+        $foreman->deregister($worker);
+
+        $this->assertEquals(0, $worker->getStat('processed'));
+        $this->assertEquals(0, $worker->getStat('failed'));
     }
 }

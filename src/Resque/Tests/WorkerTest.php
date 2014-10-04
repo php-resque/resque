@@ -8,7 +8,6 @@ use Resque\QueueWildcard;
 use Resque\Resque;
 use Resque\Queue;
 use Resque\Worker;
-use Resque\Failure\Null;
 
 class WorkerTest extends ResqueTestCase
 {
@@ -129,7 +128,6 @@ class WorkerTest extends ResqueTestCase
         );
 
         $worker = new Worker(null, null, $eventDispatcher);
-        $worker->setFailureBackend(new Null());
 
         $job = new Job($jobClass);
         $job->setQueue(new Queue('foo'));
@@ -190,7 +188,6 @@ class WorkerTest extends ResqueTestCase
         );
 
         $worker = new Worker(null, null, $eventDispatcher);
-        $worker->setFailureBackend(new Null());
 
         $job = new Job('Resque\Tests\Jobs\Simple');
         $job->setQueue(new Queue('baz'));
@@ -281,7 +278,6 @@ class WorkerTest extends ResqueTestCase
         );
 
         $worker = new Worker($queue, null, $eventDispatcher);
-        $worker->setFailureBackend(new Null());
         $worker->setRedisBackend($this->redis);
         $worker->work(0);
 
@@ -349,30 +345,6 @@ class WorkerTest extends ResqueTestCase
             $this->fail('Job does not have run_at time');
         }
         $this->assertEquals($payload, $job['payload']);
-    }
-
-    public function testWorkerErasesItsStatsWhenShutdown()
-    {
-        return self::markTestSkipped();
-
-        $queue = new Queue('jobs');
-        $queue->setRedisBackend($this->redis);
-
-        $queue->push(new Job('Resque\Tests\Job\Simple'));
-        $queue->push(new Job('Invalid_Job'));
-
-        $worker = new Worker($queue);
-        $worker->setRedisBackend($this->redis);
-        $worker->setForkOnPerform(false);
-
-        $worker->work(0);
-
-        $this->assertEquals(1, $worker->getStat('processed'));
-
-        $worker->work(0);
-
-//		$this->assertEquals(0, $worker->getStat('processed'));
-//		$this->assertEquals(0, $worker->getStat('failed'));
     }
 
     public function testBlockingListPop()
