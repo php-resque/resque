@@ -446,10 +446,6 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     {
         $queues = $this->queues();
 
-        if (!is_array($queues)) {
-            return null;
-        }
-
         foreach ($queues as $queue) {
             $this->getLogger()->debug('Checking {queue} for jobs', array('queue' => $queue));
             $job = $queue->pop();
