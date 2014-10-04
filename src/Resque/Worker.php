@@ -24,6 +24,7 @@ use Resque\Job\PerformantJobInterface;
 use Resque\Job\Status;
 use Resque\Statistic\StatsInterface;
 use Resque\Statistic\BlackHoleBackend as BlackHoleStats;
+use Resque\Exception\ResqueRuntimeException;
 
 /**
  * Resque Worker
@@ -161,6 +162,16 @@ class Worker implements WorkerInterface
     }
 
     /**
+     * Return an array containing all of the queues that this worker should use when searching for jobs.
+     *
+     * @return QueueInterface[] Array of queues this worker is dealing with.
+     */
+    public function queues()
+    {
+        return $this->queues;
+    }
+
+    /**
      * @param ClientInterface $redis
      * @return $this
      */
@@ -227,14 +238,6 @@ class Worker implements WorkerInterface
     }
 
     /**
-     * @return QueueInterface[] Array of queues this worker is dealing with.
-     */
-    public function getQueues()
-    {
-        return $this->queues;
-    }
-
-    /**
      * Work
      *
      * The primary loop for a worker which when called on an instance starts
@@ -277,7 +280,7 @@ class Worker implements WorkerInterface
                     $this->logger->debug('Sleeping for {interval}', array('interval' => $interval));
                     if ($this->paused) {
                     } else {
-                        $this->updateProcTitle('Waiting for ' . implode(',', $this->queues));
+                        $this->updateProcTitle('Waiting for ' . implode(',', $this->queues()));
                     }
 
                     usleep($interval * 1000000);
@@ -427,17 +430,6 @@ class Worker implements WorkerInterface
     }
 
     /**
-     * Return an array containing all of the queues that this worker should use
-     * when searching for jobs.
-     *
-     * @return QueueInterface[] Array of associated queues.
-     */
-    public function queues()
-    {
-        return $this->queues;
-    }
-
-    /**
      * Tell Redis which job we're currently working on.
      *
      * @param JobInterface $job The job we're working on.
@@ -446,18 +438,8 @@ class Worker implements WorkerInterface
     {
         $this->logger->notice('Starting work on {job}', array('job' => $job));
 
-        $this->currentJob = $job;
         $job->updateStatus(Status::STATUS_RUNNING);
-
-        $payload = json_encode(
-            array(
-                'queue' => $job->queue,
-                'run_at' => strftime('%a %b %d %H:%M:%S %Z %Y'),
-                'payload' => $job->jsonSerialize(),
-            )
-        );
-
-        $this->redis->set('worker:' . $this, $payload);
+        $this->setCurrentJob($job);
     }
 
     /**
@@ -535,12 +517,12 @@ class Worker implements WorkerInterface
      * Notify Redis that we've finished working on a job, clearing the working
      * state and incrementing the job stats.
      */
-    protected function workComplete()
+    protected function workComplete(JobInterface $job)
     {
-        $this->currentJob = null;
         $this->getStatisticsBackend()->increment('processed');
         $this->getStatisticsBackend()->increment('processed:' . $this->getId());
-        $this->redis->del('worker:' . $this->getId());
+        $this->setCurrentJob(null);
+        $this->logger->debug('Work complete on {job}', array('job' => $job));
     }
 
     /**
@@ -551,7 +533,7 @@ class Worker implements WorkerInterface
     public function getId()
     {
         if (null === $this->id) {
-            $this->id = $this->hostname . ':' . getmypid() . ':' . implode(',', $this->queues);
+            $this->id = $this->hostname . ':' . getmypid() . ':' . implode(',', $this->queues());
         }
 
         return $this->id;
@@ -647,6 +629,45 @@ class Worker implements WorkerInterface
     public function __toString()
     {
         return $this->getId();
+    }
+
+    /**
+     * Set current job
+     *
+     * Sets which job the worker is currently working on, and records it in redis.
+     *
+     * @param JobInterface|null $job The job being worked on, or null if the worker isn't processing a job anymore.
+     * @throws ResqueRuntimeException when current job is not cleared before setting a different one.
+     */
+    public function setCurrentJob(JobInterface $job = null)
+    {
+        if (null !== $job && null !== $this->getCurrentJob()) {
+            throw new ResqueRuntimeException(
+                sprintf(
+                    'Cannot set current job to %s when current job is not null, current job is %s',
+                    $this->getCurrentJob(),
+                    $job
+                )
+            );
+        }
+
+        $this->currentJob = $job;
+
+        if (null === $this->getCurrentJob()) {
+            $this->redis->del('worker:' . $this->getId());
+
+            return;
+        }
+
+        $payload = json_encode(
+            array(
+                'queue' => $job->queue,
+                'run_at' => strftime('%a %b %d %H:%M:%S %Z %Y'),
+                'payload' => $job->jsonSerialize(),
+            )
+        );
+
+        $this->redis->set('worker:' . $this->getId(), $payload);
     }
 
     /**

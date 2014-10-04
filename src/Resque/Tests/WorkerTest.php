@@ -418,4 +418,16 @@ class WorkerTest extends ResqueTestCase
 
         $worker->work(0); // This test fails if the worker forks, as perform is not marked as called in parent thread
     }
+
+    /**
+     * @expectedException \Resque\Exception\ResqueRuntimeException
+     */
+    public function testCannotSetCurrentJobIfNotNull()
+    {
+        $worker = new Worker();
+        $worker->setRedisBackend($this->redis);
+
+        $worker->setCurrentJob(new Job());
+        $worker->setCurrentJob(new Job());
+    }
 }
