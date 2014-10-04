@@ -286,8 +286,6 @@ class WorkerTest extends ResqueTestCase
         $worker->work(0);
 
         $this->assertTrue($callbackTriggered);
-
-        // @todo test redis failure storage is set, maybe just test failure system is called?
     }
 
     public function testPausedWorkerDoesNotPickUpJobs()
@@ -400,5 +398,24 @@ class WorkerTest extends ResqueTestCase
         }
 
         $this->assertEquals(2, $i);
+    }
+
+    public function testForkingCanBeDisabled()
+    {
+        $job = new Job('Resque\Tests\Jobs\Simple');
+
+        $worker = $this->getMock(
+            'Resque\Worker',
+            array('perform', 'reserve'),
+            array(null)
+        );
+        $worker->expects($this->at(0))->method('reserve')->will($this->returnValue($job));
+        $worker->expects($this->at(1))->method('perform')->will($this->returnValue(null));
+        $worker->expects($this->at(2))->method('reserve')->will($this->returnValue(null));
+
+        $worker->setRedisBackend($this->redis);
+        $worker->setForkOnPerform(false);
+
+        $worker->work(0); // This test fails if the worker forks, as perform is not marked as called in parent thread
     }
 }
