@@ -9,8 +9,7 @@ them some time in the future.
 Resque was pioneered and is developed by the fine folks at GitHub, and written in Ruby. What you're seeing here is a
 port of the Resque worker and enqueue system to PHP.
 
-For more information on Resque, visit the official GitHub project:
- <https://github.com/resque/resque>
+For more information on Resque, visit the official GitHub project: <https://github.com/resque/resque>
 
 This PHP port provides much the same features as the Ruby version:
 
@@ -18,6 +17,8 @@ This PHP port provides much the same features as the Ruby version:
 * Includes support for priorities (queues)
 * Resilient to memory leaks (forking)
 * Expects failures
+* Custom failure back ends
+* Ability to dequeue jobs
 * Lifecycle events
 
 It also supports the following additional features:
@@ -51,13 +52,11 @@ composer require zomble/php-resque:dev-master
 Jobs are queued as follows:
 
 ```php
-$args = array(
-    'name' => 'Chris'
-);
-Resque::push('default', 'Acme\My\Job', $args);
+$resque = new Resque\Resque(/* predis connection */);
+$resque->enqueue('default', 'Acme\My\Job', array('name' => 'Chris'));
 ```
 
-### Defining Jobs ###
+### Defining Jobs
 
 Each job should be in its own class, and implement the `Resque\Job\PerformantJobInterface` interface.
 
@@ -76,13 +75,11 @@ class Job implements PerformantJobInterface
 }
 ```
 
-When the job is run, the class will be instantiated and any arguments
-will be set as an array on the instantiated object, and are accessible
-via `$this->args`.
+When the job is run, the class will be instantiated and any arguments will be set as an array on the instantiated
+object, and are accessible via `$this->args`.
 
-Any exception thrown by a job will result in the job failing - be
-careful here and make sure you handle the exceptions that shouldn't
-result in a job failing.
+Any exception thrown by a job will result in the job failing - be careful here and make sure you handle the
+exceptions that shouldn't result in a job failing.
 
 ### Dequeueing/Removing Jobs
 
@@ -104,7 +101,7 @@ $queue->deregister();
 
 Both remove and deregister return the number of deleted jobs.
 
-### Tracking Job Statuses ###
+### Tracking Job Statuses
 
 php-resque has the ability to perform basic status tracking of a queued
 job. The status information will allow you to check if a job is in the
@@ -140,7 +137,7 @@ or failed, and are then automatically expired. A status can also
 forcefully be expired by calling the `stop()` method on a status
 class.
 
-## Workers ##
+## Workers
 
 Workers work in the exact same way as the Ruby workers. For complete
 documentation on workers, see the original documentation.
@@ -152,12 +149,12 @@ via Composer)
 The exception to the similarities with the Ruby version of resque is
 how a worker is initially setup. To work under all environments,
 not having a single environment such as with Ruby, the PHP port makes
-*no* assumptions about your setup.
+*no* assumptions about your setup, outside of depending on composer.
 
 To start a worker, it's very similar to the Ruby version:
 
 ```sh
-$ QUEUE=file_serve php bin/resque
+$ QUEUE=file_serve bin/resque
 ```
 
 It's your responsibility to tell the worker which file to include to get
@@ -165,7 +162,7 @@ your application underway. You do so by setting the `APP_INCLUDE` environment
 variable:
 
 ```sh
-$ QUEUE=file_serve APP_INCLUDE=../application/init.php php bin/resque
+$ QUEUE=file_serve APP_INCLUDE=../application/init.php bin/resque
 ```
 
 Getting your application underway also includes telling the worker your job
@@ -186,12 +183,10 @@ $ VERBOSE=1 QUEUE=file_serve bin/resque
 $ VVERBOSE=1 QUEUE=file_serve bin/resque
 ```
 
-### Priorities and Queue Lists ###
+### Priorities and Queue Lists
 
-Similarly, priority and queue list functionality works exactly
-the same as the Ruby workers. Multiple queues should be separated with
-a comma, and the order that they're supplied in is the order that they're
-checked in.
+Similarly, priority and queue list functionality works exactly the same as the Ruby workers. Multiple queues
+should be separated with a comma, and the order that they're supplied in is the order that they're checked in.
 
 As per the original example:
 
@@ -199,22 +194,19 @@ As per the original example:
 $ QUEUE=file_serve,warm_cache bin/resque
 ```
 
-The `file_serve` queue will always be checked for new jobs on each
-iteration before the `warm_cache` queue is checked.
+The `file_serve` queue will always be checked for new jobs on each iteration before the `warm_cache` queue is checked.
 
 ### Running All Queues ###
 
-All queues are supported in the same manner and processed in alphabetical
-order:
+All queues are supported in the same manner and processed in alphabetical order:
 
 ```sh
 $ QUEUE='*' bin/resque
 ```
 
-### Running Multiple Workers ###
+### Running Multiple Workers
 
-Multiple workers can be launched simultaneously by supplying the `COUNT`
-environment variable:
+Multiple workers can be launched simultaneously by supplying the `COUNT` environment variable:
 
 ```sh
 $ COUNT=5 bin/resque
@@ -225,7 +217,7 @@ will shut down as soon as it has spawned `COUNT` forks.  If you need to keep
 track of your workers using an external application such as `monit`, you'll
 need to work around this limitation.
 
-### Custom prefix ###
+### Custom prefix
 
 When you have multiple apps using the same Redis database it is better to
 use a custom prefix to separate the Resque data:
@@ -234,17 +226,16 @@ use a custom prefix to separate the Resque data:
 $ PREFIX=my-app-name bin/resque
 ```
 
-### Forking ###
+### Forking
 
 Similarly to the Ruby versions, supported platforms will immediately
 fork after picking up a job. The forked child will exit as soon as
 the job finishes.
 
-The difference with php-resque is that if a forked child does not
-exit nicely (PHP error or such), php-resque will automatically fail
-the job.
+The difference with php-resque is that if a forked child does not exit cleanly (PHP error etc), php-resque
+will automatically fail the job.
 
-### Signals ###
+### Signals
 
 Signals also work on supported platforms exactly as in the Ruby
 version of Resque:
@@ -255,7 +246,7 @@ version of Resque:
 * `USR2` - Pause worker, no new jobs will be processed
 * `CONT` - Resume worker.
 
-### Process Titles/Statuses ###
+### Process Titles/Statuses
 
 The Ruby version of Resque has a nifty feature whereby the process
 title of the worker is updated to indicate what the worker is doing,
@@ -356,7 +347,7 @@ The event contains the following:
 * `Resque\Worker` The worker that the job just failed in.
 * `\Exception` The exception that was thrown when the job failed, if one was thrown to cause it to fail.
 
-#### afterEnqueue ####
+#### afterEnqueue
 
 Called after a job has been queued using the `Resque::push` method. Arguments passed
 (in this order) include:
@@ -370,7 +361,7 @@ Called after a job has been queued using the `Resque::push` method. Arguments pa
 
 // @todo document usage
 
-## Step-By-Step ##
+## Step-By-Step
 
 For a more in-depth look at what php-resque does under the hood (without 
 needing to directly examine the code), have a look at `HOWITWORKS.md`.

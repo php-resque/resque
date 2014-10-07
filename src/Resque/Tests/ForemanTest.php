@@ -49,7 +49,7 @@ class ForemanTest extends ResqueTestCase
         $this->assertEquals($count, count($this->foreman->all()));
     }
 
-    public function testForemanCanderegisterWorker()
+    public function testForemanCanDeregisterWorker()
     {
         $worker = new Worker(
             new Queue('baz')
@@ -68,7 +68,7 @@ class ForemanTest extends ResqueTestCase
         $this->assertCount(0, $this->redis->smembers('workers'));
     }
 
-    public function testderegisteredWorkerDoesNotExistInRedis()
+    public function testUnregisteredWorkerDoesNotExistInRedis()
     {
         $worker = new Worker(array());
         $this->assertFalse($this->foreman->isRegistered($worker));

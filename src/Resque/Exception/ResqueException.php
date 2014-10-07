@@ -5,7 +5,7 @@ namespace Resque\Exception;
 use Exception;
 
 /**
- * Generic Resque exception.
+ * Generic Resque exception
  */
 class ResqueException extends Exception
 {

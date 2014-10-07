@@ -16,25 +16,26 @@ interface FailureInterface
     /**
      * Record job failure
      *
-     * @param JobInterface $job
-     * @param \Exception $exception
-     * @param QueueInterface $queue
-     * @param WorkerInterface $worker
-     * @return mixed
+     * @param JobInterface $job The job that just failed to perform cleanly.
+     * @param \Exception $exception The exception for the cause of the failure.
+     * @param QueueInterface $queue The queue the failed job came from.
+     * @param WorkerInterface $worker The worker that the job failed to perform with in.
+     *
+     * @return void
      */
     public function save(JobInterface $job, \Exception $exception, QueueInterface $queue, WorkerInterface $worker);
 
     /**
      * Number of failed jobs
      *
-     * @return mixed
+     * @return int
      */
     public function count();
 
     /**
      * Clear all saved failures
      *
-     * @return mixed
+     * @return void
      */
     public function clear();
 }

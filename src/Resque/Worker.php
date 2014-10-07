@@ -542,7 +542,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
         $this->getStatisticsBackend()->increment('failed:' . $this->getId());
 
         $this->eventDispatcher->dispatch(
-            new JobFailedEvent($job, $exception, null, $this)
+            new JobFailedEvent($job, $exception, $this)
         );
     }
 

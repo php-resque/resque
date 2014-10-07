@@ -5,7 +5,7 @@ namespace Resque\Event;
 /**
  * Resque simple event dispatcher
  *
- * Allows simple binding of callables to events. @see http://php.net/manual/en/language.types.callable.php
+ * Allows simple binding of a callable to events. @see http://php.net/manual/en/language.types.callable.php
  *
  * It is expected that you'll inject your own EventDispatcher, and manage the events in a way
  * that makes sense to you. This class is not intended to solve any event dispatching problems for you.

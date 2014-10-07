@@ -2,7 +2,7 @@
 
 namespace Resque\Event;
 
-use Resque\Job;
+use Resque\Job\JobInterface;
 use Resque\WorkerInterface;
 use Exception;
 
@@ -13,7 +13,7 @@ class JobFailedEvent implements EventInterface
      */
     protected $exception;
 
-    public function __construct(Job $payload, Exception $exception, $queue, WorkerInterface $worker)
+    public function __construct(JobInterface $job, Exception $exception, WorkerInterface $worker)
     {
         $this->exception = $exception;
     }
