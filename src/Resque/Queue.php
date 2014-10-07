@@ -5,6 +5,7 @@ namespace Resque;
 use Predis\ClientInterface;
 use Resque\Job\JobInterface;
 use Resque\Job\FilterAwareJobInterface;
+use Resque\Job\QueueAwareJobInterface;
 
 /**
  * Resque Queue
@@ -127,7 +128,10 @@ class Queue implements QueueInterface
         }
 
         $job = Job::decode($payload); // @todo should be something like $this->jobEncoderThingy->decode()
-        $job->setQueue($this);
+
+        if ($job instanceof QueueAwareJobInterface) {
+            $job->setOriginQueue($this);
+        }
 
         return $job;
     }

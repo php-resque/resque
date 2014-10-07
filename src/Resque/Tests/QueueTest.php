@@ -60,7 +60,7 @@ class QueueTest extends ResqueTestCase
             $this->fail('Job could not be reserved.');
         }
 
-        $this->assertEquals('jobs', $job->queue->getName());
+        $this->assertEquals('jobs', $job->getOriginQueue()->getName());
         $this->assertEquals('Test_Job', $job->getJobClass());
     }
 

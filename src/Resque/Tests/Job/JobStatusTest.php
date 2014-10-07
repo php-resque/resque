@@ -1,20 +1,13 @@
 <?php
 
-namespace Resque\Tests;
+namespace Resque\Tests\Job;
 
 use Resque\Job;
 use Resque\Resque;
-use Resque\Foreman;
-use Resque\Queue;
-use Resque\Worker;
+use Resque\Tests\ResqueTestCase;
 
 class JobStatusTest extends ResqueTestCase
 {
-    /**
-     * @var \Resque_Worker
-     */
-    protected $worker;
-
     public function setUp()
     {
         parent::setUp();

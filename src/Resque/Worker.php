@@ -23,6 +23,7 @@ use Resque\Job\JobInstanceFactory;
 use Resque\Job\JobInstanceFactoryInterface;
 use Resque\Job\JobInterface;
 use Resque\Job\PerformantJobInterface;
+use Resque\Job\QueueAwareJobInterface;
 use Resque\Job\Status;
 use Resque\Statistic\StatsInterface;
 use Resque\Statistic\BlackHoleBackend as BlackHoleStats;
@@ -524,6 +525,8 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
     protected function handleFailedJob(JobInterface $job, \Exception $exception)
     {
+        $queue = ($job instanceof QueueAwareJobInterface) ? $job->getOriginQueue() : null;
+
         $this->getLogger()->error(
             'Perform failure on {job}, {message}',
             array(
@@ -532,7 +535,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
             )
         );
 
-        $this->getFailureBackend()->save($job, $exception, $job->queue, $this);
+        $this->getFailureBackend()->save($job, $exception, $queue, $this);
 
         // $job->updateStatus(Status::STATUS_FAILED);
         $this->getStatisticsBackend()->increment('failed');
@@ -546,6 +549,8 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     /**
      * Notify Redis that we've finished working on a job, clearing the working
      * state and incrementing the job stats.
+     *
+     * @param JobInterface $job
      */
     protected function workComplete(JobInterface $job)
     {
@@ -698,7 +703,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
         $payload = json_encode(
             array(
-                'queue' => $job->queue,
+                'queue' => ($job instanceof QueueAwareJobInterface) ? $job->getOriginQueue() : null,
                 'run_at' => strftime('%a %b %d %H:%M:%S %Z %Y'),
                 'payload' => $job->jsonSerialize(),
             )

@@ -39,10 +39,10 @@ class WorkerTest extends ResqueTestCase
         $queueTwo->push($jobTwo);
 
         $job = $worker->reserve();
-        $this->assertEquals($queueOne, $job->queue);
+        $this->assertEquals($queueOne, $job->getOriginQueue());
 
         $job = $worker->reserve();
-        $this->assertEquals($queueTwo, $job->queue);
+        $this->assertEquals($queueTwo, $job->getOriginQueue());
     }
 
     public function testWorkerWorksQueuesInSpecifiedOrder()
@@ -69,11 +69,11 @@ class WorkerTest extends ResqueTestCase
 
         // Now check we get the jobs back in the right queue order
         $job = $worker->reserve();
-        $this->assertSame($queueHigh, $job->queue);
+        $this->assertSame($queueHigh, $job->getOriginQueue());
         $job = $worker->reserve();
-        $this->assertSame($queueMedium, $job->queue);
+        $this->assertSame($queueMedium, $job->getOriginQueue());
         $job = $worker->reserve();
-        $this->assertSame($queueLow, $job->queue);
+        $this->assertSame($queueLow, $job->getOriginQueue());
     }
 
     public function testWildcardQueueWorkerWorksAllQueues()
@@ -93,7 +93,7 @@ class WorkerTest extends ResqueTestCase
 
         $job = $worker->reserve();
         // The job should come from the original queue.
-        $this->assertEquals($queue, $job->queue);
+        $this->assertEquals($queue, $job->getOriginQueue());
     }
 
     public function testWorkerDoesNotWorkOnUnknownQueues()
@@ -130,7 +130,7 @@ class WorkerTest extends ResqueTestCase
         $worker = new Worker(null, null, $eventDispatcher);
 
         $job = new Job($jobClass);
-        $job->setQueue(new Queue('foo'));
+        $job->setOriginQueue(new Queue('foo'));
 
         $worker->perform($job);
 
@@ -190,7 +190,7 @@ class WorkerTest extends ResqueTestCase
         $worker = new Worker(null, null, $eventDispatcher);
 
         $job = new Job('Resque\Tests\Jobs\Simple');
-        $job->setQueue(new Queue('baz'));
+        $job->setOriginQueue(new Queue('baz'));
 
         $this->assertFalse(
             $worker->perform($job),

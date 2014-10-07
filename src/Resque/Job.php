@@ -4,6 +4,7 @@ namespace Resque;
 
 use Resque\Job\FilterAwareJobInterface;
 use Resque\Job\JobInterface;
+use Resque\Job\QueueAwareJobInterface;
 
 /**
  * Resque Job
@@ -12,6 +13,7 @@ use Resque\Job\JobInterface;
  */
 class Job implements
     JobInterface,
+    QueueAwareJobInterface,
     FilterAwareJobInterface
 {
     /**
@@ -35,11 +37,9 @@ class Job implements
     protected $status;
 
     /**
-     * @var Queue
-     *
-     * @todo remove public, and make it obvious this is the queue of origin.
+     * @var QueueInterface|null The queue this job was popped from, if it was popped.
      */
-    public $queue;
+    protected $originQueue;
 
     /**
      * Constructor
@@ -81,22 +81,6 @@ class Job implements
         return $this->id;
     }
 
-    /*
-     * Data structure for self::encode
-     *
-     * Based off JsonSerializable with out actually implementing it.
-     * @see http://php.net/manual/en/jsonserializable.jsonserialize.php for more details.
-     */
-    public function jsonSerialize()
-    {
-        return array(
-            'class' => $this->getJobClass(),
-            'args' => array($this->getArguments()),
-            'id' => $this->getId(),
-            'queue_time' => microtime(true), // @todo this isn't queue time. $queue->push() is queue time.
-        );
-    }
-
     /**
      * @param string $class
      * @return $this
@@ -114,6 +98,23 @@ class Job implements
     public function getJobClass()
     {
         return $this->class;
+    }
+
+    /**
+     * setArguments
+     *
+     * @param array $args An array of parameters for the job.
+     * @throws \InvalidArgumentException when $args is not an array
+     */
+    public function setArguments($args)
+    {
+        if (false === is_array($args)) {
+            throw new \InvalidArgumentException(
+                'Supplied $args must be an array.'
+            );
+        }
+
+        $this->arguments = $args;
     }
 
     /**
@@ -153,26 +154,37 @@ class Job implements
     }
 
     /**
-     * @param \Resque\Queue $queue
+     * {@inheritDoc}
      */
-    public function setQueue($queue)
+    public function setOriginQueue(QueueInterface $queue)
     {
-        $this->queue = $queue;
+        $this->originQueue = $queue;
+
+        return $this;
     }
 
     /**
-     * @param $args
-     * @throws \InvalidArgumentException when $args is not an array
+     * {@inheritDoc}
      */
-    public function setArguments($args)
+    public function getOriginQueue()
     {
-        if (false === is_array($args)) {
-            throw new \InvalidArgumentException(
-                'Supplied $args must be an array.'
-            );
-        }
+        return $this->originQueue;
+    }
 
-        $this->arguments = $args;
+    /*
+     * Data structure for self::encode
+     *
+     * Based off JsonSerializable with out actually implementing it.
+     * @see http://php.net/manual/en/jsonserializable.jsonserialize.php for more details.
+     */
+    public function jsonSerialize()
+    {
+        return array(
+            'class' => $this->getJobClass(),
+            'args' => array($this->getArguments()),
+            'id' => $this->getId(),
+            'queue_time' => microtime(true), // @todo this isn't queue time. $queue->push() is queue time.
+        );
     }
 
     /**
