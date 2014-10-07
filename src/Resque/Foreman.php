@@ -240,7 +240,13 @@ class Foreman implements LoggerAwareInterface
             foreach ($workers as $worker) {
                 $status = 0;
                 if ($worker->getPid() != pcntl_waitpid($worker->getPid(), $status)) {
-                    die("Error with worker wait on pid {$worker->getPid()}.\n"); // @todo Exception?
+                    throw new ResqueRuntimeException(
+                        sprintf(
+                            "Foreman error with worker %s wait on pid %d.\n",
+                            $worker->getId(),
+                            $worker->getPid()
+                        )
+                    );
                 } else {
                     $this->deregister($worker);
                 }
