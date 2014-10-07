@@ -4,6 +4,7 @@ namespace Resque;
 
 use Predis\ClientInterface;
 use Resque\Job\JobInterface;
+use Resque\Job\FilterAwareJobInterface;
 
 /**
  * Resque Queue
@@ -150,7 +151,7 @@ class Queue implements QueueInterface
             $payload = $this->redis->rpoplpush($queueKey, $tmpKey);
             if (!empty($payload)) {
                 $job = Job::decode($payload); // @todo should be something like $this->jobEncoderThingy->decode()
-                if ($job::matchFilter($job, $filter)) { // @todo check for FilterAwareJobInterface
+                if ($job instanceof FilterAwareJobInterface && $job::matchFilter($job, $filter)) {
                     $jobsRemoved++;
                 } else {
                     $this->redis->rpoplpush($tmpKey, $enqueueKey);

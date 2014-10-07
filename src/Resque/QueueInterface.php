@@ -28,7 +28,7 @@ interface QueueInterface
     /**
      * Pop a job off the end of the specified queue, decode it and return it.
      *
-     * @return Job|null Decoded job from the queue, or null if no jobs.
+     * @return JobInterface|null Decoded job from the queue, or null if no jobs.
      */
     public function pop();
 }
