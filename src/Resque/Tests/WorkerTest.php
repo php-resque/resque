@@ -5,7 +5,6 @@ namespace Resque\Tests;
 use Resque\Event\EventDispatcher;
 use Resque\Job;
 use Resque\QueueWildcard;
-use Resque\Resque;
 use Resque\Queue;
 use Resque\Worker;
 

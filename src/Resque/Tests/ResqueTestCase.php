@@ -36,8 +36,5 @@ abstract class ResqueTestCase extends PHPUnit_Framework_TestCase
         );
 
         $this->redis->flushdb();
-
-        $this->resque = new Resque();
-        $this->resque->setRedisBackend($this->redis);
     }
 }
