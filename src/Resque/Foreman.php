@@ -149,7 +149,7 @@ class Foreman implements LoggerAwareInterface
     }
 
     /**
-     * Registers the given worker in Redis.
+     * Registers the given worker in Redis
      *
      * @throws \Exception
      *
@@ -173,7 +173,7 @@ class Foreman implements LoggerAwareInterface
     }
 
     /**
-     * deregister the given worker from Redis.
+     * Deregisters the given worker from Redis
      *
      * @param WorkerInterface $worker
      */
@@ -186,8 +186,8 @@ class Foreman implements LoggerAwareInterface
         $this->redis->srem('workers', $id);
         $this->redis->del('worker:' . $id);
         $this->redis->del('worker:' . $id . ':started');
-        $this->getStatisticsBackend()->clear('processed:' . $id);
-        $this->getStatisticsBackend()->clear('failed:' . $id);
+
+        $worker->clearStats();
 
         unset($this->registeredWorkers[$id]);
     }

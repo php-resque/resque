@@ -17,12 +17,12 @@ class RedisTest extends ResqueTestCase
         $this->assertEquals(0, $backend->count());
 
         $job = new Job('derp');
+        $job->setOriginQueue(new Queue('jobs'));
         $worker = new Worker();
 
         $backend->save(
             $job,
             new \Exception('it broke'),
-            new Queue('jobs'),
             $worker
         );
 

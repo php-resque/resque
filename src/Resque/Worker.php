@@ -293,6 +293,10 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                 break;
             }
 
+            if (function_exists('pcntl_signal_dispatch')) {
+                pcntl_signal_dispatch();
+            }
+
             if ($this->paused) {
                 $this->updateProcTitle('Paused');
                 usleep($interval * 1000000);
@@ -375,7 +379,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     }
 
     /**
-     * Perform necessary actions to start a worker.
+     * Perform necessary actions to start a worker
      */
     protected function startup()
     {
@@ -412,30 +416,6 @@ class Worker implements WorkerInterface, LoggerAwareInterface
         if (function_exists('setproctitle')) {
             setproctitle($processTitle);
         }
-    }
-
-    /**
-     * Register signal handlers that a worker should respond to.
-     *
-     * TERM: Shutdown immediately and stop processing jobs.
-     * INT: Shutdown immediately and stop processing jobs.
-     * QUIT: Shutdown after the current job finishes processing.
-     * USR1: Kill the forked child immediately and continue processing jobs.
-     */
-    private function registerSigHandlers()
-    {
-        if (!function_exists('pcntl_signal')) {
-            return;
-        }
-
-        declare(ticks = 1);
-        pcntl_signal(SIGTERM, array($this, 'shutDownNow'));
-        pcntl_signal(SIGINT, array($this, 'shutDownNow'));
-        pcntl_signal(SIGQUIT, array($this, 'shutdown'));
-        pcntl_signal(SIGUSR1, array($this, 'killChild'));
-        pcntl_signal(SIGUSR2, array($this, 'pauseProcessing'));
-        pcntl_signal(SIGCONT, array($this, 'resumeProcessing'));
-        $this->getLogger()->debug('Registered signals');
     }
 
     /**
@@ -525,8 +505,6 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
     protected function handleFailedJob(JobInterface $job, \Exception $exception)
     {
-        $queue = ($job instanceof QueueAwareJobInterface) ? $job->getOriginQueue() : null;
-
         $this->getLogger()->error(
             'Perform failure on {job}, {message}',
             array(
@@ -535,7 +513,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
             )
         );
 
-        $this->getFailureBackend()->save($job, $exception, $queue, $this);
+        $this->getFailureBackend()->save($job, $exception, $this);
 
         // $job->updateStatus(Status::STATUS_FAILED);
         $this->getStatisticsBackend()->increment('failed');
@@ -585,6 +563,30 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     }
 
     /**
+     * Register signal handlers that a worker should respond to.
+     *
+     * TERM: Shutdown immediately and stop processing jobs.
+     * INT: Shutdown immediately and stop processing jobs.
+     * QUIT: Shutdown after the current job finishes processing.
+     * USR1: Kill the forked child immediately and continue processing jobs.
+     */
+    private function registerSigHandlers()
+    {
+        if (!function_exists('pcntl_signal')) {
+            return;
+        }
+
+        declare(ticks = 100);
+        pcntl_signal(SIGTERM, array($this, 'shutDownNow'));
+        pcntl_signal(SIGINT, array($this, 'shutDownNow'));
+        pcntl_signal(SIGQUIT, array($this, 'shutdown'));
+        pcntl_signal(SIGUSR1, array($this, 'killChild'));
+        pcntl_signal(SIGUSR2, array($this, 'pauseProcessing'));
+        pcntl_signal(SIGCONT, array($this, 'resumeProcessing'));
+        $this->getLogger()->debug('Registered signals');
+    }
+
+    /**
      * Signal handler callback for USR2, pauses processing of new jobs.
      */
     public function pauseProcessing()
@@ -616,7 +618,8 @@ class Worker implements WorkerInterface, LoggerAwareInterface
         if (null !== $currentJob) {
             $this->handleFailedJob(
                 $currentJob,
-                new DirtyExitException('Worker forced shutdown killed job ' . $currentJob->getId()));
+                new DirtyExitException('Worker forced shutdown killed job ' . $currentJob->getId())
+            );
         }
     }
 
@@ -731,6 +734,15 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     public function getStat($stat)
     {
         return $this->getStatisticsBackend()->get($stat . ':' . $this->getId());
+    }
+
+    /**
+     * Clear worker stats
+     */
+    public function clearStats()
+    {
+        $this->getStatisticsBackend()->clear('processed:' . $this->getId());
+        $this->getStatisticsBackend()->clear('failed:' . $this->getId());
     }
 
     /**

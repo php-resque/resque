@@ -3,10 +3,7 @@
 namespace Resque\Tests;
 
 use Resque\Job;
-use Resque\Resque;
-use Resque\Foreman;
-use Resque\Queue;
-use Resque\Worker;
+use Resque\Job\FilterAwareJobInterface;
 
 class JobTest extends ResqueTestCase
 {
@@ -58,73 +55,11 @@ class JobTest extends ResqueTestCase
         $this->assertEquals(1, Resque_Stat::get('failed:' . $this->worker));
     }
 
-    /**
-     * @expectedException \Resque\Exception\ResqueException
-     */
-    public function testJobWithoutPerformMethodThrowsException()
-    {
-        return self::markTestSkipped();
-
-        Resque::enqueue('jobs', 'Test_Job_Without_Perform_Method');
-        $job = $this->worker->reserve();
-        $job->worker = $this->worker;
-        $job->perform();
-    }
-
-    /**
-     * @expectedException \Resque\Exception\ResqueException
-     */
-    public function testInvalidJobThrowsException()
-    {
-        return self::markTestSkipped();
-
-
-        Resque::enqueue('jobs', 'Invalid_Job');
-        $job = $this->worker->reserve();
-        $job->worker = $this->worker;
-        $job->perform();
-    }
-
-    public function testJobWithSetUpCallbackFiresSetUp()
-    {
-        return self::markTestSkipped();
-
-
-        $payload = array(
-            'class' => 'Test_Job_With_SetUp',
-            'args' => array(
-                'somevar',
-                'somevar2',
-            ),
-        );
-        $job = new Resque_Job('jobs', $payload);
-        $job->perform();
-
-        $this->assertTrue(Test_Job_With_SetUp::$called);
-    }
-
-    public function testJobWithTearDownCallbackFiresTearDown()
-    {
-        return self::markTestSkipped();
-
-
-        $payload = array(
-            'class' => 'Test_Job_With_TearDown',
-            'args' => array(
-                'somevar',
-                'somevar2',
-            ),
-        );
-        $job = new Resque_Job('jobs', $payload);
-        $job->perform();
-
-        $this->assertTrue(Test_Job_With_TearDown::$called);
-    }
 
     /**
      * @dataProvider dataProviderMatchFilter
      */
-    public function testMatchFilter($job, $expected, $filter)
+    public function testMatchFilter(FilterAwareJobInterface $job, $expected, $filter)
     {
         $this->assertEquals($expected, $job::matchFilter($job, $filter));
     }

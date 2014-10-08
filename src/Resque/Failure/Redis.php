@@ -4,8 +4,9 @@ namespace Resque\Failure;
 
 use Predis\ClientInterface;
 use Resque\Job\JobInterface;
-use Resque\WorkerInterface;
+use Resque\Job\QueueAwareJobInterface;
 use Resque\QueueInterface;
+use Resque\WorkerInterface;
 
 /**
  * Default redis backend for storing failed jobs.
@@ -22,8 +23,10 @@ class Redis implements FailureInterface
         $this->redis = $redis;
     }
 
-    public function save(JobInterface $job, \Exception $exception, QueueInterface $queue, WorkerInterface $worker)
+    public function save(JobInterface $job, \Exception $exception, WorkerInterface $worker)
     {
+        $queue = ($job instanceof QueueAwareJobInterface) ? $job->getOriginQueue() : null;
+
         $this->redis->rpush(
             'failed',
             json_encode(
@@ -34,7 +37,7 @@ class Redis implements FailureInterface
                     'error' => $exception->getMessage(),
                     'backtrace' => explode("\n", $exception->getTraceAsString()),
                     'worker' => $worker->getId(),
-                    'queue' => $queue->getName(),
+                    'queue' => ($queue instanceof QueueInterface) ? $queue->getName() : null,
                 )
             )
         );

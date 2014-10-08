@@ -3,6 +3,7 @@
 namespace Resque\Tests;
 
 use Resque\Foreman;
+use Resque\Job;
 use Resque\Queue;
 use Resque\Worker;
 use Resque\Statistic\RedisBackend;
@@ -173,23 +174,24 @@ class ForemanTest extends ResqueTestCase
         $this->assertSame('my.other.host:1:jobs', (string)$workers[0]);
     }
 
-    public function testWorkerFailsUncompletedJobsOnExit()
+    public function testWorkerFailsUncompletedJobsOnDeregister()
     {
-        return self::markTestSkipped();
-
+        $stats = new RedisBackend($this->redis);
         $foreman = new Foreman();
         $foreman->setRedisBackend($this->redis);
 
         $worker = new Worker();
         $worker->setRedisBackend($this->redis);
+        $worker->setStatisticsBackend($stats);
 
-        $job = new Job('jobs');
+        $job = new Job('Foo');
 
         $worker->workingOn($job);
 
         $foreman->deregister($worker);
 
-        $this->assertEquals(1, Resque_Stat::get('failed'));
+        $this->assertEquals(0, $worker->getStat('failed'));
+        $this->assertEquals(1, $stats->get('failed'));
     }
 
     public function testForemanErasesWorkerStats()

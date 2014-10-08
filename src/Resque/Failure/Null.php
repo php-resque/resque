@@ -13,7 +13,7 @@ use Resque\QueueInterface;
  */
 class Null implements FailureInterface
 {
-    public function save(JobInterface $job, \Exception $exception, QueueInterface $queue, WorkerInterface $worker)
+    public function save(JobInterface $job, \Exception $exception, WorkerInterface $worker)
     {
         return;
     }
