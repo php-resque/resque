@@ -119,8 +119,8 @@ class ForemanTest extends ResqueTestCase
 
         // Check the workers hold different PIDs
         foreach ($workers as $worker) {
-            $this->assertNotEquals(0, $worker->getPid());
-            $this->assertNotEquals($me, $worker->getPid());
+            $this->assertNotEquals(0, $worker->getProcess()->getPid());
+            $this->assertNotEquals($me, $worker->getProcess()->getPid());
         }
     }
 

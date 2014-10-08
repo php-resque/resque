@@ -217,8 +217,11 @@ class Foreman implements LoggerAwareInterface
 
         /** @var Worker $worker */
         foreach ($workers as $worker) {
-            $worker->setPid(self::fork());
-            if (!$worker->getPid()) {
+
+            $parent = new Process();
+            $child = $parent->fork();
+
+            if (null === $child) {
                 // This is child process, it will work and then die.
                 $this->register($worker);
                 $worker->work();
@@ -227,62 +230,39 @@ class Foreman implements LoggerAwareInterface
                 exit(0);
             }
 
+            $worker->setProcess($child);
+
             $this->logger->info(
                 sprintf(
                     'Successfully started worker %s with pid %d',
                     $worker,
-                    $worker->getPid()
+                    $child->getPid()
                 )
             );
         }
 
         if ($wait) {
             foreach ($workers as $worker) {
-                $status = 0;
-                if ($worker->getPid() != pcntl_waitpid($worker->getPid(), $status)) {
+                $process = $worker->getProcess();
+                $process->wait();
+                if ($process->isCleanExit()) {
+                    $this->deregister($worker);
+                } else {
                     throw new ResqueRuntimeException(
                         sprintf(
                             "Foreman error with worker %s wait on pid %d.\n",
                             $worker->getId(),
-                            $worker->getPid()
+                            $process->getPid()
                         )
                     );
-                } else {
-                    $this->deregister($worker);
                 }
             }
         }
     }
 
     /**
-     * fork() helper method for php-resque
+     * Prune dead workers
      *
-     * @see pcntl_fork()
-     *
-     * @return int Return vars as per pcntl_fork()
-     * @throws ResqueRuntimeException when cannot fork, or fork failed.
-     */
-    public static function fork()
-    {
-        if (!function_exists('pcntl_fork')) {
-            throw new ResqueRuntimeException('pcntl_fork is not available');
-        }
-
-        $pid = pcntl_fork();
-
-        if ($pid === -1) {
-            throw new ResqueRuntimeException(
-                sprintf(
-                    'Unable to fork child. %s',
-                    pcntl_strerror(pcntl_get_last_error())
-                )
-            );
-        }
-
-        return $pid;
-    }
-
-    /**
      * Look for any workers which should be running on this server and if
      * they're not, remove them from Redis.
      *

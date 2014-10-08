@@ -42,9 +42,9 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     protected $id;
 
     /**
-     * @var int Process id, used by Foreman.
+     * @var Process The workers current process.
      */
-    protected $pid;
+    protected $process;
 
     /**
      * @var LoggerInterface Logging object that implements the PSR-3 LoggerInterface
@@ -254,20 +254,26 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     }
 
     /**
-     * @return mixed
+     * @return Process
      */
-    public function getPid()
+    public function getProcess()
     {
-        return $this->pid;
+        if (null === $this->process) {
+            $process = new Process();
+            $process->setPidFromCurrentProcess();
+            $this->setProcess($process);
+        }
+
+        return $this->process;
     }
 
     /**
-     * @param int $pid
+     * @param Process $process
      * @return $this
      */
-    public function setPid($pid)
+    public function setProcess(Process $process)
     {
-        $this->pid = $pid;
+        $this->process = $process;
 
         return $this;
     }
@@ -293,12 +299,10 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                 break;
             }
 
-            if (function_exists('pcntl_signal_dispatch')) {
-                pcntl_signal_dispatch();
-            }
+            $this->getProcess()->dispatchSignals();
 
             if ($this->paused) {
-                $this->updateProcTitle('Paused');
+                $this->getProcess()->setTitle('Paused');
                 usleep($interval * 1000000);
 
                 continue;
@@ -319,7 +323,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                     $this->getLogger()->debug('Sleeping for {interval}', array('interval' => $interval));
                     if ($this->paused) {
                     } else {
-                        $this->updateProcTitle('Waiting for ' . implode(',', $this->queues()));
+                        $this->getProcess()->setTitle('Waiting for ' . implode(',', $this->queues()));
                     }
 
                     usleep($interval * 1000000);
@@ -337,10 +341,10 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
                 $this->redis->disconnect();
 
-                $this->childPid = Foreman::fork();
+                $child = $this->getProcess()->fork();
 
-                if (0 === $this->childPid) {
-                    // Forked and we're the child
+                if (null === $child) {
+                    // This is child process, it will perform the job and then die.
                     $this->eventDispatcher->dispatch(
                         new WorkerAfterForkEvent($this, $job)
                     );
@@ -348,21 +352,20 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                     $this->perform($job);
 
                     exit(0);
-                }
+                } else {
+                    // We're the parent, sit and wait.
+                    $this->childPid = $child->getPid();
 
-                if ($this->childPid > 0) {
-                    // Forked and we're the parent, sit and wait
-                    $status = 'Forked ' . $this->childPid . ' at ' . strftime('%F %T');
-                    $this->updateProcTitle($status);
-                    $this->getLogger()->debug($status);
+                    $title = 'Forked ' . $this->childPid . ' at ' . strftime('%F %T');
+                    $this->getProcess()->setTitle($title);
+                    $this->getLogger()->debug($title);
 
                     // Wait until the child process finishes before continuing
-                    pcntl_wait($waitStatus);
-                    $exitStatus = pcntl_wexitstatus($waitStatus);
+                    $child->wait();
 
-                    if ($exitStatus !== 0) {
+                    if (false === $child->isCleanExit()) {
                         $exception = new DirtyExitException(
-                            'Job exited with exit code ' . $exitStatus
+                            'Job exited with exit code ' . $child->getExitCode()
                         );
 
                         $this->handleFailedJob($job, $exception);
@@ -383,39 +386,13 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      */
     protected function startup()
     {
-        $this->updateProcTitle('Starting');
+        $this->getProcess()->setPidFromCurrentProcess();
+        $this->getProcess()->setTitle('Starting');
         $this->registerSigHandlers();
 
         $this->eventDispatcher->dispatch(
             new WorkerStartupEvent($this)
         );
-    }
-
-    /**
-     * Set process name
-     *
-     * If possible, sets the name of the currently running process, to indicate the current state of the worker.
-     *
-     * Only supported systems with the PECL proctitle module installed, or CLI SAPI > 5.5.
-     *
-     * @see http://pecl.php.net/package/proctitle
-     * @see http://php.net/manual/en/function.cli-set-process-title.php
-     *
-     * @param string $status The updated process title.
-     */
-    protected function updateProcTitle($status)
-    {
-        $processTitle = 'resque-' . Resque::VERSION . ': ' . $status;
-
-        if (function_exists('cli_set_process_title')) {
-            cli_set_process_title($processTitle);
-
-            return;
-        }
-
-        if (function_exists('setproctitle')) {
-            setproctitle($processTitle);
-        }
     }
 
     /**
@@ -464,7 +441,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     public function perform(JobInterface $job)
     {
         $status = 'Performing job ' . $job->getId();
-        $this->updateProcTitle($status);
+        $this->getProcess()->setTitle($status);
         $this->getLogger()->info($status);
 
         try {
