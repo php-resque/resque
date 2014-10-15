@@ -6,7 +6,7 @@ use Resque\Job\PerformantJobInterface;
 
 class Failure implements PerformantJobInterface
 {
-    public function perform()
+    public function perform($arguments)
     {
         throw new \Exception('Failure!');
     }

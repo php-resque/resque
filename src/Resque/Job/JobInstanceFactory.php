@@ -26,10 +26,6 @@ class JobInstanceFactory implements JobInstanceFactoryInterface
 
         $instance = new $class;
 
-        //$instance->job = $this;
-//        $this->instance->args = $this->getArguments();
-//        $this->instance->queue = $this->queue;
-
         return $instance;
     }
 }

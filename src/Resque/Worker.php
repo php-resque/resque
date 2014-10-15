@@ -457,7 +457,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                 new JobBeforePerformEvent($job, $jobInstance)
             );
 
-            $jobInstance->perform();
+            $jobInstance->perform($job->getArguments());
 
             $this->eventDispatcher->dispatch(
                 new JobAfterPerformEvent($job, $jobInstance)

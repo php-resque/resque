@@ -6,7 +6,7 @@ use Resque\Job\PerformantJobInterface;
 
 class PhpError implements PerformantJobInterface
 {
-    public function perform()
+    public function perform($arguments)
     {
         callToUndefinedFunction();
     }

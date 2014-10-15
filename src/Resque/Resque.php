@@ -40,7 +40,6 @@ class Resque
     {
         $queue = $this->createQueue($queueName);
         $job = new Job($jobClass, $arguments);
-
         $queue->push($job);
 
         return $job;
@@ -57,6 +56,4 @@ class Resque
 
         return $queue;
     }
-
-
 }

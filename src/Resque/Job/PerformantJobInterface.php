@@ -14,7 +14,9 @@ interface PerformantJobInterface
      *
      * This is how your task is invoked.
      *
+     * @param array $arguments The arguments passed in to the original enqueue call.
+     *
      * @return void
      */
-    public function perform();
+    public function perform($arguments);
 }

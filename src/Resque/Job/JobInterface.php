@@ -8,7 +8,6 @@ namespace Resque\Job;
 interface JobInterface
 {
     /**
-     *
      * @param string $id
      * @return $this
      */

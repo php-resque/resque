@@ -6,6 +6,7 @@ use Resque\Event\EventDispatcher;
 use Resque\Job;
 use Resque\QueueWildcard;
 use Resque\Queue;
+use Resque\Tests\Jobs\Simple;
 use Resque\Worker;
 
 class WorkerTest extends ResqueTestCase
@@ -106,6 +107,28 @@ class WorkerTest extends ResqueTestCase
 
         $worker = new Worker($queueOne);
         $this->assertNull($worker->reserve());
+    }
+
+    public function testWorkerPerformSendsCorrectArgumentsToJobInstance()
+    {
+        $worker = new Worker();
+
+        $args = array(
+            1,
+            array(
+                'foo' => 'test'
+            ),
+            'key' => 'baz',
+        );
+
+        $job = new Job('Resque\Tests\Jobs\Simple', $args);
+
+        $worker->perform($job);
+
+        $this->assertSame(
+            $args,
+            Simple::$lastPerformArguments
+        );
     }
 
     /**
