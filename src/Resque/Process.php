@@ -7,7 +7,7 @@ use Resque\Exception\ResqueRuntimeException;
 class Process
 {
     /**
-     * @var int Posix process id.
+     * @var int|null Posix process id.
      */
     protected $pid;
 
@@ -27,7 +27,7 @@ class Process
     }
 
     /**
-     * @return integer The current pid.
+     * @return integer|null The current pid, if set.
      */
     public function getPid()
     {
@@ -114,13 +114,34 @@ class Process
      */
     public function wait()
     {
-        if (!$this->pid) {
+        if (!$this->getPid()) {
             throw new ResqueRuntimeException(
                 'Cannot wait on a process with out a pid set'
             );
         }
 
         pcntl_waitpid($this->pid, $this->status);
+
+        return $this;
+    }
+
+    /**
+     * Attempt to kill the process
+     *
+     * @param int $signal The signal to send to the process
+     * @return $this
+     */
+    public function kill($signal = SIGKILL)
+    {
+        if (!$this->getPid()) {
+            throw new ResqueRuntimeException(
+                'Cannot kill a process with out a pid set'
+            );
+        }
+
+        // @todo Work out if I care to check the result, and if I did what to do about it... Exception?
+        posix_kill($this->getPid(), $signal);
+        $this->setPid(null);
 
         return $this;
     }

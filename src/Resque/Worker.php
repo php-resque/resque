@@ -48,6 +48,11 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     protected $process;
 
     /**
+     * @var Process|null The workers child process, if it currently has one.
+     */
+    protected $childProcess = null;
+
+    /**
      * @var LoggerInterface Logging object that implements the PSR-3 LoggerInterface
      */
     protected $logger;
@@ -76,11 +81,6 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      * @var JobInterface Current job being processed by this worker.
      */
     protected $currentJob = null;
-
-    /**
-     * @var int Process ID of child worker processes.
-     */
-    protected $childPid = null;
 
     /**
      * @var Event\EventDispatcher
@@ -255,6 +255,17 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     }
 
     /**
+     * @param Process $process
+     * @return $this
+     */
+    public function setProcess(Process $process)
+    {
+        $this->process = $process;
+
+        return $this;
+    }
+
+    /**
      * @return Process
      */
     public function getProcess()
@@ -269,17 +280,6 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     }
 
     /**
-     * @param Process $process
-     * @return $this
-     */
-    public function setProcess(Process $process)
-    {
-        $this->process = $process;
-
-        return $this;
-    }
-
-    /**
      * Work
      *
      * The primary loop for a worker which when called on an instance starts
@@ -288,9 +288,8 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      * Queues are checked every $interval (seconds) for new jobs.
      *
      * @param int $interval How often to check for new jobs across the queues. @todo remove, use setInterval or similar
-     * @param bool $blocking @todo remove, use setBlocking or similar, but this should be on the Queue.
      */
-    public function work($interval = 3, $blocking = false)
+    public function work($interval = 3)
     {
         $this->startup();
 
@@ -319,17 +318,6 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                     break;
                 }
 
-                if ($blocking === false) {
-                    // If no job was found, we sleep for $interval before continuing and checking again
-                    $this->getLogger()->debug('Sleeping for {interval}', array('interval' => $interval));
-                    if ($this->paused) {
-                    } else {
-                        $this->getProcess()->setTitle('Waiting for ' . implode(',', $this->queues()));
-                    }
-
-                    usleep($interval * 1000000);
-                }
-
                 continue;
             }
 
@@ -342,9 +330,9 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
                 $this->redis->disconnect();
 
-                $child = $this->getProcess()->fork();
+                $this->childProcess = $this->getProcess()->fork();
 
-                if (null === $child) {
+                if (null === $this->childProcess) {
                     // This is child process, it will perform the job and then die.
                     $this->eventDispatcher->dispatch(
                         new WorkerAfterForkEvent($this, $job)
@@ -355,25 +343,25 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                     exit(0);
                 } else {
                     // We're the parent, sit and wait.
-                    $this->childPid = $child->getPid();
 
-                    $title = 'Forked ' . $this->childPid . ' at ' . strftime('%F %T');
+                    $title = 'Forked ' . $this->childProcess->getPid() . ' at ' . strftime('%F %T');
                     $this->getProcess()->setTitle($title);
                     $this->getLogger()->debug($title);
 
                     // Wait until the child process finishes before continuing
-                    $child->wait();
+                    $this->childProcess->wait();
 
-                    if (false === $child->isCleanExit()) {
+                    if (false === $this->childProcess->isCleanExit()) {
                         $exception = new DirtyExitException(
-                            'Job exited with exit code ' . $child->getExitCode()
+                            'Job exited with exit code ' . $this->childProcess->getExitCode()
                         );
 
                         $this->handleFailedJob($job, $exception);
                     }
                 }
 
-                $this->childPid = null;
+                // Child should be dead now.
+                $this->childProcess = null;
             } else {
                 $this->perform($job);
             }
@@ -389,7 +377,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     {
         $this->getProcess()->setPidFromCurrentProcess();
         $this->getProcess()->setTitle('Starting');
-        $this->registerSigHandlers();
+        $this->registerSignalHandlers();
 
         $this->eventDispatcher->dispatch(
             new WorkerStartupEvent($this)
@@ -481,6 +469,12 @@ class Worker implements WorkerInterface, LoggerAwareInterface
         return true;
     }
 
+    /**
+     * Handle failed job
+     *
+     * @param JobInterface $job The job that failed.
+     * @param \Exception $exception The reason the job failed.
+     */
     protected function handleFailedJob(JobInterface $job, \Exception $exception)
     {
         $this->getLogger()->error(
@@ -524,7 +518,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     public function getId()
     {
         if (null === $this->id) {
-            $this->id = $this->hostname . ':' . getmypid() . ':' . implode(',', $this->queues());
+            $this->setId($this->hostname . ':' . getmypid() . ':' . implode(',', $this->queues()));
         }
 
         return $this->id;
@@ -548,13 +542,14 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      * QUIT: Shutdown after the current job finishes processing.
      * USR1: Kill the forked child immediately and continue processing jobs.
      */
-    private function registerSigHandlers()
+    private function registerSignalHandlers()
     {
         if (!function_exists('pcntl_signal')) {
             return;
         }
 
         declare(ticks = 100);
+
         pcntl_signal(SIGTERM, array($this, 'shutDownNow'));
         pcntl_signal(SIGINT, array($this, 'shutDownNow'));
         pcntl_signal(SIGQUIT, array($this, 'shutdown'));
@@ -569,7 +564,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      */
     public function pauseProcessing()
     {
-        $this->getLogger()->notice('USR2 received; pausing job processing');
+        $this->getLogger()->notice('SIGUSR2 received; pausing job processing');
         $this->paused = true;
     }
 
@@ -579,7 +574,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      */
     public function resumeProcessing()
     {
-        $this->getLogger()->notice('CONT received; resuming job processing');
+        $this->getLogger()->notice('SIGCONT received; resuming job processing');
         $this->paused = false;
     }
 
@@ -608,7 +603,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     public function shutdown()
     {
         $this->shutdown = true;
-        $this->getLogger()->notice('Shutting down');
+        $this->getLogger()->notice('Worker {worker} shutting down', array('worker' => $this));
     }
 
     /**
@@ -617,31 +612,13 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      */
     public function killChild()
     {
-        if (!$this->childPid) {
-            $this->getLogger()->debug('No child to kill.');
+        if (null === $this->childProcess || !$this->childProcess->getPid()) {
+            $this->getLogger()->debug('No child to kill for worker {worker}', array('worker' => $this));
+
             return;
         }
 
-        $this->getLogger()->debug(
-            'Killing child at {child}',
-            array('child' => $this->childPid)
-        );
-
-        if (exec('ps -o pid,state -p ' . $this->childPid, $output, $returnCode) && $returnCode != 1) {
-            $this->getLogger()->debug(
-                'Child {child} found, killing.',
-                array('child' => $this->childPid)
-            );
-            posix_kill($this->childPid, SIGKILL);
-            $this->childPid = null;
-        } else {
-            $this->getLogger()->warning(
-                'Child {child} not found, restarting.',
-                array('child' => $this->childPid)
-            );
-
-            $this->shutdown();
-        }
+        $this->childProcess->kill();
     }
 
     /**
