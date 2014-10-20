@@ -1,6 +1,6 @@
 <?php
 
-namespace Resque;
+namespace Resque\Queue;
 
 use Resque\Job\JobInterface;
 

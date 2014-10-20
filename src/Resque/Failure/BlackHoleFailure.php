@@ -4,14 +4,13 @@ namespace Resque\Failure;
 
 use Resque\Job\JobInterface;
 use Resque\WorkerInterface;
-use Resque\QueueInterface;
 
 /**
- * Null job failure handler
+ * Black hole job failure handler
  *
  * Does nothing.
  */
-class Null implements FailureInterface
+class BlackHoleFailure implements FailureInterface
 {
     public function save(JobInterface $job, \Exception $exception, WorkerInterface $worker)
     {

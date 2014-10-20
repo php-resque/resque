@@ -2,7 +2,7 @@
 
 namespace Resque\Job;
 
-use Resque\QueueInterface;
+use Resque\Queue\QueueInterface;
 
 /**
  * Queue aware job interface

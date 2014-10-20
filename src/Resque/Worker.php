@@ -15,19 +15,20 @@ use Resque\Event\JobPerformedEvent;
 use Resque\Event\WorkerAfterForkEvent;
 use Resque\Event\WorkerBeforeForkEvent;
 use Resque\Event\WorkerStartupEvent;
+use Resque\Exception\ResqueRuntimeException;
 use Resque\Failure\FailureInterface;
-use Resque\Failure\Null;
+use Resque\Failure\BlackHoleFailure;
 use Resque\Job\Exception\DirtyExitException;
 use Resque\Job\Exception\InvalidJobException;
-use Resque\Job\JobInstanceFactory;
 use Resque\Job\JobInstanceFactoryInterface;
+use Resque\Job\JobInstanceFactory;
 use Resque\Job\JobInterface;
 use Resque\Job\PerformantJobInterface;
 use Resque\Job\QueueAwareJobInterface;
 use Resque\Job\Status;
-use Resque\Statistic\StatsInterface;
-use Resque\Statistic\BlackHoleBackend as BlackHoleStats;
-use Resque\Exception\ResqueRuntimeException;
+use Resque\Queue\QueueInterface;
+use Resque\Statistic\StatisticInterface;
+use Resque\Statistic\BlackHoleStatistic;
 
 /**
  * Resque Worker
@@ -92,7 +93,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     protected $failureBackend;
 
     /**
-     * @var StatsInterface
+     * @var StatisticInterface
      */
     protected $statisticsBackend;
 
@@ -199,7 +200,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     public function getFailureBackend()
     {
         if (null === $this->failureBackend) {
-            $this->setFailureBackend(new Null());
+            $this->setFailureBackend(new BlackHoleFailure());
         }
 
         return $this->failureBackend;
@@ -208,10 +209,10 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     /**
      * Set statistic backend
      *
-     * @param StatsInterface $statisticsBackend
+     * @param StatisticInterface $statisticsBackend
      * @return $this
      */
-    public function setStatisticsBackend(StatsInterface $statisticsBackend)
+    public function setStatisticsBackend(StatisticInterface $statisticsBackend)
     {
         $this->statisticsBackend = $statisticsBackend;
 
@@ -219,12 +220,12 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     }
 
     /**
-     * @return StatsInterface
+     * @return StatisticInterface
      */
     public function getStatisticsBackend()
     {
         if (null === $this->statisticsBackend) {
-            $this->setStatisticsBackend(new BlackHoleStats());
+            $this->setStatisticsBackend(new BlackHoleStatistic());
         }
 
         return $this->statisticsBackend;

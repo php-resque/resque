@@ -5,7 +5,7 @@ namespace Resque\Statistic;
 /**
  * Stat interface
  */
-interface StatsInterface
+interface StatisticInterface
 {
     /**
      * Get the value of the supplied statistic counter for the specified statistic.

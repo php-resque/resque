@@ -7,8 +7,8 @@ use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Resque\Exception\ResqueRuntimeException;
-use Resque\Statistic\StatsInterface;
-use Resque\Statistic\BlackHoleBackend as BlackHoleStats;
+use Resque\Statistic\StatisticInterface;
+use Resque\Statistic\BlackHoleStatistic as BlackHoleStats;
 
 /**
  * Resque Foreman
@@ -33,7 +33,7 @@ class Foreman implements LoggerAwareInterface
     protected $redis;
 
     /**
-     * @var StatsInterface
+     * @var StatisticInterface
      */
     protected $statisticsBackend;
 
@@ -69,10 +69,10 @@ class Foreman implements LoggerAwareInterface
     /**
      * Set statistic backend
      *
-     * @param StatsInterface $statisticsBackend
+     * @param StatisticInterface $statisticsBackend
      * @return $this
      */
-    public function setStatisticsBackend(StatsInterface $statisticsBackend)
+    public function setStatisticsBackend(StatisticInterface $statisticsBackend)
     {
         $this->statisticsBackend = $statisticsBackend;
 
@@ -80,7 +80,7 @@ class Foreman implements LoggerAwareInterface
     }
 
     /**
-     * @return StatsInterface
+     * @return StatisticInterface
      */
     public function getStatisticsBackend()
     {

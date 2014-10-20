@@ -1,9 +1,10 @@
 <?php
 
-namespace Resque\Tests;
+namespace Resque\Tests\Queue;
 
 use Resque\Job;
 use Resque\Queue;
+use Resque\Tests\ResqueTestCase;
 
 class QueueTest extends ResqueTestCase
 {

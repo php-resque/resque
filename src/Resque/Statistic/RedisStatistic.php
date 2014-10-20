@@ -2,11 +2,23 @@
 
 namespace Resque\Statistic;
 
+use Predis\ClientInterface;
+
 /**
  * Default redis backend for storing failed jobs.
  */
-class BlackHoleBackend implements StatsInterface
+class RedisStatistic implements StatisticInterface
 {
+    /**
+     * @var ClientInterface A redis client.
+     */
+    protected $redis;
+
+    public function __construct(ClientInterface $redis)
+    {
+        $this->redis = $redis;
+    }
+
     /**
      * Get the value of the supplied statistic counter for the specified statistic.
      *
@@ -15,7 +27,7 @@ class BlackHoleBackend implements StatsInterface
      */
     public function get($stat)
     {
-        return null;
+        return (int)$this->redis->get('stat:' . $stat);
     }
 
     /**
@@ -27,7 +39,7 @@ class BlackHoleBackend implements StatsInterface
      */
     public function increment($stat, $by = 1)
     {
-        return true;
+        return (bool)$this->redis->incrby('stat:' . $stat, $by);
     }
 
     /**
@@ -39,7 +51,7 @@ class BlackHoleBackend implements StatsInterface
      */
     public function decrement($stat, $by = 1)
     {
-        return true;
+        return (bool)$this->redis->decrby('stat:' . $stat, $by);
     }
 
     /**
@@ -50,6 +62,6 @@ class BlackHoleBackend implements StatsInterface
      */
     public function clear($stat)
     {
-        return true;
+        return (bool)$this->redis->del('stat:' . $stat);
     }
 }

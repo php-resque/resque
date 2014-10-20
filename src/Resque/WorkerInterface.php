@@ -2,6 +2,8 @@
 
 namespace Resque;
 
+use Resque\Queue\QueueInterface;
+
 interface WorkerInterface
 {
     /**

@@ -4,7 +4,6 @@ namespace Resque\Failure;
 
 use Resque\Job\JobInterface;
 use Resque\WorkerInterface;
-use Resque\QueueInterface;
 
 /**
  * Resque failure backend interface

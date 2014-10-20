@@ -4,8 +4,8 @@ namespace Resque\Tests;
 
 use Resque\Event\EventDispatcher;
 use Resque\Job;
-use Resque\QueueWildcard;
 use Resque\Queue;
+use Resque\Queue\WildcardQueue;
 use Resque\Tests\Jobs\Simple;
 use Resque\Worker;
 
@@ -81,7 +81,7 @@ class WorkerTest extends ResqueTestCase
         $queue = new Queue('notastar');
         $queue->setRedisBackend($this->redis);
 
-        $wildcardQueue = new QueueWildcard();
+        $wildcardQueue = new WildcardQueue();
         $wildcardQueue->setRedisBackend($this->redis);
 
         $worker = new Worker(

@@ -3,6 +3,7 @@
 namespace Resque;
 
 use Predis\ClientInterface;
+use Resque\Queue\QueueInterface;
 
 /**
  * Resque
@@ -38,7 +39,7 @@ class Resque
      */
     public function enqueue($queueName, $jobClass, $arguments = array())
     {
-        $queue = $this->createQueue($queueName);
+        $queue = $this->getQueue($queueName);
         $job = new Job($jobClass, $arguments);
         $queue->push($job);
 
@@ -46,10 +47,14 @@ class Resque
     }
 
     /**
-     * @param $queueName
-     * @return Queue
+     * Get queue
+     *
+     * Creates a QueueInterface for the given queue name.
+     *
+     * @param string $queueName
+     * @return QueueInterface
      */
-    public function createQueue($queueName)
+    public function getQueue($queueName)
     {
         $queue = new Queue($queueName);
         $queue->setRedisBackend($this->redis);

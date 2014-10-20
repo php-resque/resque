@@ -5,6 +5,7 @@ namespace Resque;
 use Resque\Job\FilterAwareJobInterface;
 use Resque\Job\JobInterface;
 use Resque\Job\QueueAwareJobInterface;
+use Resque\Queue\QueueInterface;
 
 /**
  * Resque Job

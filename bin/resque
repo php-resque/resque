@@ -1,9 +1,9 @@
 #!/usr/bin/env php
 <?php
 
-// Find and initialize Composer
 use Psr\Log\NullLogger;
 
+// Find and initialize Composer
 $files = array(
     __DIR__ . '/../../vendor/autoload.php',
     __DIR__ . '/../../../autoload.php',
@@ -90,7 +90,7 @@ $queues = array();
 $configQueues = explode(',', $QUEUE);
 
 if (in_array('*', $configQueues)) {
-    $wildcard = new \Resque\QueueWildcard();
+    $wildcard = new \Resque\Queue\WildcardQueue();
     $wildcard->setRedisBackend($redis);
     $queues[] = $wildcard;
 } else {
@@ -103,13 +103,14 @@ if (in_array('*', $configQueues)) {
     unset($configQueue, $q);
 }
 
-$failureBackend = new \Resque\Failure\Redis($redis);
-$statisticBackend = new \Resque\Statistic\RedisBackend($redis);
+$failureBackend = new \Resque\Failure\RedisFailure($redis);
+$statisticBackend = new \Resque\Statistic\RedisStatistic($redis);
 
 $foreman = new \Resque\Foreman();
-$foreman->setRedisBackend($redis);
-$foreman->setLogger($logger);
-$foreman->setStatisticsBackend($statisticBackend);
+$foreman
+    ->setRedisBackend($redis)
+    ->setStatisticsBackend($statisticBackend)
+    ->setLogger($logger);
 
 $workers = array();
 for ($i = 0; $i < $count; ++$i) {

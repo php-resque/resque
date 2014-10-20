@@ -6,7 +6,7 @@ use Resque\Foreman;
 use Resque\Job;
 use Resque\Queue;
 use Resque\Worker;
-use Resque\Statistic\RedisBackend;
+use Resque\Statistic\RedisStatistic;
 
 class ForemanTest extends ResqueTestCase
 {
@@ -176,7 +176,7 @@ class ForemanTest extends ResqueTestCase
 
     public function testWorkerFailsUncompletedJobsOnDeregister()
     {
-        $stats = new RedisBackend($this->redis);
+        $stats = new RedisStatistic($this->redis);
         $foreman = new Foreman();
         $foreman->setRedisBackend($this->redis);
 
@@ -196,7 +196,7 @@ class ForemanTest extends ResqueTestCase
 
     public function testForemanErasesWorkerStats()
     {
-        $stats = new RedisBackend($this->redis);
+        $stats = new RedisStatistic($this->redis);
 
         $foreman = new Foreman();
         $foreman->setRedisBackend($this->redis);

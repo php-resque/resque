@@ -1,15 +1,16 @@
 <?php
 
-namespace Resque\Tests;
+namespace Resque\Tests\Queue;
 
 use Resque\Job;
 use Resque\Queue;
-use Resque\QueueWildcard;
+use Resque\Queue\WildcardQueue;
+use Resque\Tests\ResqueTestCase;
 
-class QueueWildcardTest extends ResqueTestCase
+class WildcardQueueTest extends ResqueTestCase
 {
     /**
-     * @var QueueWildcard
+     * @var \Resque\Queue\WildcardQueue
      */
     protected $wildcard;
 
@@ -17,7 +18,7 @@ class QueueWildcardTest extends ResqueTestCase
     {
         parent::setUp();
 
-        $this->wildcard = new QueueWildcard();
+        $this->wildcard = new WildcardQueue();
         $this->wildcard->setRedisBackend($this->redis);
     }
 
@@ -61,7 +62,7 @@ class QueueWildcardTest extends ResqueTestCase
 
     public function testPrefixOnlyPopsFromMatchingQueues()
     {
-        $this->wildcard = new QueueWildcard('foo');
+        $this->wildcard = new WildcardQueue('foo');
         $this->wildcard->setRedisBackend($this->redis);
 
         $this->assertSame('foo*', $this->wildcard->getName());

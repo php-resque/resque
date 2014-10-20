@@ -3,16 +3,16 @@
 namespace Resque\Tests\Failure;
 
 use Resque\Tests\ResqueTestCase;
-use Resque\Failure\Redis;
+use Resque\Failure\RedisFailure;
 use Resque\Job;
 use Resque\Queue;
 use Resque\Worker;
 
-class RedisTest extends ResqueTestCase
+class RedisFailureTest extends ResqueTestCase
 {
     public function testCanSave()
     {
-        $backend = new Redis($this->redis);
+        $backend = new RedisFailure($this->redis);
 
         $this->assertEquals(0, $backend->count());
 

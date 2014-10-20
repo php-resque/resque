@@ -5,13 +5,13 @@ namespace Resque\Failure;
 use Predis\ClientInterface;
 use Resque\Job\JobInterface;
 use Resque\Job\QueueAwareJobInterface;
-use Resque\QueueInterface;
+use Resque\Queue\QueueInterface;
 use Resque\WorkerInterface;
 
 /**
  * Default redis backend for storing failed jobs.
  */
-class Redis implements FailureInterface
+class RedisFailure implements FailureInterface
 {
     /**
      * @var ClientInterface A redis client.

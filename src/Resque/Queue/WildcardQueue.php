@@ -1,8 +1,9 @@
 <?php
 
-namespace Resque;
+namespace Resque\Queue;
 
 use Resque\Job\JobInterface;
+use Resque\Queue;
 
 /**
  * Resque wildcard queue
@@ -11,7 +12,7 @@ use Resque\Job\JobInterface;
  * can be used, useful if you use a single redis instance that multiple projects talk too and you give projects queue
  * prefixes.
  */
-class QueueWildcard extends Queue
+class WildcardQueue extends Queue
 {
     /**
      * @var null

@@ -3,12 +3,12 @@
 namespace Resque\Tests\Statistic;
 
 use Resque\Tests\ResqueTestCase;
-use Resque\Statistic\RedisBackend;
+use Resque\Statistic\RedisStatistic;
 
-class RedisBackendTest extends ResqueTestCase
+class RedisStatisticTest extends ResqueTestCase
 {
     /**
-     * @var RedisBackend
+     * @var RedisStatistic
      */
     protected $stat;
 
@@ -16,7 +16,7 @@ class RedisBackendTest extends ResqueTestCase
     {
         parent::setUp();
 
-        $this->stat = new RedisBackend($this->redis);
+        $this->stat = new RedisStatistic($this->redis);
     }
 
     public function testStatCanBeIncremented()

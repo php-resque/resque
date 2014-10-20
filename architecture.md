@@ -54,7 +54,7 @@ Examples:
         // or
         $resque->push($queue, $job); // internally just calls $queue->push($job);
         // or
-        $resque->push('foo', $job); // internally just calls, $resque->createQueue('foo'), $queue->push($job);
+        $resque->push('foo', $job); // internally just calls, $resque->getQueue('foo'), $queue->push($job);
 
 ### The Job
 

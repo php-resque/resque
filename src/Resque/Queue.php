@@ -3,9 +3,10 @@
 namespace Resque;
 
 use Predis\ClientInterface;
-use Resque\Job\JobInterface;
 use Resque\Job\FilterAwareJobInterface;
+use Resque\Job\JobInterface;
 use Resque\Job\QueueAwareJobInterface;
+use Resque\Queue\QueueInterface;
 
 /**
  * Resque Queue
