@@ -31,7 +31,7 @@ class RedisFailure implements FailureInterface
             'failed',
             json_encode(
                 array(
-                    'failed_at' => strftime('%a %b %d %H:%M:%S %Z %Y'),
+                    'failed_at' => date('c'),
                     'payload' => $job,
                     'exception' => get_class($exception),
                     'error' => $exception->getMessage(),

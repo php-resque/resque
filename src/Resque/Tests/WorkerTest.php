@@ -308,15 +308,16 @@ class WorkerTest extends ResqueTestCase
 
     public function testPausedWorkerDoesNotPickUpJobs()
     {
-        return self::markTestSkipped();
+        $queue = new Queue('jobs');
+        $queue->setRedisBackend($this->redis);
+        $queue->push(new Job('Resque\Tests\Jobs\Simple'));
 
-        $worker = new Worker('*');
-        $worker->setLogger(new Resque_Log());
+        $worker = new Worker($queue);
         $worker->pauseProcessing();
-        Resque::enqueue('jobs', 'Test_Job');
+
         $worker->work(0);
-        $worker->work(0);
-        $this->assertEquals(0, Resque_Stat::get('processed'));
+
+        $this->assertEquals(1, $queue->count());
     }
 
     public function testResumedWorkerPicksUpJobs()
@@ -369,31 +370,6 @@ class WorkerTest extends ResqueTestCase
         $this->assertEquals($payload, $job['payload']);
     }
 
-    public function testBlockingListPop()
-    {
-        return self::markTestSkipped();
-
-        $worker = new Worker('jobs');
-        $worker->setLogger(new Resque_Log());
-        $worker->registerWorker();
-
-        Resque::enqueue('jobs', 'Test_Job_1');
-        Resque::enqueue('jobs', 'Test_Job_2');
-
-        $i = 1;
-        while ($job = $worker->reserve(true, 1)) {
-            $this->assertEquals('Test_Job_' . $i, $job->payload['class']);
-
-            if ($i == 2) {
-                break;
-            }
-
-            $i++;
-        }
-
-        $this->assertEquals(2, $i);
-    }
-
     public function testForkingCanBeDisabled()
     {
         $job = new Job('Resque\Tests\Jobs\Simple');
@@ -410,7 +386,7 @@ class WorkerTest extends ResqueTestCase
         $worker->setRedisBackend($this->redis);
         $worker->setForkOnPerform(false);
 
-        $worker->work(0); // This test fails if the worker forks, as perform is not marked as called in parent thread
+        $worker->work(0); // This test fails if the worker forks, as perform is not marked as called in the parent
     }
 
     /**

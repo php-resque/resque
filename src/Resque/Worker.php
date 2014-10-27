@@ -305,6 +305,11 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                 $this->getProcess()->setTitle('Paused');
                 usleep($interval * 1000000);
 
+                if ($interval == 0) {
+
+                    break;
+                }
+
                 continue;
             }
 
@@ -344,7 +349,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                 } else {
                     // We're the parent, sit and wait.
 
-                    $title = 'Forked ' . $this->childProcess->getPid() . ' at ' . strftime('%F %T');
+                    $title = 'Forked ' . $this->childProcess->getPid() . ' at ' . date('c');
                     $this->getProcess()->setTitle($title);
                     $this->getLogger()->debug($title);
 
@@ -662,7 +667,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
         $payload = json_encode(
             array(
                 'queue' => ($job instanceof QueueAwareJobInterface) ? $job->getOriginQueue() : null,
-                'run_at' => strftime('%a %b %d %H:%M:%S %Z %Y'),
+                'run_at' => date('c'),
                 'payload' => $job->jsonSerialize(),
             )
         );

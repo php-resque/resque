@@ -38,24 +38,6 @@ class JobTest extends ResqueTestCase
         $this->assertNotNull($clone->getId());
     }
 
-    public function testFailedJobExceptionsAreCaught()
-    {
-        return self::markTestSkipped();
-
-        $payload = array(
-            'class' => 'Failing_Job',
-            'args' => null
-        );
-        $job = new Resque_Job('jobs', $payload);
-        $job->worker = $this->worker;
-
-        $this->worker->perform($job);
-
-        $this->assertEquals(1, Resque_Stat::get('failed'));
-        $this->assertEquals(1, Resque_Stat::get('failed:' . $this->worker));
-    }
-
-
     /**
      * @dataProvider dataProviderMatchFilter
      */

@@ -1,6 +1,8 @@
 <?php
 
-namespace Resque;
+namespace Resque\Queue;
+
+use Resque\Queue;
 
 /**
  * Resque Blocking Queue
@@ -10,7 +12,7 @@ namespace Resque;
  * @todo this is really just to hold blpop usage until I decided how it should be a part of normal queues.
  *       it could be like wildcard, but takes a bunch of queues?
  */
-class QueueBlocking extends Queue
+class BlockingQueue extends Queue
 {
     /**
      * Pop an item off the end of the specified queues, using blocking list pop,

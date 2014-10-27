@@ -167,7 +167,7 @@ class Foreman implements LoggerAwareInterface
         $this->registeredWorkers[$id] = $worker;
 
         $this->redis->sadd('workers', $id);
-        $this->redis->set('worker:' . $id . ':started', strftime('%a %b %d %H:%M:%S %Z %Y'));
+        $this->redis->set('worker:' . $id . ':started', date('c'));
 
         return $this;
     }
