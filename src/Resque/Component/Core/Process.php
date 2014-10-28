@@ -1,8 +1,9 @@
 <?php
 
-namespace Resque;
+namespace Resque\Component\Core;
 
 use Resque\Exception\ResqueRuntimeException;
+use Resque\Resque;
 
 class Process
 {

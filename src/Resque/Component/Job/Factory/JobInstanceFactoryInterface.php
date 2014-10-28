@@ -1,12 +1,11 @@
 <?php
 
-namespace Resque\Job;
+namespace Resque\Component\Job\Factory;
 
-use Resque\Job\JobInterface;
+use Resque\Component\Job\Model\JobInterface;
+use Resque\Component\Job\PerformantJobInterface;
+use Resque\Job\Exception;
 
-/**
- *
- */
 interface JobInstanceFactoryInterface
 {
     /**
@@ -15,7 +14,7 @@ interface JobInstanceFactoryInterface
      * @throws Exception\JobNotFoundException When the job class/service could not be found.
      *
      * @param JobInterface $job
-     * @return PerformantJobInterface The instance of the Job that will perform.
+     * @return \Resque\Component\Job\PerformantJobInterface The actual class/service that will perform.
      */
     public function createJob(JobInterface $job);
 }

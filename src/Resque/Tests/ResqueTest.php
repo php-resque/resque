@@ -11,7 +11,7 @@ class ResqueTest extends ResqueTestCase
         $resque = new Resque($this->redis);
         $job = $resque->enqueue('foo', 'Resque\Tests\Jobs\Test');
 
-        $this->assertInstanceOf('Resque\Job\JobInterface', $job);
+        $this->assertInstanceOf('Resque\Component\Job\Model\JobInterface', $job);
         $this->assertNotNull($job->getId());
     }
 }

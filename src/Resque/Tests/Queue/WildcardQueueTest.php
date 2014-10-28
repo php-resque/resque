@@ -18,8 +18,7 @@ class WildcardQueueTest extends ResqueTestCase
     {
         parent::setUp();
 
-        $this->wildcard = new WildcardQueue();
-        $this->wildcard->setRedisBackend($this->redis);
+        $this->wildcard = new WildcardQueue($this->redis);
     }
 
     /**
@@ -47,12 +46,10 @@ class WildcardQueueTest extends ResqueTestCase
 
     public function testPopsFromAllQueues()
     {
-        $queueBaz = new Queue('baz');
-        $queueBaz->setRedisBackend($this->redis);
+        $queueBaz = new Queue('baz', $this->redis);
         $queueBaz->push(new Job('Foo'));
 
-        $queueFoo = new Queue('foo');
-        $queueFoo->setRedisBackend($this->redis);
+        $queueFoo = new Queue('foo', $this->redis);
         $queueFoo->push(new Job('Foo'));
 
         $this->assertNotNull($this->wildcard->pop());
@@ -62,18 +59,15 @@ class WildcardQueueTest extends ResqueTestCase
 
     public function testPrefixOnlyPopsFromMatchingQueues()
     {
-        $this->wildcard = new WildcardQueue('foo');
-        $this->wildcard->setRedisBackend($this->redis);
+        $this->wildcard = new WildcardQueue($this->redis, 'foo');
 
         $this->assertSame('foo*', $this->wildcard->getName());
 
-        $queueBaz = new Queue('baz');
-        $queueBaz->setRedisBackend($this->redis);
+        $queueBaz = new Queue('baz', $this->redis);
         $jobBaz = new Job('Baz');
         $queueBaz->push($jobBaz);
 
-        $queueFoo = new Queue('foo');
-        $queueFoo->setRedisBackend($this->redis);
+        $queueFoo = new Queue('foo', $this->redis);
         $jobFoo = new Job('Foo');
         $queueFoo->push($jobFoo);
 

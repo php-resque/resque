@@ -20,7 +20,7 @@ class ForemanTest extends ResqueTestCase
         parent::setUp();
 
         $this->foreman = new Foreman();
-        $this->foreman->setRedisBackend($this->redis);
+        $this->foreman->setRedisClient($this->redis);
     }
 
     public function testForemanRegistersWorkerInRedisSet()
@@ -178,10 +178,10 @@ class ForemanTest extends ResqueTestCase
     {
         $stats = new RedisStatistic($this->redis);
         $foreman = new Foreman();
-        $foreman->setRedisBackend($this->redis);
+        $foreman->setRedisClient($this->redis);
 
         $worker = new Worker();
-        $worker->setRedisBackend($this->redis);
+        $worker->setRedisClient($this->redis);
         $worker->setStatisticsBackend($stats);
 
         $job = new Job('Foo');
@@ -199,7 +199,7 @@ class ForemanTest extends ResqueTestCase
         $stats = new RedisStatistic($this->redis);
 
         $foreman = new Foreman();
-        $foreman->setRedisBackend($this->redis);
+        $foreman->setRedisClient($this->redis);
         $foreman->setStatisticsBackend($stats);
 
         $worker = new Worker();

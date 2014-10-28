@@ -21,9 +21,9 @@ class WorkerTest extends ResqueTestCase
     public function testWorkerCanWorkOverMultipleQueues()
     {
         $queueOne = new Queue('queue1');
-        $queueOne->setRedisBackend($this->redis);
+        $queueOne->setRedisClient($this->redis);
         $queueTwo = new Queue('queue2');
-        $queueTwo->setRedisBackend($this->redis);
+        $queueTwo->setRedisClient($this->redis);
 
         $worker = new Worker(
             array(
@@ -48,11 +48,11 @@ class WorkerTest extends ResqueTestCase
     public function testWorkerWorksQueuesInSpecifiedOrder()
     {
         $queueHigh = new Queue('high');
-        $queueHigh->setRedisBackend($this->redis);
+        $queueHigh->setRedisClient($this->redis);
         $queueMedium = new Queue('medium');
-        $queueMedium->setRedisBackend($this->redis);
+        $queueMedium->setRedisClient($this->redis);
         $queueLow = new Queue('low');
-        $queueLow->setRedisBackend($this->redis);
+        $queueLow->setRedisClient($this->redis);
 
         $worker = new Worker(
             array(
@@ -79,10 +79,9 @@ class WorkerTest extends ResqueTestCase
     public function testWildcardQueueWorkerWorksAllQueues()
     {
         $queue = new Queue('notastar');
-        $queue->setRedisBackend($this->redis);
+        $queue->setRedisClient($this->redis);
 
-        $wildcardQueue = new WildcardQueue();
-        $wildcardQueue->setRedisBackend($this->redis);
+        $wildcardQueue = new WildcardQueue($this->redis);
 
         $worker = new Worker(
             $wildcardQueue
@@ -99,9 +98,9 @@ class WorkerTest extends ResqueTestCase
     public function testWorkerDoesNotWorkOnUnknownQueues()
     {
         $queueOne = new Queue('queue1');
-        $queueOne->setRedisBackend($this->redis);
+        $queueOne->setRedisClient($this->redis);
         $queueTwo = new Queue('queue2');
-        $queueTwo->setRedisBackend($this->redis);
+        $queueTwo->setRedisClient($this->redis);
 
         $queueTwo->push(new Job('Test_Job'));
 
@@ -240,11 +239,11 @@ class WorkerTest extends ResqueTestCase
         $job = new Job('Resque\Tests\Jobs\Simple');
 
         $queue = new Queue('baz');
-        $queue->setRedisBackend($this->redis);
+        $queue->setRedisClient($this->redis);
         $queue->push($job);
 
         $worker = new Worker($queue, null, $eventDispatcher);
-        $worker->setRedisBackend($this->redis);
+        $worker->setRedisClient($this->redis);
 
         $worker->work(0);
 
@@ -254,7 +253,7 @@ class WorkerTest extends ResqueTestCase
     public function testWorkerTracksCurrentJobCorrectly()
     {
         $queue = new Queue('jobs');
-        $queue->setRedisBackend($this->redis);
+        $queue->setRedisClient($this->redis);
 
         $job = new Job('Resque\Tests\Jobs\Simple');
         $queue->push($job);
@@ -268,7 +267,7 @@ class WorkerTest extends ResqueTestCase
             ->expects($this->once())
             ->method('workComplete')
             ->will($this->returnValue(null));
-        $mockWorker->setRedisBackend($this->redis);
+        $mockWorker->setRedisClient($this->redis);
         $mockWorker->work(0);
 
         $currentJob = $mockWorker->getCurrentJob();
@@ -277,13 +276,14 @@ class WorkerTest extends ResqueTestCase
         $this->assertEquals($job->getId(), $currentJob->getId());
         $this->assertTrue($this->redis->exists('worker:' . $mockWorker));
         $redisCurrentJob = json_decode($this->redis->get('worker:' . $mockWorker), true);
-        $this->assertEquals($job->getId(), $redisCurrentJob['payload']['id']);
+        $payload = json_decode($redisCurrentJob['payload'], true);
+        $this->assertEquals($job->getId(), $payload['id']);
     }
 
     public function testWorkerRecoversFromChildDirtyExit()
     {
         $queue = new Queue('jobs');
-        $queue->setRedisBackend($this->redis);
+        $queue->setRedisClient($this->redis);
 
         $job = new Job('Resque\Tests\Jobs\DirtyExit');
         $queue->push($job);
@@ -300,7 +300,7 @@ class WorkerTest extends ResqueTestCase
         );
 
         $worker = new Worker($queue, null, $eventDispatcher);
-        $worker->setRedisBackend($this->redis);
+        $worker->setRedisClient($this->redis);
         $worker->work(0);
 
         $this->assertTrue($callbackTriggered);
@@ -309,7 +309,7 @@ class WorkerTest extends ResqueTestCase
     public function testPausedWorkerDoesNotPickUpJobs()
     {
         $queue = new Queue('jobs');
-        $queue->setRedisBackend($this->redis);
+        $queue->setRedisClient($this->redis);
         $queue->push(new Job('Resque\Tests\Jobs\Simple'));
 
         $worker = new Worker($queue);
@@ -383,7 +383,7 @@ class WorkerTest extends ResqueTestCase
         $worker->expects($this->at(1))->method('perform')->will($this->returnValue(null));
         $worker->expects($this->at(2))->method('reserve')->will($this->returnValue(null));
 
-        $worker->setRedisBackend($this->redis);
+        $worker->setRedisClient($this->redis);
         $worker->setForkOnPerform(false);
 
         $worker->work(0); // This test fails if the worker forks, as perform is not marked as called in the parent
@@ -395,7 +395,7 @@ class WorkerTest extends ResqueTestCase
     public function testCannotSetCurrentJobIfNotNull()
     {
         $worker = new Worker();
-        $worker->setRedisBackend($this->redis);
+        $worker->setRedisClient($this->redis);
 
         $worker->setCurrentJob(new Job());
         $worker->setCurrentJob(new Job());

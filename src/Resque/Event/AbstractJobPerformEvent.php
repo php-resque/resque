@@ -2,8 +2,8 @@
 
 namespace Resque\Event;
 
-use Resque\Job\JobInterface;
-use Resque\Job\PerformantJobInterface;
+use Resque\Component\Job\Model\JobInterface;
+use Resque\Component\Job\PerformantJobInterface;
 
 /**
  * AbstractJobPerformEvent
@@ -32,7 +32,7 @@ abstract class AbstractJobPerformEvent
     }
 
     /**
-     * @return PerformantJobInterface
+     * @return \Resque\Component\Job\PerformantJobInterface
      */
     public function getInstance()
     {
@@ -40,7 +40,7 @@ abstract class AbstractJobPerformEvent
     }
 
     /**
-     * @return JobInterface
+     * @return \Resque\Component\Job\Model\JobInterface
      */
     public function getJob()
     {

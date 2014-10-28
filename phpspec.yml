@@ -1,0 +1,3 @@
+suites:
+    Core: { namespace: Resque, spec_path: src/Resque/Component/Core }
+    Job:  { namespace: Resque, spec_path: src/Resque/Component/Job }

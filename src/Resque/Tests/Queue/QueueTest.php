@@ -18,7 +18,7 @@ class QueueTest extends ResqueTestCase
         parent::setUp();
 
         $this->queue = new Queue('jobs');
-        $this->queue->setRedisBackend($this->redis);
+        $this->queue->setRedisClient($this->redis);
     }
 
     public function testNameIsSet()
@@ -79,15 +79,15 @@ class QueueTest extends ResqueTestCase
         $this->assertCount(0, $queues);
 
         $foo = new Queue('foo');
-        $foo->setRedisBackend($this->redis);
+        $foo->setRedisClient($this->redis);
         $foo->register();
 
         $queues = $this->queue->all();
         $this->assertCount(1, $queues);
-        $this->assertEquals('foo', (string)$queues['foo']);
+        $this->assertEquals('foo', $queues['foo']);
 
         $bar = new Queue('bar');
-        $bar->setRedisBackend($this->redis);
+        $bar->setRedisClient($this->redis);
         $bar->register();
 
         $queues = $this->queue->all();

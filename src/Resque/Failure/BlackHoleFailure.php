@@ -2,8 +2,8 @@
 
 namespace Resque\Failure;
 
-use Resque\Job\JobInterface;
-use Resque\WorkerInterface;
+use Resque\Component\Job\Model\JobInterface;
+use Resque\Component\Worker\Model\WorkerInterface;
 
 /**
  * Black hole job failure handler

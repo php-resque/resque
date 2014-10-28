@@ -3,7 +3,8 @@
 namespace Resque;
 
 use Predis\ClientInterface;
-use Resque\Queue\QueueInterface;
+use Resque\Component\Job\Model\JobInterface;
+use Resque\Component\Queue\Model\QueueInterface;
 
 /**
  * Resque
@@ -35,7 +36,7 @@ class Resque
      * @param string $queueName The name of the queue the job should go in.
      * @param string $jobClass The FQCN of your targeted job class.
      * @param array $arguments
-     * @return Job\JobInterface The job instance that was created if enqueue was successful, exception otherwise.
+     * @return JobInterface The job instance that was created if enqueue was successful, exception otherwise.
      */
     public function enqueue($queueName, $jobClass, $arguments = array())
     {
@@ -56,9 +57,16 @@ class Resque
      */
     public function getQueue($queueName)
     {
-        $queue = new Queue($queueName);
-        $queue->setRedisBackend($this->redis);
+        $queue = new Queue($queueName, $this->redis);
 
         return $queue;
+    }
+
+    /**
+     * @param JobInterface $job
+     */
+    public function track(JobInterface $job)
+    {
+
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Resque\Tests\Jobs;
 
-use Resque\Job\PerformantJobInterface;
+use Resque\Component\Job\PerformantJobInterface;
 
 class DirtyExit implements PerformantJobInterface
 {

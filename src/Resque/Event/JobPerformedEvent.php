@@ -2,7 +2,7 @@
 
 namespace Resque\Event;
 
-use Resque\Job\JobInterface;
+use Resque\Component\Job\Model\JobInterface;
 
 class JobPerformedEvent implements EventInterface
 {
@@ -22,7 +22,7 @@ class JobPerformedEvent implements EventInterface
     }
 
     /**
-     * @return JobInterface
+     * @return \Resque\Component\Job\JobInterface
      */
     public function getJob()
     {

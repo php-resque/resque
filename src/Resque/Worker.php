@@ -6,6 +6,15 @@ use Predis\ClientInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Resque\Component\Core\Process;
+use Resque\Component\Job\Factory\JobInstanceFactory;
+use Resque\Component\Job\Factory\JobInstanceFactoryInterface;
+use Resque\Component\Job\Model\JobInterface;
+use Resque\Component\Job\Model\TrackableJobInterface;
+use Resque\Component\Job\PerformantJobInterface;
+use Resque\Component\Queue\Model\OriginQueueAwareInterface;
+use Resque\Component\Queue\Model\QueueInterface;
+use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Event\EventDispatcher;
 use Resque\Event\EventDispatcherInterface;
 use Resque\Event\JobAfterPerformEvent;
@@ -16,19 +25,13 @@ use Resque\Event\WorkerAfterForkEvent;
 use Resque\Event\WorkerBeforeForkEvent;
 use Resque\Event\WorkerStartupEvent;
 use Resque\Exception\ResqueRuntimeException;
-use Resque\Failure\FailureInterface;
 use Resque\Failure\BlackHoleFailure;
+use Resque\Failure\FailureInterface;
 use Resque\Job\Exception\DirtyExitException;
 use Resque\Job\Exception\InvalidJobException;
-use Resque\Job\JobInstanceFactoryInterface;
-use Resque\Job\JobInstanceFactory;
-use Resque\Job\JobInterface;
-use Resque\Job\PerformantJobInterface;
-use Resque\Job\QueueAwareJobInterface;
 use Resque\Job\Status;
-use Resque\Queue\QueueInterface;
-use Resque\Statistic\StatisticInterface;
 use Resque\Statistic\BlackHoleStatistic;
+use Resque\Statistic\StatisticInterface;
 
 /**
  * Resque Worker
@@ -78,7 +81,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     protected $paused = false;
 
     /**
-     * @var JobInterface Current job being processed by this worker.
+     * @var \Resque\Component\Job\Model\JobInterface Current job being processed by this worker.
      */
     protected $currentJob = null;
 
@@ -114,7 +117,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      * the priority that they should be checked for jobs (first come, first served)
      *
      * @param QueueInterface|QueueInterface[] $queues A QueueInterface, or an array with multiple.
-     * @param JobInstanceFactoryInterface|null $jobFactory
+     * @param \Resque\Component\Job\Factory\JobInstanceFactoryInterface|null $jobFactory
      * @param EventDispatcherInterface|null $eventDispatcher
      */
     public function __construct(
@@ -148,7 +151,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      */
     public function addQueue(QueueInterface $queue)
     {
-        $this->queues[(string)$queue] = $queue;
+        $this->queues[$queue->getName()] = $queue;
 
         return $this;
     }
@@ -176,7 +179,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      * @param ClientInterface $redis
      * @return $this
      */
-    public function setRedisBackend(ClientInterface $redis)
+    public function setRedisClient(ClientInterface $redis)
     {
         $this->redis = $redis;
 
@@ -392,7 +395,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     /**
      * @todo The name reserve doesn't sit well, all it's doing is asking queues for jobs. Change it.
      *
-     * @return JobInterface|null Instance of JobInterface if a job is found, null if not.
+     * @return \Resque\Component\Job\Model\JobInterface|null Instance of JobInterface if a job is found, null if not.
      */
     public function reserve()
     {
@@ -414,13 +417,16 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     /**
      * Tell Redis which job we're currently working on.
      *
-     * @param JobInterface $job The job we're working on.
+     * @param \Resque\Component\Job\Model\JobInterface $job The job we're working on.
      */
     public function workingOn(JobInterface $job)
     {
         $this->getLogger()->notice('Starting work on {job}', array('job' => $job));
 
-        $job->updateStatus(Status::STATUS_RUNNING);
+        if ($job instanceof TrackableJobInterface) {
+            $job->setState(JobInterface::STATE_PERFORMING);
+        }
+
         $this->setCurrentJob($job);
     }
 
@@ -429,7 +435,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      *
      * @throws InvalidJobException if the given job cannot actually be asked to perform.
      *
-     * @param JobInterface $job The job to be processed.
+     * @param \Resque\Component\Job\Model\JobInterface $job The job to be processed.
      * @return bool If job performed or not.
      */
     public function perform(JobInterface $job)
@@ -477,7 +483,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     /**
      * Handle failed job
      *
-     * @param JobInterface $job The job that failed.
+     * @param \Resque\Component\Job\Model\JobInterface $job The job that failed.
      * @param \Exception $exception The reason the job failed.
      */
     protected function handleFailedJob(JobInterface $job, \Exception $exception)
@@ -505,7 +511,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      * Notify Redis that we've finished working on a job, clearing the working
      * state and incrementing the job stats.
      *
-     * @param JobInterface $job
+     * @param \Resque\Component\Job\Model\JobInterface $job
      */
     protected function workComplete(JobInterface $job)
     {
@@ -641,7 +647,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      *
      * Sets which job the worker is currently working on, and records it in redis.
      *
-     * @param JobInterface|null $job The job being worked on, or null if the worker isn't processing a job anymore.
+     * @param \Resque\Component\Job\Model\JobInterface|null $job The job being worked on, or null if the worker isn't processing a job anymore.
      * @throws ResqueRuntimeException when current job is not cleared before setting a different one.
      */
     public function setCurrentJob(JobInterface $job = null)
@@ -666,9 +672,9 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
         $payload = json_encode(
             array(
-                'queue' => ($job instanceof QueueAwareJobInterface) ? $job->getOriginQueue() : null,
+                'queue' => ($job instanceof OriginQueueAwareInterface) ? $job->getOriginQueue() : null,
                 'run_at' => date('c'),
-                'payload' => $job->jsonSerialize(),
+                'payload' => $job::encode($job),
             )
         );
 
@@ -678,7 +684,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     /**
      * Return the Job this worker is currently working on.
      *
-     * @return JobInterface|null The current Job this worker is processing, null if currently not processing a job
+     * @return \Resque\Component\Job\Model\JobInterface|null The current Job this worker is processing, null if currently not processing a job
      */
     public function getCurrentJob()
     {

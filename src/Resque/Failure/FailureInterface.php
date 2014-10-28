@@ -2,8 +2,8 @@
 
 namespace Resque\Failure;
 
-use Resque\Job\JobInterface;
-use Resque\WorkerInterface;
+use Resque\Component\Job\Model\JobInterface;
+use Resque\Component\Worker\Model\WorkerInterface;
 
 /**
  * Resque failure backend interface
@@ -17,7 +17,7 @@ interface FailureInterface
      *
      * @param JobInterface $job The job that just failed to perform cleanly.
      * @param \Exception $exception The exception for the cause of the failure.
-     * @param WorkerInterface $worker The worker that the job failed to perform with in.
+     * @param \Resque\Component\Worker\Model\WorkerInterface $worker The worker that the job failed to perform with in.
      *
      * @return void
      */

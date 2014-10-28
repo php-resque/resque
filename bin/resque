@@ -91,12 +91,12 @@ $configQueues = explode(',', $QUEUE);
 
 if (in_array('*', $configQueues)) {
     $wildcard = new \Resque\Queue\WildcardQueue();
-    $wildcard->setRedisBackend($redis);
+    $wildcard->setRedisClient($redis);
     $queues[] = $wildcard;
 } else {
     foreach ($configQueues as $configQueue) {
         $q = new \Resque\Queue($configQueue);
-        $q->setRedisBackend($redis);
+        $q->setRedisClient($redis);
         $queues[] = $q;
 
     }
@@ -108,7 +108,7 @@ $statisticBackend = new \Resque\Statistic\RedisStatistic($redis);
 
 $foreman = new \Resque\Foreman();
 $foreman
-    ->setRedisBackend($redis)
+    ->setRedisClient($redis)
     ->setStatisticsBackend($statisticBackend)
     ->setLogger($logger);
 
@@ -116,7 +116,7 @@ $workers = array();
 for ($i = 0; $i < $count; ++$i) {
     $worker = new \Resque\Worker();
     $worker
-        ->setRedisBackend($redis)
+        ->setRedisClient($redis)
         ->setFailureBackend($failureBackend)
         ->setStatisticsBackend($statisticBackend)
         ->setLogger($logger);

@@ -2,19 +2,19 @@
 
 namespace Resque;
 
+use Resque\Component\Job\Model\JobInterface;
+use Resque\Component\Job\Model\TrackableJobInterface;
+use Resque\Component\Queue\Model\OriginQueueAwareInterface;
+use Resque\Component\Queue\Model\QueueInterface;
 use Resque\Job\FilterAwareJobInterface;
-use Resque\Job\JobInterface;
-use Resque\Job\QueueAwareJobInterface;
-use Resque\Queue\QueueInterface;
 
 /**
  * Resque Job
- *
- * @todo Think of a better name for this object, as the Job is technically the class constructed by this. Payload? :s
  */
 class Job implements
     JobInterface,
-    QueueAwareJobInterface,
+    TrackableJobInterface,
+    OriginQueueAwareInterface,
     FilterAwareJobInterface
 {
     /**
@@ -33,9 +33,9 @@ class Job implements
     protected $class;
 
     /**
-     * @var string The current known status of this Job.
+     * @var string The current known status/state of this Job.
      */
-    protected $status;
+    protected $state;
 
     /**
      * @var QueueInterface|null The queue this job was popped from, if it was popped.
@@ -54,9 +54,6 @@ class Job implements
     {
         $this->class = $jobClass;
         $this->setArguments($arguments);
-//        if ($monitor) {
-//            Resque_Job_Status::create($id);
-//        }
     }
 
     /**
@@ -129,29 +126,21 @@ class Job implements
     }
 
     /**
-     * Update the status of the current job.
-     *
-     * @param int $status Status constant from Resque_Job_Status indicating the current status of a job.
+     * {@inheritDoc}
      */
-    public function updateStatus($status)
+    public function setState($state)
     {
-        if (empty($this->payload['id'])) {
-            return;
-        }
+        $this->state = $state;
 
-        $statusInstance = new Resque_Job_Status($this->payload['id']);
-        $statusInstance->update($status);
+        return $this;
     }
 
     /**
-     * Return the status of the current job.
-     *
-     * @return int The status of the job as one of the Resque_Job_Status constants.
+     * {@inheritDoc}
      */
-    public function getStatus()
+    public function getState()
     {
-        $status = new Resque_Job_Status($this->payload['id']);
-        return $status->get();
+        return $this->state;
     }
 
     /**
@@ -170,22 +159,6 @@ class Job implements
     public function getOriginQueue()
     {
         return $this->originQueue;
-    }
-
-    /*
-     * Data structure for self::encode
-     *
-     * Based off JsonSerializable with out actually implementing it.
-     * @see http://php.net/manual/en/jsonserializable.jsonserialize.php for more details.
-     */
-    public function jsonSerialize()
-    {
-        return array(
-            'class' => $this->getJobClass(),
-            'args' => array($this->getArguments()),
-            'id' => $this->getId(),
-            'queue_time' => microtime(true), // @todo this isn't queue time. $queue->push() is queue time.
-        );
     }
 
     /**
@@ -251,13 +224,18 @@ class Job implements
     /**
      * Create Redis payload
      *
-     * @param JobInterface $job
+     * @param \Resque\Component\Job\Model\JobInterface $job
      * @return string JSON object to store in redis.
      */
     public static function encode(JobInterface $job)
     {
         return json_encode(
-            $job->jsonSerialize()
+            array(
+                'class' => $job->getJobClass(),
+                'args' => array($job->getArguments()),
+                'id' => $job->getId(),
+                'queue_time' => microtime(true), // @todo this isn't queue time. $queue->push() is queue time.
+            )
         );
     }
 

@@ -2,9 +2,9 @@
 
 namespace Resque\Event;
 
-use Resque\Job\JobInterface;
-use Resque\WorkerInterface;
 use Exception;
+use Resque\Component\Job\Model\JobInterface;
+use Resque\Component\Worker\Model\WorkerInterface;
 
 class JobFailedEvent implements EventInterface
 {

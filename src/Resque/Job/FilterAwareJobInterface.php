@@ -2,6 +2,8 @@
 
 namespace Resque\Job;
 
+use Resque\Component\Job\Model\JobInterface;
+
 /**
  * Filter aware job interface
  */

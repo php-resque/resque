@@ -1,8 +1,8 @@
 <?php
 
-namespace Resque;
+namespace Resque\Component\Worker\Model;
 
-use Resque\Queue\QueueInterface;
+use Resque\Component\Queue\Model\QueueInterface;
 
 interface WorkerInterface
 {

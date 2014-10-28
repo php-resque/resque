@@ -1,6 +1,6 @@
 <?php
 
-namespace Resque\Job;
+namespace Resque\Component\Job;
 
 /**
  * Performant Job Interface

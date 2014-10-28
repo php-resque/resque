@@ -2,8 +2,8 @@
 
 namespace Resque\Event;
 
-use Resque\WorkerInterface;
-use Resque\Job\JobInterface;
+use Resque\Component\Job\Model\JobInterface;
+use Resque\Component\Worker\Model\WorkerInterface;
 
 /**
  * AbstractJobPerformEvent
@@ -16,7 +16,7 @@ use Resque\Job\JobInterface;
 abstract class AbstractWorkerForkEvent
 {
     /**
-     * @var WorkerInterface The worker that dispatched this event.
+     * @var \Resque\Component\Worker\Model\WorkerInterface The worker that dispatched this event.
      */
     protected $worker;
 
@@ -32,7 +32,7 @@ abstract class AbstractWorkerForkEvent
     }
 
     /**
-     * @return WorkerInterface
+     * @return \Resque\Component\Worker\Model\WorkerInterface
      */
     public function getWorker()
     {

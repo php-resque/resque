@@ -1,8 +1,8 @@
 <?php
 
-namespace Resque\Queue;
+namespace Resque\Component\Queue\Model;
 
-use Resque\Job\JobInterface;
+use Resque\Component\Job\Model\JobInterface;
 
 /**
  * Resque QueueInterface
@@ -11,6 +11,12 @@ use Resque\Job\JobInterface;
  */
 interface QueueInterface
 {
+    /**
+     * @param string $name The name of the queue.
+     * @return self
+     */
+    public function setName($name);
+
     /**
      * @return string The name of the queue.
      */
@@ -31,4 +37,11 @@ interface QueueInterface
      * @return JobInterface|null Decoded job from the queue, or null if no jobs.
      */
     public function pop();
+
+    /**
+     * Return the number of pending jobs in the queue
+     *
+     * @return int The size of the queue.
+     */
+    public function count();
 }

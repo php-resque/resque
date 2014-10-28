@@ -1,8 +1,10 @@
 <?php
 
-namespace Resque\Job;
+namespace Resque\Component\Job\Factory;
 
-use Resque\Job\JobInterface;
+use Resque\Component\Job\Model\JobInterface;
+use Resque\Component\Job\PerformantJobInterface;
+use Resque\Job\Exception;
 
 class JobInstanceFactory implements JobInstanceFactoryInterface
 {

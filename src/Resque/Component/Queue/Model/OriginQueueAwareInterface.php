@@ -1,13 +1,11 @@
 <?php
 
-namespace Resque\Job;
-
-use Resque\Queue\QueueInterface;
+namespace Resque\Component\Queue\Model;
 
 /**
- * Queue aware job interface
+ * Job queue aware interface
  */
-interface QueueAwareJobInterface
+interface OriginQueueAwareInterface
 {
     /**
      * Set origin Queue

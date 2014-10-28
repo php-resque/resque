@@ -58,12 +58,12 @@ $resque->enqueue('default', 'Acme\My\Job', array('name' => 'Chris'));
 
 ### Defining Jobs
 
-Each job should be in its own class, and implement the `Resque\Job\PerformantJobInterface` interface.
+Each job should be in its own class, and implement the `Resque\Component\Job\PerformantJobInterface` interface.
 
 ```php
 namespace Acme\My;
 
-use Resque\Job\PerformantJobInterface;
+use Resque\Component\Job\PerformantJobInterface;
 
 class Job implements PerformantJobInterface
 {

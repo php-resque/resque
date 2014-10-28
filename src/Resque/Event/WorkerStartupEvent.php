@@ -2,7 +2,7 @@
 
 namespace Resque\Event;
 
-use Resque\WorkerInterface;
+use Resque\Component\Worker\Model\WorkerInterface;
 
 class WorkerStartupEvent implements EventInterface
 {
@@ -25,7 +25,7 @@ class WorkerStartupEvent implements EventInterface
     }
 
     /**
-     * @return WorkerInterface
+     * @return \Resque\Component\Worker\Model\WorkerInterface
      */
     public function getWorker()
     {

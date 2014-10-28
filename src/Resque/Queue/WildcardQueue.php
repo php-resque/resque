@@ -2,7 +2,9 @@
 
 namespace Resque\Queue;
 
-use Resque\Job\JobInterface;
+use Predis\ClientInterface;
+use Resque\Component\Job\Model\JobInterface;
+use Resque\Component\Queue\Model\QueueInterface;
 use Resque\Queue;
 
 /**
@@ -21,11 +23,13 @@ class WildcardQueue extends Queue
 
     /**
      * @param string|null $prefix
+     * @param ClientInterface $redis
      */
-    public function __construct($prefix = null)
+    public function __construct(ClientInterface $redis, $prefix = null)
     {
         $this->name = $prefix . '*';
         $this->prefix = $prefix;
+        $this->redis = $redis;
     }
 
     /**
@@ -74,8 +78,6 @@ class WildcardQueue extends Queue
         ksort($queues);
 
         foreach ($queues as $queue) {
-            $queue->setRedisBackend($this->redis); // @todo should I be doing this, or should static::all() ?
-
             if (null !== $job = $queue->pop()) {
 
                 return $job;

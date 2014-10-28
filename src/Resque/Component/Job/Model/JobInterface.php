@@ -1,12 +1,17 @@
 <?php
 
-namespace Resque\Job;
+namespace Resque\Component\Job\Model;
 
 /**
  * Job Interface
  */
 interface JobInterface
 {
+    const STATE_WAITING     = 'waiting';
+    const STATE_PERFORMING  = 'performing';
+    const STATE_FAILED      = 'failed';
+    const STATE_COMPLETE    = 'complete';
+
     /**
      * @param string $id
      * @return $this
@@ -33,16 +38,6 @@ interface JobInterface
 
     public function setArguments($args);
     public function getArguments();
-
-    /**
-     * Data structure for self::encode, or other logging purposes
-     *
-     * Based off JsonSerializable with out actually implementing it.
-     * @see http://php.net/manual/en/jsonserializable.jsonserialize.php for more details.
-     *
-     * @return mixed
-     */
-    public function jsonSerialize();
 
     /**
      * Encode

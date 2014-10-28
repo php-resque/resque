@@ -3,55 +3,49 @@
 namespace Resque;
 
 use Predis\ClientInterface;
+use Resque\Component\Core\RedisAwareInterface;
+use Resque\Component\Job\Model\JobInterface;
+use Resque\Component\Queue\Model\AbstractQueue;
+use Resque\Component\Queue\Model\OriginQueueAwareInterface;
 use Resque\Job\FilterAwareJobInterface;
-use Resque\Job\JobInterface;
-use Resque\Job\QueueAwareJobInterface;
-use Resque\Queue\QueueInterface;
 
 /**
- * Resque Queue
+ * Resque Redis queue
  *
- * Provides the ability to push and pull jobs from a queue, along side other utility functions.
+ * Uses redis to store the queue.
  */
-class Queue implements QueueInterface
+class Queue extends AbstractQueue implements RedisAwareInterface
 {
     /**
-     * @var string The name of the queue.
-     */
-    protected $name;
-
-    /**
-     * @var ClientInterface Redis connection.
+     * @var ClientInterface A Predis Redis connection.
      */
     protected $redis;
 
     /**
-     * @param $name
+     * @param string $name The name of the queue
+     * @param ClientInterface $redis
      */
-    public function __construct($name)
+    public function __construct($name, ClientInterface $redis = null)
     {
-        $this->name = $name;
+        $this->setName($name);
+        if (null !== $redis) {
+            $this->setRedisClient($redis);
+        }
     }
 
-    /**
-     * @param ClientInterface $redis
-     * @return $this
-     */
-    public function setRedisBackend(ClientInterface $redis)
+    public function setRedisClient(ClientInterface $redis)
     {
         $this->redis = $redis;
 
         return $this;
     }
 
-    public function getRedisKey()
+    /**
+     * @return string Key name for redis.
+     */
+    protected function getRedisKey()
     {
         return 'queue:' . $this->getName();
-    }
-
-    public function getName()
-    {
-        return $this->name;
     }
 
     /**
@@ -100,18 +94,6 @@ class Queue implements QueueInterface
             $job::encode($job)
         );
 
-//        if ($result) {
-//            Resque_Event::trigger(
-//                'afterEnqueue',
-//                array(
-//                    'class' => $class,
-//                    'args' => $args,
-//                    'queue' => $queue,
-//                    'id' => $result,
-//                )
-//            );
-//        }
-
         return true;
     }
 
@@ -130,7 +112,7 @@ class Queue implements QueueInterface
 
         $job = Job::decode($payload); // @todo should be something like $this->jobEncoderThingy->decode()
 
-        if ($job instanceof QueueAwareJobInterface) {
+        if ($job instanceof OriginQueueAwareInterface) {
             $job->setOriginQueue($this);
         }
 
@@ -193,7 +175,7 @@ class Queue implements QueueInterface
         $queues = array();
 
         foreach ($queuesNames as $queueName) {
-            $queues[$queueName] = new self($queueName);
+            $queues[$queueName] = new self($queueName, $this->redis);
         }
 
         return $queues;
