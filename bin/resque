@@ -90,21 +90,19 @@ $queues = array();
 $configQueues = explode(',', $QUEUE);
 
 if (in_array('*', $configQueues)) {
-    $wildcard = new \Resque\Queue\WildcardQueue();
-    $wildcard->setRedisClient($redis);
+    $wildcard = new \Resque\Component\Queue\WildcardQueue($redis);
     $queues[] = $wildcard;
 } else {
     foreach ($configQueues as $configQueue) {
-        $q = new \Resque\Queue($configQueue);
+        $q = new \Resque\Component\Core\RedisQueue($configQueue);
         $q->setRedisClient($redis);
         $queues[] = $q;
-
     }
     unset($configQueue, $q);
 }
 
-$failureBackend = new \Resque\Failure\RedisFailure($redis);
-$statisticBackend = new \Resque\Statistic\RedisStatistic($redis);
+$failureBackend = new \Resque\Component\Core\RedisFailure($redis);
+$statisticBackend = new \Resque\Component\Core\RedisStatistic($redis);
 
 $foreman = new \Resque\Foreman();
 $foreman

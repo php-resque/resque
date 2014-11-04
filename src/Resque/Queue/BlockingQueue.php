@@ -2,17 +2,17 @@
 
 namespace Resque\Queue;
 
-use Resque\Queue;
+use Resque\Component\Core\RedisQueue;
 
 /**
- * Resque Blocking Queue
+ * Resque Blocking RedisQueue
  *
  * Blocks on pop return immediately if queue push
  *
  * @todo this is really just to hold blpop usage until I decided how it should be a part of normal queues.
  *       it could be like wildcard, but takes a bunch of queues?
  */
-class BlockingQueue extends Queue
+class BlockingRedisQueue extends RedisQueue
 {
     /**
      * Pop an item off the end of the specified queues, using blocking list pop,

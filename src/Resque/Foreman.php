@@ -6,9 +6,10 @@ use Predis\ClientInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Core\Process;
+use Resque\Component\Core\RedisQueue;
 use Resque\Component\Worker\Model\WorkerInterface;
-use Resque\Exception\ResqueRuntimeException;
 use Resque\Statistic\BlackHoleStatistic as BlackHoleStats;
 use Resque\Statistic\StatisticInterface;
 
@@ -122,7 +123,7 @@ class Foreman implements LoggerAwareInterface
 
         $worker = new Worker();
         foreach ($queues as $queue) {
-            $worker->addQueue(new Queue($queue));
+            $worker->addQueue(new RedisQueue($queue));
         }
 
         $worker->setId($workerId);

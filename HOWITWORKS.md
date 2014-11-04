@@ -47,7 +47,7 @@ How do the workers process the queues?
        the queue and content as constructor arguments to initialize the job
        itself, and returns it, along with control of the process, to
        `Worker->reserve()`
-  * Queue Polling
+  * RedisQueue Polling
     1. `Worker->reserve()` iterates through the queue list, calling
        `Job::reserve()` with the current queue's name as the sole
        argument on each pass

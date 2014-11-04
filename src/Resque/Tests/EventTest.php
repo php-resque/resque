@@ -2,8 +2,8 @@
 
 namespace Resque\Tests;
 
-use Resque\Job;
-use Resque\Resque;
+use Resque\Component\Core\Resque;
+use Resque\Component\Core\Test\ResqueTestCase;
 
 class EventTest extends ResqueTestCase
 {

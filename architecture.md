@@ -25,7 +25,7 @@ Holds one more Workers, when asked it will force the workers to work and keep an
 
 Controls it's own run loop, asks for Jobs from Queues, and tells the Foreman about them.
 
-### The Queue
+### The RedisQueue
 
 You can push and pop Jobs from it, as well interrogate the list.
 

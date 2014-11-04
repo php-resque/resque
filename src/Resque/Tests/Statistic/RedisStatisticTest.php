@@ -2,8 +2,8 @@
 
 namespace Resque\Tests\Statistic;
 
-use Resque\Tests\ResqueTestCase;
-use Resque\Statistic\RedisStatistic;
+use Resque\Component\Core\RedisStatistic;
+use Resque\Component\Core\Test\ResqueTestCase;
 
 class RedisStatisticTest extends ResqueTestCase
 {

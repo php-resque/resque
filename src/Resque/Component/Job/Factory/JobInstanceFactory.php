@@ -11,7 +11,7 @@ class JobInstanceFactory implements JobInstanceFactoryInterface
     /**
      * Create PerformantJobInterface class
      *
-     * @throws Exception\JobNotFoundException When the job class could not be found.
+     * @throws \Resque\Component\Job\Exception\JobNotFoundException When the job class could not be found.
      *
      * @param JobInterface $job
      * @return PerformantJobInterface The instance of the Job that will perform.
@@ -21,7 +21,7 @@ class JobInstanceFactory implements JobInstanceFactoryInterface
         $class = $job->getJobClass();
 
         if (false === class_exists($class)) {
-            throw new Exception\JobNotFoundException(
+            throw new \Resque\Component\Job\Exception\JobNotFoundException(
                 'Could not find job class "' . $class . '"'
             );
         }

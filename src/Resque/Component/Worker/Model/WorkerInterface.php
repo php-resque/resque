@@ -12,7 +12,7 @@ interface WorkerInterface
     public function getId();
 
     /**
-     * Add Queue
+     * Add RedisQueue
      *
      * @param QueueInterface $queue The queue to add to the worker.
      */

@@ -20,7 +20,7 @@ class JobInstanceFactorySpec extends ObjectBehavior
     function it_should_construct_performant_job(
         JobInterface $job
     ) {
-        $job->getJobClass()->shouldBeCalled()->willReturn('Resque\Tests\Jobs\Simple');
+        $job->getJobClass()->shouldBeCalled()->willReturn('Resque\Component\Job\Tests\Jobs\Simple');
         $this->createJob($job)->shouldReturnAnInstanceOf('Resque\Component\Job\PerformantJobInterface');
     }
 
@@ -28,6 +28,6 @@ class JobInstanceFactorySpec extends ObjectBehavior
         JobInterface $job
     ) {
         $job->getJobClass()->shouldBeCalled()->willReturn('Resque\Tests\Jobs\NonExistent');
-        $this->shouldThrow('Resque\Job\Exception\JobNotFoundException')->duringCreateJob($job);
+        $this->shouldThrow('Resque\Component\Job\Exception\JobNotFoundException')->duringCreateJob($job);
     }
 }

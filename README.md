@@ -52,7 +52,7 @@ composer require zomble/php-resque:dev-master
 Jobs are queued as follows:
 
 ```php
-$resque = new Resque\Resque(/* predis connection */);
+$resque = new Resque\Component\Core\Resque(/* predis connection */);
 $resque->enqueue('default', 'Acme\My\Job', array('name' => 'Chris'));
 ```
 
@@ -183,7 +183,7 @@ $ VERBOSE=1 QUEUE=file_serve bin/resque
 $ VVERBOSE=1 QUEUE=file_serve bin/resque
 ```
 
-### Priorities and Queue Lists
+### Priorities and RedisQueue Lists
 
 Similarly, priority and queue list functionality works exactly the same as the Ruby workers. Multiple queues
 should be separated with a comma, and the order that they're supplied in is the order that they're checked in.
@@ -271,7 +271,7 @@ In the supplied dispatcher you can listen in on events ([as listed below](#event
 event is raised:
 
 ```php
-// @see Resque\Event\EventDispatcher
+// @see Resque\Component\Core\Event\EventDispatcher
 $dispatcher->addListener('eventName', [callback]);
 ```
 
@@ -292,7 +292,7 @@ objects will implement the `Resque\Event\EventInterface` interface.
 
 #### resque.worker.start_up
 
-`@see Resque\Event\WorkerStartupEvent`
+`@see Resque\Component\Worker\Event\WorkerEvent`
 
 Dispatched once, as a worker initializes. Argument passed is the instance of the `Worker` that was just initialized.
 
@@ -300,7 +300,7 @@ Dispatched once, as a worker initializes. Argument passed is the instance of the
 
 `@see Resque\Event\WorkerBeforeForkEvent`
 
-Dispatched before `Resque\Worker` forks to run a job. The event contains the `Worker` and the `Resque\Job` that is
+Dispatched before `Resque\Worker` forks to run a job. The event contains the `Worker` and the `Resque\Component\Job\Model\Job` that is
 about to perform.
 
 `resque.job.before_fork` is triggered in the **parent** process. Any changes made will be permanent for as long as
@@ -311,7 +311,7 @@ the **worker** lives.
 @see `Resque\Event\WorkerAfterForkEvent`
 
 Dispatched from the child, after `Resque\Worker` has forked to run a job (but before the job is run). The event
-contains the the `Worker` and the `Resque\Job` that is about to perform.
+contains the the `Worker` and the `Resque\Component\Job\Model\Job` that is about to perform.
 
 **Note:** `resque.job.before_fork` is triggered in the **child** process after forking out to complete a job. Any
 changes made will only live as long as the **job** is being processed.
@@ -320,7 +320,7 @@ changes made will only live as long as the **job** is being processed.
 
 @see `Resque\Event\JobBeforePerformEvent`
 
-Dispatched just before the `perform` method on a job is called. The event contains the instance of `Resque\Job` that
+Dispatched just before the `perform` method on a job is called. The event contains the instance of `Resque\Component\Job\Model\Job` that
 is about to perform, and the instance of the target class on whom the `perform` method will be called.
 
 Any exceptions thrown will be treated as if they were thrown in a job, causing the job to be marked as failed.
@@ -329,7 +329,7 @@ Any exceptions thrown will be treated as if they were thrown in a job, causing t
 
 `@see Resque\Event\WorkerAfterForkEvent`
 
-Dispatched immediately after a job has successfully performed. The event contains the instance of `Resque\Job` and the
+Dispatched immediately after a job has successfully performed. The event contains the instance of `Resque\Component\Job\Model\Job` and the
 instance of the target class that just performed.
 
 Any exceptions thrown will be treated as if they were thrown in a job, causing the job to be marked as failed.
@@ -343,7 +343,7 @@ to exit cleanly.
 
 The event contains the following:
 
-* `Resque\Job` The job that just failed.
+* `Resque\Component\Job\Model\Job` The job that just failed.
 * `Resque\Worker` The worker that the job just failed in.
 * `\Exception` The exception that was thrown when the job failed, if one was thrown to cause it to fail.
 
@@ -354,7 +354,7 @@ Called after a job has been queued using the `Resque::push` method. Arguments pa
 
 * Class - string containing the name of scheduled job
 * Arguments - array of arguments supplied to the job
-* Queue - string containing the name of the queue the job was added to
+* RedisQueue - string containing the name of the queue the job was added to
 * ID - string containing the new token of the enqueued job
 
 ### Dispatcher Replacement

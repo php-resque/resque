@@ -2,10 +2,7 @@
 
 namespace Resque\Tests\Queue;
 
-use Resque\Job;
-use Resque\Queue;
-use Resque\Queue\BlockingQueue;
-use Resque\Tests\ResqueTestCase;
+use Resque\Component\Core\Test\ResqueTestCase;
 
 class BlockingQueueTest extends ResqueTestCase
 {

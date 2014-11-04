@@ -3,7 +3,7 @@
 namespace Resque\Component\Queue\Model;
 
 /**
- * Abstract Queue
+ * Abstract RedisQueue
  */
 abstract class AbstractQueue implements QueueInterface
 {

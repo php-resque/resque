@@ -2,7 +2,7 @@
 
 namespace Resque\Event;
 
-class JobAfterPerformEvent extends AbstractJobPerformEvent implements EventInterface
+class JobAfterPerformEvent extends AbstractJobPerformEvent
 {
     public function getName()
     {

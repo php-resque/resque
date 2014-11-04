@@ -6,7 +6,12 @@ use Predis\ClientInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Resque\Component\Core\Event\EventDispatcher;
+use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Core\Process;
+use Resque\Component\Job\Event\JobEvent;
+use Resque\Component\Job\Exception\DirtyExitException;
+use Resque\Component\Job\Exception\InvalidJobException;
 use Resque\Component\Job\Factory\JobInstanceFactory;
 use Resque\Component\Job\Factory\JobInstanceFactoryInterface;
 use Resque\Component\Job\Model\JobInterface;
@@ -14,21 +19,17 @@ use Resque\Component\Job\Model\TrackableJobInterface;
 use Resque\Component\Job\PerformantJobInterface;
 use Resque\Component\Queue\Model\OriginQueueAwareInterface;
 use Resque\Component\Queue\Model\QueueInterface;
+use Resque\Component\Worker\Event\WorkerEvent;
 use Resque\Component\Worker\Model\WorkerInterface;
-use Resque\Event\EventDispatcher;
+use Resque\Component\Worker\ResqueWorkerEvents;
 use Resque\Event\EventDispatcherInterface;
 use Resque\Event\JobAfterPerformEvent;
 use Resque\Event\JobBeforePerformEvent;
 use Resque\Event\JobFailedEvent;
-use Resque\Event\JobPerformedEvent;
 use Resque\Event\WorkerAfterForkEvent;
 use Resque\Event\WorkerBeforeForkEvent;
-use Resque\Event\WorkerStartupEvent;
-use Resque\Exception\ResqueRuntimeException;
 use Resque\Failure\BlackHoleFailure;
 use Resque\Failure\FailureInterface;
-use Resque\Job\Exception\DirtyExitException;
-use Resque\Job\Exception\InvalidJobException;
 use Resque\Job\Status;
 use Resque\Statistic\BlackHoleStatistic;
 use Resque\Statistic\StatisticInterface;
@@ -86,7 +87,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     protected $currentJob = null;
 
     /**
-     * @var Event\EventDispatcher
+     * @var \Resque\Component\Core\Event\EventDispatcher
      */
     protected $eventDispatcher;
 
@@ -388,7 +389,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
         $this->registerSignalHandlers();
 
         $this->eventDispatcher->dispatch(
-            new WorkerStartupEvent($this)
+            new WorkerEvent($this)
         );
     }
 
@@ -454,12 +455,14 @@ class Worker implements WorkerInterface, LoggerAwareInterface
             }
 
             $this->eventDispatcher->dispatch(
+                ResqueWorkerEvents::START_UP,
                 new JobBeforePerformEvent($job, $jobInstance)
             );
 
             $jobInstance->perform($job->getArguments());
 
             $this->eventDispatcher->dispatch(
+                ResqueWorkerEvents::START_UP,
                 new JobAfterPerformEvent($job, $jobInstance)
             );
         } catch (\Exception $exception) {
@@ -473,9 +476,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
         $this->getLogger()->notice('{job} has successfully processed', array('job' => $job));
 
-        $this->eventDispatcher->dispatch(
-            new JobPerformedEvent($job)
-        );
+        $this->eventDispatcher->dispatch(ResqueWorkerEvents::START_UP, new JobEvent($job));
 
         return true;
     }

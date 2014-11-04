@@ -8,7 +8,7 @@ namespace Resque\Component\Queue\Model;
 interface OriginQueueAwareInterface
 {
     /**
-     * Set origin Queue
+     * Set origin RedisQueue
      *
      * @param QueueInterface $queue
      * @return $this

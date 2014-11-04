@@ -2,11 +2,12 @@
 
 namespace Resque\Tests;
 
-use Resque\Event\EventDispatcher;
-use Resque\Job;
-use Resque\Queue;
-use Resque\Queue\WildcardQueue;
-use Resque\Tests\Jobs\Simple;
+use Resque\Component\Core\Event\EventDispatcher;
+use Resque\Component\Core\RedisQueue;
+use Resque\Component\Core\Test\ResqueTestCase;
+use Resque\Component\Job\Model\Job;
+use Resque\Component\Job\Tests\Jobs\Simple;
+use Resque\Component\Queue\WildcardQueue;
 use Resque\Worker;
 
 class WorkerTest extends ResqueTestCase
@@ -20,9 +21,9 @@ class WorkerTest extends ResqueTestCase
 
     public function testWorkerCanWorkOverMultipleQueues()
     {
-        $queueOne = new Queue('queue1');
+        $queueOne = new RedisQueue('queue1');
         $queueOne->setRedisClient($this->redis);
-        $queueTwo = new Queue('queue2');
+        $queueTwo = new RedisQueue('queue2');
         $queueTwo->setRedisClient($this->redis);
 
         $worker = new Worker(
@@ -47,11 +48,11 @@ class WorkerTest extends ResqueTestCase
 
     public function testWorkerWorksQueuesInSpecifiedOrder()
     {
-        $queueHigh = new Queue('high');
+        $queueHigh = new RedisQueue('high');
         $queueHigh->setRedisClient($this->redis);
-        $queueMedium = new Queue('medium');
+        $queueMedium = new RedisQueue('medium');
         $queueMedium->setRedisClient($this->redis);
-        $queueLow = new Queue('low');
+        $queueLow = new RedisQueue('low');
         $queueLow->setRedisClient($this->redis);
 
         $worker = new Worker(
@@ -62,7 +63,7 @@ class WorkerTest extends ResqueTestCase
             )
         );
 
-        // Queue the jobs in a different order
+        // RedisQueue the jobs in a different order
         $queueLow->push(new Job('Test_Job_1'));
         $queueHigh->push(new Job('Test_Job_2'));
         $queueMedium->push(new Job('Test_Job_3'));
@@ -76,30 +77,11 @@ class WorkerTest extends ResqueTestCase
         $this->assertSame($queueLow, $job->getOriginQueue());
     }
 
-    public function testWildcardQueueWorkerWorksAllQueues()
-    {
-        $queue = new Queue('notastar');
-        $queue->setRedisClient($this->redis);
-
-        $wildcardQueue = new WildcardQueue($this->redis);
-
-        $worker = new Worker(
-            $wildcardQueue
-        );
-
-        // Queue the jobs in a different order
-        $queue->push(new Job('Test_Job_1'));
-
-        $job = $worker->reserve();
-        // The job should come from the original queue.
-        $this->assertEquals($queue, $job->getOriginQueue());
-    }
-
     public function testWorkerDoesNotWorkOnUnknownQueues()
     {
-        $queueOne = new Queue('queue1');
+        $queueOne = new RedisQueue('queue1');
         $queueOne->setRedisClient($this->redis);
-        $queueTwo = new Queue('queue2');
+        $queueTwo = new RedisQueue('queue2');
         $queueTwo->setRedisClient($this->redis);
 
         $queueTwo->push(new Job('Test_Job'));
@@ -120,7 +102,7 @@ class WorkerTest extends ResqueTestCase
             'key' => 'baz',
         );
 
-        $job = new Job('Resque\Tests\Jobs\Simple', $args);
+        $job = new Job('Resque\Component\Job\Tests\Jobs\Simple', $args);
 
         $worker->perform($job);
 
@@ -151,7 +133,7 @@ class WorkerTest extends ResqueTestCase
         $worker = new Worker(null, null, $eventDispatcher);
 
         $job = new Job($jobClass);
-        $job->setOriginQueue(new Queue('foo'));
+        $job->setOriginQueue(new RedisQueue('foo'));
 
         $worker->perform($job);
 
@@ -172,20 +154,20 @@ class WorkerTest extends ResqueTestCase
     {
         return array(
             // Job that doesn't implement "PerformantJobInterface".
-            array(0, 'resque.job.before_perform', 'Resque\Tests\Jobs\NoPerformMethod'),
-            array(0, 'resque.job.after_perform', 'Resque\Tests\Jobs\NoPerformMethod'),
-            array(0, 'resque.job.performed', 'Resque\Tests\Jobs\NoPerformMethod'),
-            array(1, 'resque.job.failed', 'Resque\Tests\Jobs\NoPerformMethod'),
+            array(0, 'resque.job.before_perform', 'Resque\Component\Job\Tests\Jobs\NoPerformMethod'),
+            array(0, 'resque.job.after_perform', 'Resque\Component\Job\Tests\Jobs\NoPerformMethod'),
+            array(0, 'resque.job.performed', 'Resque\Component\Job\Tests\Jobs\NoPerformMethod'),
+            array(1, 'resque.job.failed', 'Resque\Component\Job\Tests\Jobs\NoPerformMethod'),
             // Normal, expected to work job.
-            array(1, 'resque.job.before_perform', 'Resque\Tests\Jobs\Simple'),
-            array(1, 'resque.job.after_perform', 'Resque\Tests\Jobs\Simple'),
-            array(1, 'resque.job.performed', 'Resque\Tests\Jobs\Simple'),
-            array(0, 'resque.job.failed', 'Resque\Tests\Jobs\Simple'),
+            array(1, 'resque.job.before_perform', 'Resque\Component\Job\Tests\Jobs\Simple'),
+            array(1, 'resque.job.after_perform', 'Resque\Component\Job\Tests\Jobs\Simple'),
+            array(1, 'resque.job.performed', 'Resque\Component\Job\Tests\Jobs\Simple'),
+            array(0, 'resque.job.failed', 'Resque\Component\Job\Tests\Jobs\Simple'),
             // Job that will fail.
-            array(1, 'resque.job.before_perform', 'Resque\Tests\Jobs\Failure'),
-            array(0, 'resque.job.after_perform', 'Resque\Tests\Jobs\Failure'),
-            array(0, 'resque.job.performed', 'Resque\Tests\Jobs\Failure'),
-            array(1, 'resque.job.failed', 'Resque\Tests\Jobs\Failure'),
+            array(1, 'resque.job.before_perform', 'Resque\Component\Job\Tests\Jobs\Failure'),
+            array(0, 'resque.job.after_perform', 'Resque\Component\Job\Tests\Jobs\Failure'),
+            array(0, 'resque.job.performed', 'Resque\Component\Job\Tests\Jobs\Failure'),
+            array(1, 'resque.job.failed', 'Resque\Component\Job\Tests\Jobs\Failure'),
         );
     }
 
@@ -210,8 +192,8 @@ class WorkerTest extends ResqueTestCase
 
         $worker = new Worker(null, null, $eventDispatcher);
 
-        $job = new Job('Resque\Tests\Jobs\Simple');
-        $job->setOriginQueue(new Queue('baz'));
+        $job = new Job('Resque\Component\Job\Tests\Jobs\Simple');
+        $job->setOriginQueue(new RedisQueue('baz'));
 
         $this->assertFalse(
             $worker->perform($job),
@@ -236,9 +218,9 @@ class WorkerTest extends ResqueTestCase
             }
         );
 
-        $job = new Job('Resque\Tests\Jobs\Simple');
+        $job = new Job('Resque\Component\Job\Tests\Jobs\Simple');
 
-        $queue = new Queue('baz');
+        $queue = new RedisQueue('baz');
         $queue->setRedisClient($this->redis);
         $queue->push($job);
 
@@ -252,10 +234,10 @@ class WorkerTest extends ResqueTestCase
 
     public function testWorkerTracksCurrentJobCorrectly()
     {
-        $queue = new Queue('jobs');
+        $queue = new RedisQueue('jobs');
         $queue->setRedisClient($this->redis);
 
-        $job = new Job('Resque\Tests\Jobs\Simple');
+        $job = new Job('Resque\Component\Job\Tests\Jobs\Simple');
         $queue->push($job);
 
         $mockWorker = $this->getMock(
@@ -282,10 +264,10 @@ class WorkerTest extends ResqueTestCase
 
     public function testWorkerRecoversFromChildDirtyExit()
     {
-        $queue = new Queue('jobs');
+        $queue = new RedisQueue('jobs');
         $queue->setRedisClient($this->redis);
 
-        $job = new Job('Resque\Tests\Jobs\DirtyExit');
+        $job = new Job('Resque\Component\Job\Tests\Jobs\DirtyExit');
         $queue->push($job);
 
         $test = $this;
@@ -295,7 +277,7 @@ class WorkerTest extends ResqueTestCase
             'resque.job.failed',
             function ($event) use (&$callbackTriggered, $test) {
                 $callbackTriggered = true;
-                $test->assertInstanceOf('Resque\Job\Exception\DirtyExitException', $event->getException());
+                $test->assertInstanceOf('Resque\Component\Job\Exception\DirtyExitException', $event->getException());
             }
         );
 
@@ -308,9 +290,9 @@ class WorkerTest extends ResqueTestCase
 
     public function testPausedWorkerDoesNotPickUpJobs()
     {
-        $queue = new Queue('jobs');
+        $queue = new RedisQueue('jobs');
         $queue->setRedisClient($this->redis);
-        $queue->push(new Job('Resque\Tests\Jobs\Simple'));
+        $queue->push(new Job('Resque\Component\Job\Tests\Jobs\Simple'));
 
         $worker = new Worker($queue);
         $worker->pauseProcessing();
@@ -372,7 +354,7 @@ class WorkerTest extends ResqueTestCase
 
     public function testForkingCanBeDisabled()
     {
-        $job = new Job('Resque\Tests\Jobs\Simple');
+        $job = new Job('Resque\Component\Job\Tests\Jobs\Simple');
 
         $worker = $this->getMock(
             'Resque\Worker',
@@ -390,7 +372,7 @@ class WorkerTest extends ResqueTestCase
     }
 
     /**
-     * @expectedException \Resque\Exception\ResqueRuntimeException
+     * @expectedException \Resque\Component\Core\Exception\ResqueRuntimeException
      */
     public function testCannotSetCurrentJobIfNotNull()
     {

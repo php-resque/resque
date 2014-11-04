@@ -2,9 +2,8 @@
 
 namespace Resque\Tests\Job;
 
-use Resque\Job;
-use Resque\Resque;
-use Resque\Tests\ResqueTestCase;
+use Resque\Component\Core\Resque;
+use Resque\Component\Core\Test\ResqueTestCase;
 
 class JobStatusTest extends ResqueTestCase
 {

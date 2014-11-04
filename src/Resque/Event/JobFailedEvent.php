@@ -6,7 +6,7 @@ use Exception;
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Worker\Model\WorkerInterface;
 
-class JobFailedEvent implements EventInterface
+class JobFailedEvent
 {
     /**
      * @var \Exception

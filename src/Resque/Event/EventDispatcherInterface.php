@@ -4,5 +4,5 @@ namespace Resque\Event;
 
 interface EventDispatcherInterface
 {
-    public function dispatch(EventInterface $event);
+    public function dispatch($event, $context);
 }

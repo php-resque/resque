@@ -2,8 +2,7 @@
 
 namespace Resque\Component\Core;
 
-use Resque\Exception\ResqueRuntimeException;
-use Resque\Resque;
+use Resque\Component\Core\Exception\ResqueRuntimeException;
 
 class Process
 {
@@ -60,7 +59,7 @@ class Process
      * @see pcntl_fork()
      *
      * @return Process|null An instance of Process representing the child in the parent, or null in the child.
-     * @throws ResqueRuntimeException when cannot fork, or fork failed.
+     * @throws \Resque\Component\Core\Exception\ResqueRuntimeException when cannot fork, or fork failed.
      */
     public function fork()
     {

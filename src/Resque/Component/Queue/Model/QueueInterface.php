@@ -7,7 +7,7 @@ use Resque\Component\Job\Model\JobInterface;
 /**
  * Resque QueueInterface
  *
- * Defines the basic interface of a Queue needed by a worker.
+ * Defines the basic interface of a RedisQueue needed by a worker.
  */
 interface QueueInterface
 {

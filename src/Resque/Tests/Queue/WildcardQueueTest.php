@@ -2,15 +2,15 @@
 
 namespace Resque\Tests\Queue;
 
-use Resque\Job;
-use Resque\Queue;
-use Resque\Queue\WildcardQueue;
-use Resque\Tests\ResqueTestCase;
+use Resque\Component\Core\RedisQueue;
+use Resque\Component\Core\Test\ResqueTestCase;
+use Resque\Component\Job\Model\Job;
+use Resque\Component\Queue\WildcardQueue;
 
 class WildcardQueueTest extends ResqueTestCase
 {
     /**
-     * @var \Resque\Queue\WildcardQueue
+     * @var \Resque\Component\Queue\WildcardQueue
      */
     protected $wildcard;
 
@@ -46,10 +46,10 @@ class WildcardQueueTest extends ResqueTestCase
 
     public function testPopsFromAllQueues()
     {
-        $queueBaz = new Queue('baz', $this->redis);
+        $queueBaz = new RedisQueue('baz', $this->redis);
         $queueBaz->push(new Job('Foo'));
 
-        $queueFoo = new Queue('foo', $this->redis);
+        $queueFoo = new RedisQueue('foo', $this->redis);
         $queueFoo->push(new Job('Foo'));
 
         $this->assertNotNull($this->wildcard->pop());
@@ -63,15 +63,16 @@ class WildcardQueueTest extends ResqueTestCase
 
         $this->assertSame('foo*', $this->wildcard->getName());
 
-        $queueBaz = new Queue('baz', $this->redis);
+        $queueBaz = new RedisQueue('baz', $this->redis);
         $jobBaz = new Job('Baz');
         $queueBaz->push($jobBaz);
 
-        $queueFoo = new Queue('foo', $this->redis);
+        $queueFoo = new RedisQueue('foo', $this->redis);
         $jobFoo = new Job('Foo');
         $queueFoo->push($jobFoo);
 
         $poppedJob = $this->wildcard->pop();
+        $this->assertNotNull($poppedJob);
         $this->assertSame($jobFoo->getId(), $poppedJob->getId());
         $this->assertNull($this->wildcard->pop());
     }
