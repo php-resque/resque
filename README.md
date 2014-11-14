@@ -336,7 +336,7 @@ Any exceptions thrown will be treated as if they were thrown in a job, causing t
 
 #### resque.job.failed
 
-`@see Resque\Event\JobFailedEvent`
+`@see Resque\Component\Job\Event\JobFailedEvent`
 
 Dispatched whenever a job fails to perform. That is when a job throws an Exception, or when a Worker's child fails
 to exit cleanly.

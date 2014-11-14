@@ -7,12 +7,14 @@ use Resque\Component\Queue\Model\QueueInterface;
 interface WorkerInterface
 {
     /**
+     * Get Id
+     *
      * @return string The id of this worker.
      */
     public function getId();
 
     /**
-     * Add RedisQueue
+     * Add Queue
      *
      * @param QueueInterface $queue The queue to add to the worker.
      */

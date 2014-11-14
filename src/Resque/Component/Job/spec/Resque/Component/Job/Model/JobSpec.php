@@ -11,4 +11,27 @@ class JobSpec extends ObjectBehavior
     {
         $this->shouldHaveType('Resque\Component\Job\Model\Job');
     }
+
+    function it_is_trackable()
+    {
+        $this->shouldImplement('Resque\Component\Job\Model\TrackableJobInterface');
+    }
+
+    function it_provides_a_filter()
+    {
+        $this->shouldImplement('Resque\Component\Job\Model\FilterableJobInterface');
+    }
+
+    function it_id_is_mutable()
+    {
+        $this->setId('foo');
+        $this->getId()->shouldReturn('foo');
+    }
+
+    function it_should_generate_id_if_id_is_null()
+    {
+        $this->setId(null);
+        $id = $this->getId();
+        $this->getId()->shouldReturn($id);
+    }
 }

@@ -20,22 +20,22 @@ class Job implements
     protected $id;
 
     /**
-     * @var array Array of arguments/parameters.
+     * @var array Array of arguments/parameters
      */
     protected $arguments;
 
     /**
-     * @var object Instance of the class performing work for this job.
+     * @var string FQCN of the class performing work for this job
      */
     protected $class;
 
     /**
-     * @var string The current known status/state of this Job.
+     * @var string The current known status/state of this Job
      */
     protected $state;
 
     /**
-     * @var QueueInterface|null The queue this job was popped from, if it was popped.
+     * @var QueueInterface|null The queue this job was popped from, if it was popped
      */
     protected $originQueue;
 
@@ -45,7 +45,7 @@ class Job implements
      * Instantiate a new instance of a job.
      *
      * @param string $jobClass The fully quantified class name of the target job to run
-     * @param array $arguments An array of arguments/parameters for the job.
+     * @param array $arguments An array of arguments/parameters for the job
      */
     public function __construct($jobClass = null, $arguments = array())
     {
@@ -54,8 +54,7 @@ class Job implements
     }
 
     /**
-     * @param string $id
-     * @return $this
+     * {@inheritDoc}
      */
     public function setId($id)
     {
@@ -65,7 +64,7 @@ class Job implements
     }
 
     /**
-     * @return string
+     * {@inheritDoc}
      */
     public function getId()
     {
@@ -77,8 +76,7 @@ class Job implements
     }
 
     /**
-     * @param string $class
-     * @return $this
+     * {@inheritDoc}
      */
     public function setJobClass($class)
     {
@@ -88,7 +86,7 @@ class Job implements
     }
 
     /**
-     * @return object|string
+     * {@inheritDoc}
      */
     public function getJobClass()
     {
@@ -96,10 +94,7 @@ class Job implements
     }
 
     /**
-     * setArguments
-     *
-     * @param array $args An array of parameters for the job.
-     * @throws \InvalidArgumentException when $args is not an array
+     * {@inheritDoc}
      */
     public function setArguments($args)
     {
@@ -113,9 +108,7 @@ class Job implements
     }
 
     /**
-     * Get the arguments supplied to this job
-     *
-     * @return array Array of arguments
+     * {@inheritDoc}
      */
     public function getArguments()
     {
@@ -218,11 +211,9 @@ class Job implements
         return (count(array_unique($results)) === 1) && reset($results) === true;
     }
 
+
     /**
-     * Create Redis payload
-     *
-     * @param \Resque\Component\Job\Model\JobInterface $job
-     * @return string JSON object to store in redis.
+     * {@inheritDoc}
      */
     public static function encode(JobInterface $job)
     {
@@ -236,6 +227,9 @@ class Job implements
         );
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public static function decode($payload)
     {
         $payload = json_decode($payload, true);

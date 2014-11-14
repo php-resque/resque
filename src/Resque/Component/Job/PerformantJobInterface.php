@@ -5,7 +5,7 @@ namespace Resque\Component\Job;
 /**
  * Performant Job Interface
  *
- * Job classes must implement this, else a worker cannot ask them to perform.
+ * Job target classes must implement this, else a worker cannot ask them to perform.
  */
 interface PerformantJobInterface
 {

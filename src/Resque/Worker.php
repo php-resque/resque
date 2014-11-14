@@ -25,7 +25,7 @@ use Resque\Component\Worker\ResqueWorkerEvents;
 use Resque\Event\EventDispatcherInterface;
 use Resque\Event\JobAfterPerformEvent;
 use Resque\Event\JobBeforePerformEvent;
-use Resque\Event\JobFailedEvent;
+use Resque\Component\Job\Event\JobFailedEvent;
 use Resque\Event\WorkerAfterForkEvent;
 use Resque\Event\WorkerBeforeForkEvent;
 use Resque\Failure\BlackHoleFailure;

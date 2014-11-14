@@ -11,7 +11,7 @@ class JobEvent
      */
     protected $job;
 
-    public function __constructor(JobInterface $job)
+    public function __construct(JobInterface $job)
     {
         $this->job = $job;
     }

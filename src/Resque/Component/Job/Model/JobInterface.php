@@ -7,23 +7,29 @@ namespace Resque\Component\Job\Model;
  */
 interface JobInterface
 {
-    const STATE_WAITING     = 'waiting';
-    const STATE_PERFORMING  = 'performing';
-    const STATE_FAILED      = 'failed';
-    const STATE_COMPLETE    = 'complete';
+    const STATE_WAITING    = 'waiting';
+    const STATE_PERFORMING = 'performing';
+    const STATE_FAILED     = 'failed';
+    const STATE_COMPLETE   = 'complete';
 
     /**
+     * Set Id
+     *
      * @param string $id
      * @return $this
      */
     public function setId($id);
 
     /**
+     * Get id
+     *
      * @return string
      */
     public function getId();
 
     /**
+     * Set target job class
+     *
      * @param $class
      * @return $this
      */
@@ -36,7 +42,19 @@ interface JobInterface
      */
     public function getJobClass();
 
+    /**
+     * Set arguments
+     *
+     * @param array $args An array of parameters for the job.
+     * @throws \InvalidArgumentException when $args is not an array
+     */
     public function setArguments($args);
+
+    /**
+     * Get the arguments supplied to this job
+     *
+     * @return array Array of arguments
+     */
     public function getArguments();
 
     /**
