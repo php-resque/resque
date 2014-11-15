@@ -85,7 +85,7 @@ class Process
             return null;
         }
 
-        $child = new Process();
+        $child = new self();
         $child->setPid($pid);
 
         return $child;

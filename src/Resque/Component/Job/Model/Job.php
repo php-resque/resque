@@ -2,6 +2,7 @@
 
 namespace Resque\Component\Job\Model;
 
+use InvalidArgumentException;
 use Resque\Component\Queue\Model\OriginQueueAwareInterface;
 use Resque\Component\Queue\Model\QueueInterface;
 
@@ -235,6 +236,9 @@ class Job implements
         $payload = json_decode($payload, true);
 
         // @todo check for json_decode error, if error throw an exception.
+        if (null === $payload) {
+            throw new InvalidArgumentException('Invalid JSON');
+        }
 
         $job = new static();
         $job->setJobClass($payload['class']);

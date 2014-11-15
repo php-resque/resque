@@ -300,7 +300,7 @@ Dispatched once, as a worker initializes. Argument passed is the instance of the
 
 `@see Resque\Event\WorkerBeforeForkEvent`
 
-Dispatched before `Resque\Worker` forks to run a job. The event contains the `Worker` and the `Resque\Component\Job\Model\Job` that is
+Dispatched before `Resque\Component\Worker\Worker` forks to run a job. The event contains the `Worker` and the `Resque\Component\Job\Model\Job` that is
 about to perform.
 
 `resque.job.before_fork` is triggered in the **parent** process. Any changes made will be permanent for as long as
@@ -310,7 +310,7 @@ the **worker** lives.
 
 @see `Resque\Event\WorkerAfterForkEvent`
 
-Dispatched from the child, after `Resque\Worker` has forked to run a job (but before the job is run). The event
+Dispatched from the child, after `Resque\Component\Worker\Worker` has forked to run a job (but before the job is run). The event
 contains the the `Worker` and the `Resque\Component\Job\Model\Job` that is about to perform.
 
 **Note:** `resque.job.before_fork` is triggered in the **child** process after forking out to complete a job. Any
@@ -344,7 +344,7 @@ to exit cleanly.
 The event contains the following:
 
 * `Resque\Component\Job\Model\Job` The job that just failed.
-* `Resque\Worker` The worker that the job just failed in.
+* `Resque\Component\Worker\Worker` The worker that the job just failed in.
 * `\Exception` The exception that was thrown when the job failed, if one was thrown to cause it to fail.
 
 #### afterEnqueue

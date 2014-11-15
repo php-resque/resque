@@ -23,7 +23,7 @@ class Resque
     /**
      * Constructor
      *
-     * @param QueueRegistryInterface $queueRegistry The queue registry factory
+     * @param QueueRegistryInterface $queueRegistry The queue registry and factory
      */
     public function __construct(QueueRegistryInterface $queueRegistry)
     {

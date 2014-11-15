@@ -106,13 +106,13 @@ $statisticBackend = new \Resque\Component\Core\RedisStatistic($redis);
 
 $foreman = new \Resque\Foreman();
 $foreman
-    ->setRedisClient($redis)
+    ->setRedisClient($redis) 
     ->setStatisticsBackend($statisticBackend)
     ->setLogger($logger);
 
 $workers = array();
 for ($i = 0; $i < $count; ++$i) {
-    $worker = new \Resque\Worker();
+    $worker = new \Resque\Component\Worker\Worker();
     $worker
         ->setRedisClient($redis)
         ->setFailureBackend($failureBackend)

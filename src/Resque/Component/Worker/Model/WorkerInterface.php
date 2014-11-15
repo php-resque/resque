@@ -14,6 +14,21 @@ interface WorkerInterface
     public function getId();
 
     /**
+     * Set hostname
+     *
+     * @param string $hostname The name of the host the worker is/was running on.
+     * @return $this
+     */
+    public function setHostname($hostname);
+
+    /**
+     * Get hostname
+     *
+     * @return string $hostname The name of the host the worker is/was running on.
+     */
+    public function getHostname();
+
+    /**
      * Add Queue
      *
      * @param QueueInterface $queue The queue to add to the worker.

@@ -12,7 +12,12 @@ class JobSpec extends ObjectBehavior
         $this->shouldHaveType('Resque\Component\Job\Model\Job');
     }
 
-    function it_is_trackable()
+    function it_is_a_job()
+    {
+        $this->shouldImplement('Resque\Component\Job\Model\JobInterface');
+    }
+
+    function it_is_a_trackable_job()
     {
         $this->shouldImplement('Resque\Component\Job\Model\TrackableJobInterface');
     }
@@ -22,16 +27,37 @@ class JobSpec extends ObjectBehavior
         $this->shouldImplement('Resque\Component\Job\Model\FilterableJobInterface');
     }
 
+    function it_always_has_an_id()
+    {
+        $this->getId()->shouldBeString();
+    }
+
     function it_id_is_mutable()
     {
         $this->setId('foo');
         $this->getId()->shouldReturn('foo');
     }
 
-    function it_should_generate_id_if_id_is_null()
+    function it_job_class_should_be_mutable()
     {
-        $this->setId(null);
-        $id = $this->getId();
-        $this->getId()->shouldReturn($id);
+        $this->getJobClass()->shouldReturn(null);
+        $this->setJobClass('Acme\Job');
+        $this->getJobClass()->shouldReturn('Acme\Job');
+
+    }
+
+    function it_can_encode_itself()
+    {
+        $this::encode($this)->shouldBeString();
+    }
+
+    function it_can_decode_a_job()
+    {
+        $this::decode('{"class":"Acme\Job"}')->shouldReturnAnInstanceOf('Resque\Component\Job\Model\Job');
+    }
+
+    function it_should_not_allow_decode_to_return_job_on_invalid_json()
+    {
+        $this->shouldThrow(new \InvalidArgumentException('Invalid JSON'))->duringDecode('{asd$%^]');
     }
 }

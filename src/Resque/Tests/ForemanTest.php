@@ -2,12 +2,11 @@
 
 namespace Resque\Tests;
 
-use Resque\Component\Core\RedisQueue;
 use Resque\Component\Core\RedisStatistic;
 use Resque\Component\Core\Test\ResqueTestCase;
 use Resque\Component\Job\Model\Job;
+use Resque\Component\Worker\Worker;
 use Resque\Foreman;
-use Resque\Worker;
 
 class ForemanTest extends ResqueTestCase
 {
@@ -26,9 +25,7 @@ class ForemanTest extends ResqueTestCase
 
     public function testForemanRegistersWorkerInRedisSet()
     {
-        $worker = new Worker(
-            new RedisQueue('foo')
-        );
+        $worker = new Worker();
 
         $this->foreman->register($worker);
 
@@ -42,8 +39,7 @@ class ForemanTest extends ResqueTestCase
         $count = 3;
         // Register a few workers
         for ($i = 0; $i < $count; ++$i) {
-            $queue = new RedisQueue('queue_' . $i);
-            $worker = new Worker($queue);
+            $worker = new Worker();
             $this->foreman->register($worker);
         }
 
@@ -53,9 +49,7 @@ class ForemanTest extends ResqueTestCase
 
     public function testForemanCanDeregisterWorker()
     {
-        $worker = new Worker(
-            new RedisQueue('baz')
-        );
+        $worker = new Worker();
 
         $this->foreman->register($worker);
 
@@ -99,7 +93,7 @@ class ForemanTest extends ResqueTestCase
         $me = getmypid();
 
         $mockWorker = $this->getMock(
-            'Resque\Worker',
+            'Resque\Component\Worker\Worker',
             array('work'),
             array(array())
         );

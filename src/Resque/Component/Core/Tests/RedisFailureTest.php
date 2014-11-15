@@ -2,11 +2,11 @@
 
 namespace Resque\Component\Core\Tests;
 
-use Resque\Component\Core\RedisQueue;
 use Resque\Component\Core\RedisFailure;
+use Resque\Component\Core\RedisQueue;
 use Resque\Component\Core\Test\ResqueTestCase;
 use Resque\Component\Job\Model\Job;
-use Resque\Worker;
+use Resque\Component\Worker\Worker;
 
 class RedisFailureTest extends ResqueTestCase
 {

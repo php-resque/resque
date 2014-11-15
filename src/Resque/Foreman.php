@@ -8,8 +8,8 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Core\Process;
-use Resque\Component\Core\RedisQueue;
 use Resque\Component\Worker\Model\WorkerInterface;
+use Resque\Component\Worker\Worker;
 use Resque\Statistic\BlackHoleStatistic as BlackHoleStats;
 use Resque\Statistic\StatisticInterface;
 
@@ -34,11 +34,6 @@ class Foreman implements LoggerAwareInterface
      * @var ClientInterface Redis connection.
      */
     protected $redis;
-
-    /**
-     * @var StatisticInterface
-     */
-    protected $statisticsBackend;
 
     /**
      * @var LoggerInterface Logging object that implements the PSR-3 LoggerInterface
@@ -70,31 +65,6 @@ class Foreman implements LoggerAwareInterface
     }
 
     /**
-     * Set statistic backend
-     *
-     * @param StatisticInterface $statisticsBackend
-     * @return $this
-     */
-    public function setStatisticsBackend(StatisticInterface $statisticsBackend)
-    {
-        $this->statisticsBackend = $statisticsBackend;
-
-        return $this;
-    }
-
-    /**
-     * @return StatisticInterface
-     */
-    public function getStatisticsBackend()
-    {
-        if (null === $this->statisticsBackend) {
-            $this->setStatisticsBackend(new BlackHoleStats());
-        }
-
-        return $this->statisticsBackend;
-    }
-
-    /**
      * Inject a logging object into the worker
      *
      * @param LoggerInterface $logger
@@ -122,9 +92,9 @@ class Foreman implements LoggerAwareInterface
         $queues = explode(',', $queues);
 
         $worker = new Worker();
-        foreach ($queues as $queue) {
-            $worker->addQueue(new RedisQueue($queue));
-        }
+//        foreach ($queues as $queue) {
+//            $worker->addQueue(new RedisQueue($queue));
+//        }
 
         $worker->setId($workerId);
 

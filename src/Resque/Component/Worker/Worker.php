@@ -1,6 +1,6 @@
 <?php
 
-namespace Resque;
+namespace Resque\Component\Worker;
 
 use Predis\ClientInterface;
 use Psr\Log\LoggerAwareInterface;
@@ -10,6 +10,7 @@ use Resque\Component\Core\Event\EventDispatcher;
 use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Core\Process;
 use Resque\Component\Job\Event\JobEvent;
+use Resque\Component\Job\Event\JobFailedEvent;
 use Resque\Component\Job\Exception\DirtyExitException;
 use Resque\Component\Job\Exception\InvalidJobException;
 use Resque\Component\Job\Factory\JobInstanceFactory;
@@ -17,17 +18,17 @@ use Resque\Component\Job\Factory\JobInstanceFactoryInterface;
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Job\Model\TrackableJobInterface;
 use Resque\Component\Job\PerformantJobInterface;
+use Resque\Component\Job\ResqueJobEvents;
 use Resque\Component\Queue\Model\OriginQueueAwareInterface;
 use Resque\Component\Queue\Model\QueueInterface;
 use Resque\Component\Worker\Event\WorkerEvent;
 use Resque\Component\Worker\Model\WorkerInterface;
-use Resque\Component\Worker\ResqueWorkerEvents;
 use Resque\Event\EventDispatcherInterface;
 use Resque\Event\JobAfterPerformEvent;
 use Resque\Event\JobBeforePerformEvent;
-use Resque\Component\Job\Event\JobFailedEvent;
 use Resque\Event\WorkerAfterForkEvent;
 use Resque\Event\WorkerBeforeForkEvent;
+use Resque\Failure;
 use Resque\Failure\BlackHoleFailure;
 use Resque\Failure\FailureInterface;
 use Resque\Job\Status;
@@ -454,6 +455,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                 );
             }
 
+            // @todo use correct events and event object.
             $this->eventDispatcher->dispatch(
                 ResqueWorkerEvents::START_UP,
                 new JobBeforePerformEvent($job, $jobInstance)
@@ -504,6 +506,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
         $this->getStatisticsBackend()->increment('failed:' . $this->getId());
 
         $this->eventDispatcher->dispatch(
+            ResqueJobEvents::FAILED,
             new JobFailedEvent($job, $exception, $this)
         );
     }

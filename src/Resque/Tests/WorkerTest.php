@@ -7,8 +7,7 @@ use Resque\Component\Core\RedisQueue;
 use Resque\Component\Core\Test\ResqueTestCase;
 use Resque\Component\Job\Model\Job;
 use Resque\Component\Job\Tests\Jobs\Simple;
-use Resque\Component\Queue\WildcardQueue;
-use Resque\Worker;
+use Resque\Component\Worker\Worker;
 
 class WorkerTest extends ResqueTestCase
 {
@@ -241,7 +240,7 @@ class WorkerTest extends ResqueTestCase
         $queue->push($job);
 
         $mockWorker = $this->getMock(
-            'Resque\Worker',
+            'Resque\Component\Worker\Worker',
             array('workComplete'),
             array(array($queue))
         );
@@ -357,7 +356,7 @@ class WorkerTest extends ResqueTestCase
         $job = new Job('Resque\Component\Job\Tests\Jobs\Simple');
 
         $worker = $this->getMock(
-            'Resque\Worker',
+            'Resque\Component\Worker\Worker',
             array('perform', 'reserve'),
             array(null)
         );
