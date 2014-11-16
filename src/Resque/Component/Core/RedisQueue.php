@@ -24,7 +24,7 @@ class RedisQueue extends AbstractQueue implements RedisAwareInterface
     /**
      * @param ClientInterface $redis
      */
-    public function __construct(ClientInterface $redis = null)
+    public function __construct(ClientInterface $redis)
     {
         if (null !== $redis) {
             $this->setRedisClient($redis);
@@ -142,5 +142,10 @@ class RedisQueue extends AbstractQueue implements RedisAwareInterface
     public function count()
     {
         return $this->redis->llen($this->getRedisKey());
+    }
+
+    public function __toString()
+    {
+        return $this->getName();
     }
 }

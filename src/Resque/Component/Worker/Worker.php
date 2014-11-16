@@ -22,6 +22,7 @@ use Resque\Component\Job\ResqueJobEvents;
 use Resque\Component\Queue\Model\OriginQueueAwareInterface;
 use Resque\Component\Queue\Model\QueueInterface;
 use Resque\Component\Worker\Event\WorkerEvent;
+use Resque\Component\Worker\Event\WorkerJobEvent;
 use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Event\EventDispatcherInterface;
 use Resque\Event\JobAfterPerformEvent;
@@ -335,7 +336,8 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
             if ($this->fork) {
                 $this->eventDispatcher->dispatch(
-                    new WorkerBeforeForkEvent($this, $job)
+                    ResqueWorkerEvents::BEFORE_FORK_TO_PERFORM,
+                    new WorkerJobEvent($this, $job)
                 );
 
                 $this->redis->disconnect();
@@ -345,7 +347,8 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                 if (null === $this->childProcess) {
                     // This is child process, it will perform the job and then die.
                     $this->eventDispatcher->dispatch(
-                        new WorkerAfterForkEvent($this, $job)
+                        ResqueWorkerEvents::AFTER_FORK_TO_PERFORM,
+                        new WorkerJobEvent($this, $job)
                     );
 
                     $this->perform($job);
@@ -390,6 +393,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
         $this->registerSignalHandlers();
 
         $this->eventDispatcher->dispatch(
+            ResqueWorkerEvents::START_UP,
             new WorkerEvent($this)
         );
     }
@@ -723,5 +727,26 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     public function setForkOnPerform($fork)
     {
         $this->fork = (bool)$fork;
+    }
+
+    /**
+     * Set hostname
+     *
+     * @param string $hostname The name of the host the worker is/was running on.
+     * @return $this
+     */
+    public function setHostname($hostname)
+    {
+        // TODO: Implement setHostname() method.
+    }
+
+    /**
+     * Get hostname
+     *
+     * @return string $hostname The name of the host the worker is/was running on.
+     */
+    public function getHostname()
+    {
+        // TODO: Implement getHostname() method.
     }
 }

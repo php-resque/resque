@@ -92,11 +92,10 @@ class Foreman implements LoggerAwareInterface
         $queues = explode(',', $queues);
 
         $worker = new Worker();
+        $worker->setId($workerId);
 //        foreach ($queues as $queue) {
 //            $worker->addQueue(new RedisQueue($queue));
 //        }
-
-        $worker->setId($workerId);
 
         return $worker;
     }

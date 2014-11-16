@@ -40,6 +40,7 @@ class ForemanTest extends ResqueTestCase
         // Register a few workers
         for ($i = 0; $i < $count; ++$i) {
             $worker = new Worker();
+            $worker->setId($i);
             $this->foreman->register($worker);
         }
 
@@ -195,7 +196,6 @@ class ForemanTest extends ResqueTestCase
 
         $foreman = new Foreman();
         $foreman->setRedisClient($this->redis);
-        $foreman->setStatisticsBackend($stats);
 
         $worker = new Worker();
         $worker->setStatisticsBackend($stats);

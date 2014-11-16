@@ -188,7 +188,8 @@ class Process
         $processTitle = 'resque-' . Resque::VERSION . ': ' . $title;
 
         if (function_exists('cli_set_process_title')) {
-            cli_set_process_title($processTitle);
+            // @todo remove @, it is throwing errors on my mac.
+            @cli_set_process_title($processTitle);
 
             return;
         }

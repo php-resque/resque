@@ -3,6 +3,7 @@
 namespace Resque\Tests\Queue;
 
 use Resque\Component\Core\RedisQueue;
+use Resque\Component\Core\RedisQueueRegistry;
 use Resque\Component\Core\Test\ResqueTestCase;
 use Resque\Component\Job\Model\Job;
 use Resque\Component\Queue\WildcardQueue;
@@ -10,15 +11,21 @@ use Resque\Component\Queue\WildcardQueue;
 class WildcardQueueTest extends ResqueTestCase
 {
     /**
-     * @var \Resque\Component\Queue\WildcardQueue
+     * @var WildcardQueue
      */
     protected $wildcard;
+
+    /**
+     * @var RedisQueueRegistry
+     */
+    protected $registry;
 
     public function setUp()
     {
         parent::setUp();
 
-        $this->wildcard = new WildcardQueue($this->redis);
+        $this->registry = new RedisQueueRegistry($this->redis);
+        $this->wildcard = new WildcardQueue($this->registry);
     }
 
     /**
@@ -46,10 +53,12 @@ class WildcardQueueTest extends ResqueTestCase
 
     public function testPopsFromAllQueues()
     {
-        $queueBaz = new RedisQueue('baz', $this->redis);
+        $queueBaz = new RedisQueue($this->redis);
+        $queueBaz->setName('baz');
         $queueBaz->push(new Job('Foo'));
 
-        $queueFoo = new RedisQueue('foo', $this->redis);
+        $queueFoo = new RedisQueue($this->redis);
+        $queueFoo->setName('foo');
         $queueFoo->push(new Job('Foo'));
 
         $this->assertNotNull($this->wildcard->pop());
@@ -59,15 +68,16 @@ class WildcardQueueTest extends ResqueTestCase
 
     public function testPrefixOnlyPopsFromMatchingQueues()
     {
-        $this->wildcard = new WildcardQueue($this->redis, 'foo');
+        $this->wildcard = new WildcardQueue($this->registry, 'foo');
 
         $this->assertSame('foo*', $this->wildcard->getName());
 
-        $queueBaz = new RedisQueue('baz', $this->redis);
-        $jobBaz = new Job('Baz');
-        $queueBaz->push($jobBaz);
+        $queueBaz = new RedisQueue($this->redis);
+        $queueBaz->setName('baz');
+        $queueBaz->push(new Job('Foo'));
 
-        $queueFoo = new RedisQueue('foo', $this->redis);
+        $queueFoo = new RedisQueue($this->redis);
+        $queueFoo->setName('foo');
         $jobFoo = new Job('Foo');
         $queueFoo->push($jobFoo);
 
