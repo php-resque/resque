@@ -11,6 +11,7 @@ use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Core\Process;
 use Resque\Component\Job\Event\JobEvent;
 use Resque\Component\Job\Event\JobFailedEvent;
+use Resque\Component\Job\Event\JobInstanceEvent;
 use Resque\Component\Job\Exception\DirtyExitException;
 use Resque\Component\Job\Exception\InvalidJobException;
 use Resque\Component\Job\Factory\JobInstanceFactory;
@@ -24,7 +25,7 @@ use Resque\Component\Queue\Model\QueueInterface;
 use Resque\Component\Worker\Event\WorkerEvent;
 use Resque\Component\Worker\Event\WorkerJobEvent;
 use Resque\Component\Worker\Model\WorkerInterface;
-use Resque\Event\EventDispatcherInterface;
+use Resque\Component\Core\Event\EventDispatcherInterface;
 use Resque\Event\JobAfterPerformEvent;
 use Resque\Event\JobBeforePerformEvent;
 use Resque\Event\WorkerAfterForkEvent;
@@ -461,7 +462,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
             $this->eventDispatcher->dispatch(
                 ResqueJobEvents::BEFORE_PERFORM,
-                new JobBeforePerformEvent($job, $jobInstance)
+                new JobInstanceEvent($job, $jobInstance)
             );
 
             $jobInstance->perform($job->getArguments());

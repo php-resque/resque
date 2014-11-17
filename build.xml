@@ -6,6 +6,11 @@
         <mkdir dir="${basedir}/build"/>
         <mkdir dir="${basedir}/build/logs"/>
     </target>
+    <target name="phpspec">
+        <exec dir="${basedir}" executable="./vendor/bin/phpspec" failonerror="true">
+            <arg line="run -f dot"/>
+        </exec>
+    </target>
     <target name="phpunit">
         <exec dir="${basedir}" executable="./vendor/bin/phpunit" failonerror="true">
             <arg line="--log-junit         ${basedir}/build/logs/phpunit.xml
@@ -13,5 +18,5 @@
 				--coverage-html   ${basedir}/build/coverage"/>
         </exec>
     </target>
-    <target name="build" depends="clean,prepare,phpunit"/>
+    <target name="build" depends="clean,prepare,phpspec,phpunit"/>
 </project>

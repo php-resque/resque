@@ -1,19 +1,14 @@
 <?php
 
-namespace Resque\Event;
+namespace Resque\Component\Job\Event;
 
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Job\PerformantJobInterface;
 
 /**
- * AbstractJobPerformEvent
- *
- * DRY for JobBeforePerformEvent and JobAfterPerformEvent.
- *
- * @see JobBeforePerformEvent
- * @see JobAfterPerformEvent
+ * JobInstanceEvent
  */
-abstract class AbstractJobPerformEvent
+class JobInstanceEvent
 {
     /**
      * @var JobInterface The job that just performed, or is about to.
@@ -32,15 +27,15 @@ abstract class AbstractJobPerformEvent
     }
 
     /**
-     * @return \Resque\Component\Job\PerformantJobInterface
+     * @return PerformantJobInterface
      */
-    public function getInstance()
+    public function getJobInstance()
     {
         return $this->instance;
     }
 
     /**
-     * @return \Resque\Component\Job\Model\JobInterface
+     * @return JobInterface
      */
     public function getJob()
     {

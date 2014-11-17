@@ -1,6 +1,6 @@
 <?php
 
-namespace Resque\Event;
+namespace Resque\Component\Core\Event;
 
 interface EventDispatcherInterface
 {
