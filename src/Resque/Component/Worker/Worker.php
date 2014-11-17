@@ -126,9 +126,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      */
     public function __construct(
         $queues = null,
-        // Redis?
         JobInstanceFactoryInterface $jobFactory = null,
-        // FailureBackend?
         EventDispatcherInterface $eventDispatcher = null
     ) {
         $this->jobFactory = $jobFactory ?: new JobInstanceFactory();

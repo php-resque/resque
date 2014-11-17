@@ -52,7 +52,7 @@ if (!empty($LOGGING) || !empty($VERBOSE)) {
     }
 }
 
-// See if the APP_INCLUDE containes a logger object,
+// See if the APP_INCLUDE contains a logger object,
 // If none exists, fallback to internal logger
 if (!isset($logger) || !is_object($logger)) {
     $logger = new NullLogger(); // @todo restore
@@ -73,16 +73,16 @@ if (!empty($COUNT) && $COUNT > 1) {
 }
 
 $PREFIX = getenv('PREFIX');
+$redisPrefix = 'resque';
 if (!empty($PREFIX)) {
     $logger->log(Psr\Log\LogLevel::INFO, 'Prefix set to {prefix}', array('prefix' => $PREFIX));
-    Resque_Redis::prefix($PREFIX);
+    $redisPrefix = $PREFIX;
 }
 
-
 $redis = new \Predis\Client(
-    getenv('REDIS_BACKEND'), // @todo
+    getenv('REDIS_BACKEND'),
     array(
-        'prefix' => 'resque:'
+        'prefix' => $redisPrefix . ':'
     )
 );
 
@@ -90,12 +90,13 @@ $queues = array();
 $configQueues = explode(',', $QUEUE);
 
 if (in_array('*', $configQueues)) {
-    $wildcard = new \Resque\Component\Queue\WildcardQueue($redis);
+    $queueRegistry = new \Resque\Component\Core\RedisQueueRegistry($redis);
+    $wildcard = new \Resque\Component\Queue\WildcardQueue($queueRegistry);
     $queues[] = $wildcard;
 } else {
     foreach ($configQueues as $configQueue) {
-        $q = new \Resque\Component\Core\RedisQueue($configQueue);
-        $q->setRedisClient($redis);
+        $q = new \Resque\Component\Core\RedisQueue($redis);
+        $q->setName($configQueue);
         $queues[] = $q;
     }
     unset($configQueue, $q);
@@ -103,11 +104,10 @@ if (in_array('*', $configQueues)) {
 
 $failureBackend = new \Resque\Component\Core\RedisFailure($redis);
 $statisticBackend = new \Resque\Component\Core\RedisStatistic($redis);
+$workerRegistry = new \Resque\Component\Core\RedisWorkerRegistry($redis);
 
-$foreman = new \Resque\Foreman();
+$foreman = new \Resque\Foreman($workerRegistry);
 $foreman
-    ->setRedisClient($redis) 
-    ->setStatisticsBackend($statisticBackend)
     ->setLogger($logger);
 
 $workers = array();
@@ -128,7 +128,7 @@ for ($i = 0; $i < $count; ++$i) {
     unset($worker);
 }
 
-// clean up before we begin.
+// clean up before we begin
 $foreman->pruneDeadWorkers();
 
 $foreman->work($workers);

@@ -41,8 +41,12 @@ interface WorkerRegistryInterface
     public function all();
 
     /**
-     * @param $workerId
-     * @return WorkerInterface|null
+     * Find worker
+     *
+     * Given a worker Id, find it and return an instantiated worker class for it.
+     *
+     * @param string $id The ID of the worker.
+     * @return WorkerInterface|null Instance of the worker. null if the worker does not exist.
      */
-    public function findWorkerById($workerId);
+    public function findWorkerById($id);
 }

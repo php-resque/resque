@@ -2,66 +2,47 @@
 
 namespace Resque;
 
-use Predis\ClientInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Core\Process;
 use Resque\Component\Worker\Model\WorkerInterface;
+use Resque\Component\Worker\Registry\WorkerRegistryInterface;
 use Resque\Component\Worker\Worker;
-use Resque\Statistic\BlackHoleStatistic as BlackHoleStats;
-use Resque\Statistic\StatisticInterface;
 
 /**
  * Resque Foreman
  *
- * Handles creating, pruning, forking, killing and general management of workers.
+ * Handles pruning, forking, killing and general management of workers.
  */
 class Foreman implements LoggerAwareInterface
 {
     /**
-     * @var array
+     * @var string The hostname of the current machine.
      */
-    protected $workers;
+    protected $hostname;
 
     /**
-     * @var array Workers currently registered in Redis as work() has been called.
+     * @var WorkerRegistryInterface A worker registry.
      */
-    protected $registeredWorkers;
-
-    /**
-     * @var ClientInterface Redis connection.
-     */
-    protected $redis;
+    protected $registry;
 
     /**
      * @var LoggerInterface Logging object that implements the PSR-3 LoggerInterface
      */
     protected $logger;
 
-    public function __construct()
+    public function __construct(WorkerRegistryInterface $workerRegistry)
     {
-        $this->workers = array();
-        $this->registeredWorkers = array();
         $this->logger = new NullLogger();
+        $this->registry = $workerRegistry;
 
         if (function_exists('gethostname')) {
             $this->hostname = gethostname();
         } else {
             $this->hostname = php_uname('n');
         }
-    }
-
-    /**
-     * @param ClientInterface $redis
-     * @return $this
-     */
-    public function setRedisClient(ClientInterface $redis)
-    {
-        $this->redis = $redis;
-
-        return $this;
     }
 
     /**
@@ -76,107 +57,13 @@ class Foreman implements LoggerAwareInterface
     }
 
     /**
-     * Given a worker ID, find it and return an instantiated worker class for it.
+     * Work
      *
-     * @param string $workerId The ID of the worker.
-     * @return Worker Instance of the worker. null if the worker does not exist.
-     */
-    public function findWorkerById($workerId)
-    {
-        if (false /** === $this->exists($workerId) */ || false === strpos($workerId, ":")) {
-
-            return null;
-        }
-
-        list($hostname, $pid, $queues) = explode(':', $workerId, 3);
-        $queues = explode(',', $queues);
-
-        $worker = new Worker();
-        $worker->setId($workerId);
-//        foreach ($queues as $queue) {
-//            $worker->addQueue(new RedisQueue($queue));
-//        }
-
-        return $worker;
-    }
-
-    /**
-     * Return all workers known to Resque as instantiated instances.
-     * @return WorkerInterface[]
-     */
-    public function all()
-    {
-        $workers = $this->redis->smembers('workers');
-
-        if (!is_array($workers)) {
-            $workers = array();
-        }
-
-        $instances = array();
-        foreach ($workers as $workerId) {
-            $instances[] = $this->findWorkerById($workerId);
-        }
-
-        return $instances;
-    }
-
-    /**
-     * Registers the given worker in Redis
+     * Given workers this will fork a new process for each and task them to work, registering them with the
+     * worker registry.
      *
-     * @throws \Exception
-     *
-     * @param WorkerInterface $worker
-     * @return $this
-     */
-    public function register(WorkerInterface $worker)
-    {
-        if (in_array($worker, $this->registeredWorkers, true)) {
-            throw new \Exception('Cannot double register a worker, call deregister(), or halt() to clear');
-        }
-
-        $id = $worker->getId();
-
-        $this->registeredWorkers[$id] = $worker;
-
-        $this->redis->sadd('workers', $id);
-        $this->redis->set('worker:' . $id . ':started', date('c'));
-
-        return $this;
-    }
-
-    /**
-     * Deregisters the given worker from Redis
-     *
-     * @param WorkerInterface $worker
-     */
-    public function deregister(WorkerInterface $worker)
-    {
-        $id = $worker->getId();
-
-        $worker->shutdownNow();
-
-        $this->redis->srem('workers', $id);
-        $this->redis->del('worker:' . $id);
-        $this->redis->del('worker:' . $id . ':started');
-
-        $worker->clearStats();
-
-        unset($this->registeredWorkers[$id]);
-    }
-
-    /**
-     * Given a worker, check if it is registered/valid.
-     *
-     * @param WorkerInterface $worker The worker.
-     * @return boolean True if the worker exists in redis, false if not.
-     */
-    public function isRegistered(WorkerInterface $worker)
-    {
-        return (bool)$this->redis->sismember('workers', $worker->getId());
-    }
-
-    /**
-     * @param Worker[] $workers An array of workers you would like forked into child processes and set on their way.
+     * @param WorkerInterface[] $workers An array of workers you would like forked into child processes and set
+     *                          on their way.
      * @param bool $wait If true, this Foreman will wait for the workers to complete. This will guarantee workers are
      *                   cleaned up after correctly, however this is not really practical for most purposes.
      */
@@ -185,8 +72,6 @@ class Foreman implements LoggerAwareInterface
         // @todo Guard multiple calls. Expect ->work() ->halt() ->work() etc
         // @todo Check workers are instanceof WorkerInterface.
 
-        $this->redis->disconnect();
-
         /** @var Worker $worker */
         foreach ($workers as $worker) {
 
@@ -194,10 +79,10 @@ class Foreman implements LoggerAwareInterface
             $child = $parent->fork();
 
             if (null === $child) {
-                // This is child process, it will work and then die.
-                $this->register($worker);
+                // This is worker process, it will process jobs until told to exit.
+                $this->registry->register($worker);
                 $worker->work();
-                $this->deregister($worker);
+                $this->registry->deregister($worker);
 
                 exit(0);
             }
@@ -218,7 +103,7 @@ class Foreman implements LoggerAwareInterface
                 $process = $worker->getProcess();
                 $process->wait();
                 if ($process->isCleanExit()) {
-                    $this->deregister($worker);
+                    $this->registry->deregister($worker);
                 } else {
                     throw new ResqueRuntimeException(
                         sprintf(
@@ -245,7 +130,7 @@ class Foreman implements LoggerAwareInterface
     public function pruneDeadWorkers()
     {
         $workerPids = $this->getLocalWorkerPids();
-        $workers = $this->all();
+        $workers = $this->registry->all();
         foreach ($workers as $worker) {
             if ($worker instanceof WorkerInterface) {
                 $id = $worker->getId();
@@ -255,7 +140,7 @@ class Foreman implements LoggerAwareInterface
                     continue;
                 }
                 $this->logger->warning('Pruning dead worker {worker}', array('worker' => $id));
-                $this->deregister($worker);
+                $this->registry->deregister($worker);
             }
         }
     }
