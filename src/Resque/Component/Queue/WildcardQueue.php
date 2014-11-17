@@ -2,7 +2,6 @@
 
 namespace Resque\Component\Queue;
 
-use Predis\ClientInterface;
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Queue\Model\AbstractQueue;
 use Resque\Component\Queue\Model\QueueInterface;
@@ -18,9 +17,9 @@ use Resque\Component\Queue\Registry\QueueRegistryInterface;
 class WildcardQueue extends AbstractQueue
 {
     /**
-     * @var ClientInterface A Predis Redis connection.
+     * @var QueueRegistryInterface A queue registry.
      */
-    protected $redis;
+    protected $registry;
 
     /**
      * @var null|string Prefix to wildcard, eg "acme-" makes the wildcard behave like "acme-*"

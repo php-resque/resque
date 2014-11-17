@@ -3,25 +3,41 @@
 namespace Resque\Component\Worker;
 
 /**
+ * Worker events
+ *
  * Contains all job related events thrown in the worker component
  */
 final class ResqueWorkerEvents
 {
-    /*
+    /**
      * The event listener receives a Resque\Component\Worker\Event\WorkerEvent instance.
      *
      * @var string
      */
-    const START_UP = 'resque.worker.start_up';
+    const REGISTERED = 'resque.worker.registered';
 
-    /*
+    /**
+     * The event listener receives a Resque\Component\Worker\Event\WorkerEvent instance.
+     *
+     * @var string
+     */
+    const UNREGISTERED = 'resque.worker.unregistered';
+
+    /**
+     * The event listener receives a Resque\Component\Worker\Event\WorkerEvent instance.
+     *
+     * @var string
+     */
+    const START_UP = 'resque.worker.started';
+
+    /**
      * The event listener receives a Resque\Component\Worker\Event\WorkerJobEvent instance.
      *
      * @var string
      */
     const BEFORE_FORK_TO_PERFORM = 'resque.worker.before_fork_to_perform';
 
-    /*
+    /**
      * The event listener receives a Resque\Component\Worker\Event\WorkerJobEvent instance.
      *
      * @var string

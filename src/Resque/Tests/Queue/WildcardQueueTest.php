@@ -61,6 +61,9 @@ class WildcardQueueTest extends ResqueTestCase
         $queueFoo->setName('foo');
         $queueFoo->push(new Job('Foo'));
 
+        $this->registry->register($queueBaz);
+        $this->registry->register($queueFoo);
+
         $this->assertNotNull($this->wildcard->pop());
         $this->assertNotNull($this->wildcard->pop());
         $this->assertNull($this->wildcard->pop());
@@ -68,9 +71,9 @@ class WildcardQueueTest extends ResqueTestCase
 
     public function testPrefixOnlyPopsFromMatchingQueues()
     {
-        $this->wildcard = new WildcardQueue($this->registry, 'foo');
+        $wildcard = new WildcardQueue($this->registry, 'foo');
 
-        $this->assertSame('foo*', $this->wildcard->getName());
+        $this->assertSame('foo*', $wildcard->getName());
 
         $queueBaz = new RedisQueue($this->redis);
         $queueBaz->setName('baz');
@@ -81,9 +84,12 @@ class WildcardQueueTest extends ResqueTestCase
         $jobFoo = new Job('Foo');
         $queueFoo->push($jobFoo);
 
-        $poppedJob = $this->wildcard->pop();
+        $this->registry->register($queueBaz);
+        $this->registry->register($queueFoo);
+
+        $poppedJob = $wildcard->pop();
         $this->assertNotNull($poppedJob);
         $this->assertSame($jobFoo->getId(), $poppedJob->getId());
-        $this->assertNull($this->wildcard->pop());
+        $this->assertNull($wildcard->pop());
     }
 }

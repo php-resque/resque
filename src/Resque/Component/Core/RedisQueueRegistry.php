@@ -100,6 +100,9 @@ class RedisQueueRegistry implements
      */
     public function createQueue($name)
     {
-        return new RedisQueue($name, $this->redis);
+        $queue = new RedisQueue($this->redis);
+        $queue->setName($name);
+
+        return $queue;
     }
 }

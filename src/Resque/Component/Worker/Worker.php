@@ -459,18 +459,13 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                 );
             }
 
-            // @todo use correct events and event object.
             $this->eventDispatcher->dispatch(
-                ResqueWorkerEvents::START_UP,
+                ResqueJobEvents::BEFORE_PERFORM,
                 new JobBeforePerformEvent($job, $jobInstance)
             );
 
             $jobInstance->perform($job->getArguments());
 
-            $this->eventDispatcher->dispatch(
-                ResqueWorkerEvents::START_UP,
-                new JobAfterPerformEvent($job, $jobInstance)
-            );
         } catch (\Exception $exception) {
 
             $this->handleFailedJob($job, $exception);
@@ -482,7 +477,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
         $this->getLogger()->notice('{job} has successfully processed', array('job' => $job));
 
-        $this->eventDispatcher->dispatch(ResqueWorkerEvents::START_UP, new JobEvent($job));
+        $this->eventDispatcher->dispatch(ResqueJobEvents::PERFORMED, new JobEvent($job));
 
         return true;
     }

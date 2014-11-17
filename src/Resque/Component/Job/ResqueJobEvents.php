@@ -3,6 +3,8 @@
 namespace Resque\Component\Job;
 
 /**
+ * Job Events
+ *
  * Contains all job related events
  */
 final class ResqueJobEvents
@@ -17,12 +19,25 @@ final class ResqueJobEvents
      */
     const STATE_CHANGE = 'resque.job.state_change';
 
-    const PRE_PERFORM = 'resue.job.pre_perform';
+    /**
+     * The BEFORE_PERFORM event is dispatched before a job perform is attempted.
+     *
+     * The event listener receives a Resque\Component\Job\Event\JobEvent instance.
+     *
+     * @see \Resque\Component\Job\Event\JobEvent
+     *
+     * @var string
+     */
+    const BEFORE_PERFORM = 'resque.job.before_perform';
 
     /**
      * The PERFORMED event is dispatched whenever a job successfully performs from with in a worker.
      *
      * The event listener receives a Resque\Component\Job\Event\JobEvent instance.
+     *
+     * @see \Resque\Component\Job\Event\JobEvent
+     *
+     * @var string
      */
     const PERFORMED = 'resque.job.performed';
 

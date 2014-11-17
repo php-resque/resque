@@ -3,35 +3,37 @@
 namespace Resque\Component\Queue;
 
 /**
+ * Queue events
+ *
  * Contains all events thrown in the queue component
  */
 final class ResqueQueueEvents
 {
-    /*
-     * The event listener receives a Resque\Component\RedisQueue\Event\QueueEvent instance.
+    /**
+     * The event listener receives a Resque\Component\Queue\Event\QueueEvent instance.
      *
      * @var string
      */
     const REGISTERED = 'resque.queue.registered';
 
-    /*
-     * The event listener receives a Resque\Component\RedisQueue\Event\QueueEvent instance.
+    /**
+     * The event listener receives a Resque\Component\Queue\Event\QueueEvent instance.
      *
      * @var string
      */
     const UNREGISTERED = 'resque.queue.unregistered';
 
-    /*
-     * The event listener receives a Resque\Component\RedisQueue\Event\QueueJobEvent instance.
+    /**
+     * The event listener receives a Resque\Component\Queue\Event\QueueJobEvent instance.
      *
      * @var string
      */
-    const PRE_PUSH = 'resque.queue.pre_push';
+    const JOB_PUSH = 'resque.queue.job_push';
 
-    /*
-     * The event listener receives a Resque\Component\RedisQueue\Event\QueueJobEvent instance.
+    /**
+     * The event listener receives a Resque\Component\Queue\Event\QueueJobEvent instance.
      *
      * @var string
      */
-    const POST_PUSH = 'resque.queue.post_push';
+    const JOB_PUSHED = 'resque.queue.job_pushed';
 }
