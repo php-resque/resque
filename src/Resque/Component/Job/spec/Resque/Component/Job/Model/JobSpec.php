@@ -53,7 +53,7 @@ class JobSpec extends ObjectBehavior
 
     function it_can_decode_a_job()
     {
-        $this::decode('{"class":"Acme\Job"}')->shouldReturnAnInstanceOf('Resque\Component\Job\Model\Job');
+        $this::decode('{"class":"Acme\\\\Job","args":[[]],"id":123}')->shouldReturnAnInstanceOf('Resque\Component\Job\Model\Job');
     }
 
     function it_should_not_allow_decode_to_return_job_on_invalid_json()

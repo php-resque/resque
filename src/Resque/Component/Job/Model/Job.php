@@ -233,17 +233,17 @@ class Job implements
      */
     public static function decode($payload)
     {
-        $payload = json_decode($payload, true);
+        $decoded = json_decode($payload, true);
 
         // @todo check for json_decode error, if error throw an exception.
-        if (null === $payload) {
+        if (null === $decoded) {
             throw new InvalidArgumentException('Invalid JSON');
         }
 
         $job = new static();
-        $job->setJobClass($payload['class']);
-        $job->setArguments($payload['args'][0]);
-        $job->setId($payload['id']);
+        $job->setJobClass($decoded['class']);
+        $job->setArguments($decoded['args'][0]);
+        $job->setId($decoded['id']);
 
         return $job;
     }
