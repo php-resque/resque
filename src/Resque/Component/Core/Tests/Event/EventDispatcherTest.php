@@ -12,8 +12,6 @@ class EventDispatcherTest extends \PHPUnit_Framework_TestCase
     {
         $dispatcher = new EventDispatcher();
 
-        $mockEvent = $this->getMock('Resque\Event\EventInterface');
-
         $called = 0;
 
         $dispatcher->addListener(
@@ -23,10 +21,10 @@ class EventDispatcherTest extends \PHPUnit_Framework_TestCase
             }
         );
 
-        $dispatcher->dispatch(self::MOCK_EVENT, $mockEvent);
+        $dispatcher->dispatch(self::MOCK_EVENT, new \stdClass());
         $this->assertEquals(1, $called);
 
-        $dispatcher->dispatch(self::MOCK_EVENT, $mockEvent);
+        $dispatcher->dispatch(self::MOCK_EVENT, new \stdClass());
         $this->assertEquals(2, $called);
     }
 
