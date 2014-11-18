@@ -6,31 +6,27 @@ use Resque\Component\Core\Event\EventDispatcher;
 
 class EventDispatcherTest extends \PHPUnit_Framework_TestCase
 {
+    const MOCK_EVENT = 'mock.event';
+
     public function testEventsCanBeDispatched()
     {
         $dispatcher = new EventDispatcher();
 
         $mockEvent = $this->getMock('Resque\Event\EventInterface');
-        $mockEvent
-            ->expects($this->atLeastOnce())
-            ->method('getName')
-            ->will(
-                $this->returnValue('test')
-            );
 
         $called = 0;
 
         $dispatcher->addListener(
-            'test',
+            self::MOCK_EVENT,
             function () use (&$called) {
                 $called++;
             }
         );
 
-        $dispatcher->dispatch($mockEvent);
+        $dispatcher->dispatch(self::MOCK_EVENT, $mockEvent);
         $this->assertEquals(1, $called);
 
-        $dispatcher->dispatch($mockEvent);
+        $dispatcher->dispatch(self::MOCK_EVENT, $mockEvent);
         $this->assertEquals(2, $called);
     }
 

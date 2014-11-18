@@ -17,7 +17,9 @@ class RedisFailureTest extends ResqueTestCase
         $this->assertEquals(0, $backend->count());
 
         $job = new Job('derp');
-        $job->setOriginQueue(new RedisQueue('jobs'));
+        $queue = new RedisQueue($this->redis);
+        $queue->setName('jobs');
+        $job->setOriginQueue($queue);
         $worker = new Worker();
 
         $backend->save(

@@ -11,7 +11,7 @@
         >
     <testsuites>
         <testsuite name="Resque Test Suite">
-            <directory>./src/Resque/Tests</directory>
+            <directory suffix="Test.php">./src/Resque</directory>
         </testsuite>
     </testsuites>
 

@@ -78,6 +78,8 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisAwareInterfac
         $this->redis->del('worker:' . $id);
         $this->redis->del('worker:' . $id . ':started');
 
+        $worker->clearStats();
+
         unset($this->registeredWorkers[$id]);
     }
 
@@ -108,7 +110,7 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisAwareInterfac
      */
     public function findWorkerById($workerId)
     {
-        if (false === $this->isRegistered($workerId) || false === strpos($workerId, ":")) {
+        if (false === strpos($workerId, ":")) {
 
             return null;
         }
@@ -121,6 +123,11 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisAwareInterfac
 //        foreach ($queues as $queue) {
 //            $worker->addQueue(new RedisQueue($queue));
 //        }
+
+        if (false === $this->isRegistered($worker)) {
+
+            return null;
+        }
 
         return $worker;
     }

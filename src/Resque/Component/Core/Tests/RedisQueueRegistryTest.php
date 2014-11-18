@@ -24,7 +24,8 @@ class RedisQueueRegistryTest extends ResqueTestCase
         parent::setUp();
 
         $this->registry = new RedisQueueRegistry($this->redis);
-        $this->queue = new RedisQueue('jobs', $this->redis);
+        $this->queue = new RedisQueue($this->redis);
+        $this->queue->setName('jobs');
     }
 
     public function testDeregister()
@@ -51,16 +52,16 @@ class RedisQueueRegistryTest extends ResqueTestCase
         $queues = $this->registry->all();
         $this->assertCount(0, $queues);
 
-        $foo = new RedisQueue('foo');
-        $foo->setRedisClient($this->redis);
+        $foo = new RedisQueue($this->redis);
+        $foo->setName('foo');
         $this->registry->register($foo);
 
         $queues = $this->registry->all();
         $this->assertCount(1, $queues);
         $this->assertEquals('foo', $queues['foo']);
 
-        $bar = new RedisQueue('bar');
-        $bar->setRedisClient($this->redis);
+        $bar = new RedisQueue($this->redis);
+        $bar->setName('bar');
         $this->registry->register($bar);
 
         $queues = $this->registry->all();

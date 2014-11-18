@@ -2,6 +2,7 @@
 
 namespace Resque\Component\Worker\Model;
 
+use Resque\Component\Core\Process;
 use Resque\Component\Queue\Model\QueueInterface;
 
 interface WorkerInterface
@@ -41,4 +42,6 @@ interface WorkerInterface
      * The worker should probably do some important stuff.
      */
     public function work();
+
+    public function setProcess(Process $process);
 }
