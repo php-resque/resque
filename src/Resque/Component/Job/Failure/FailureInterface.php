@@ -1,6 +1,6 @@
 <?php
 
-namespace Resque\Failure;
+namespace Resque\Component\Job\Failure;
 
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Worker\Model\WorkerInterface;

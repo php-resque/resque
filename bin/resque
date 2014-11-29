@@ -104,19 +104,18 @@ if (in_array('*', $configQueues)) {
 
 $failureBackend = new \Resque\Component\Core\RedisFailure($redis);
 $statisticBackend = new \Resque\Component\Core\RedisStatistic($redis);
-$workerRegistry = new \Resque\Component\Core\RedisWorkerRegistry($redis);
+$jobInstanceFactory = new \Resque\Component\Job\Factory\JobInstanceFactory();
+$workerFactory = new \Resque\Component\Worker\Factory\WorkerFactory($jobInstanceFactory, $eventDispatcher);
+$workerRegistry = new \Resque\Component\Core\RedisWorkerRegistry($redis, $workerFactory);
 
-$foreman = new \Resque\Foreman($workerRegistry);
+$foreman = new \Resque\Component\Core\Foreman($workerRegistry);
 $foreman
     ->setLogger($logger);
 
 $workers = array();
 for ($i = 0; $i < $count; ++$i) {
-    $worker = new \Resque\Component\Worker\Worker();
+    $worker = $workerFactory->createWorker();
     $worker
-        ->setRedisClient($redis)
-        ->setFailureBackend($failureBackend)
-        ->setStatisticsBackend($statisticBackend)
         ->setLogger($logger);
 
     foreach ($queues as $queue) {

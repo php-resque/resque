@@ -62,12 +62,4 @@ class Resque
     {
         return $this->queueRegistry->createQueue($queueName);
     }
-
-    /**
-     * @param TrackableJobInterface $job
-     */
-    public function track(TrackableJobInterface $job)
-    {
-
-    }
 }

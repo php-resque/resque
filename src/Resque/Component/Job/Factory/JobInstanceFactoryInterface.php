@@ -3,7 +3,6 @@
 namespace Resque\Component\Job\Factory;
 
 use Resque\Component\Job\Model\JobInterface;
-use Resque\Job\Exception;
 
 interface JobInstanceFactoryInterface
 {
@@ -15,5 +14,5 @@ interface JobInstanceFactoryInterface
      * @param JobInterface $job
      * @return \Resque\Component\Job\PerformantJobInterface The actual class/service that will perform.
      */
-    public function createJob(JobInterface $job);
+    public function createPerformantJob(JobInterface $job);
 }

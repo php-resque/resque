@@ -11,7 +11,7 @@ interface RedisAwareInterface
 {
     /**
      * @param ClientInterface $redis
-     * @return self
+     * @return $this
      */
     public function setRedisClient(ClientInterface $redis);
 }

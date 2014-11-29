@@ -4,5 +4,9 @@ namespace Resque\Component\Core\Event;
 
 interface EventDispatcherInterface
 {
-    public function dispatch($event, $context);
+    /**
+     * @param string $eventName The name of the event being dispatched.
+     * @param $context
+     */
+    public function dispatch($eventName, $context);
 }

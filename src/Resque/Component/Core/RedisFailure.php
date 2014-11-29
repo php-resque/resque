@@ -7,7 +7,7 @@ use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Queue\Model\OriginQueueAwareInterface;
 use Resque\Component\Queue\Model\QueueInterface;
 use Resque\Component\Worker\Model\WorkerInterface;
-use Resque\Failure\FailureInterface;
+use Resque\Component\Job\Failure\FailureInterface;
 
 /**
  * Default redis backend for storing failed jobs.
@@ -54,11 +54,17 @@ class RedisFailure implements FailureInterface, RedisAwareInterface
         );
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function count()
     {
         return $this->redis->llen('failed');
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function clear()
     {
         $this->redis->del('failed');

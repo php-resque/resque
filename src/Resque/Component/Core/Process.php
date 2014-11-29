@@ -4,6 +4,9 @@ namespace Resque\Component\Core;
 
 use Resque\Component\Core\Exception\ResqueRuntimeException;
 
+/**
+ * @todo this should have an interface
+ */
 class Process
 {
     /**

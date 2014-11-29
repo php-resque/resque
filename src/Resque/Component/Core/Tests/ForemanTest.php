@@ -2,10 +2,9 @@
 
 namespace Resque\Tests;
 
+use Resque\Component\Core\Foreman;
 use Resque\Component\Core\RedisWorkerRegistry;
 use Resque\Component\Core\Test\ResqueTestCase;
-use Resque\Component\Worker\Worker;
-use Resque\Foreman;
 
 class ForemanTest extends ResqueTestCase
 {
@@ -13,6 +12,11 @@ class ForemanTest extends ResqueTestCase
      * @var Foreman
      */
     protected $foreman;
+
+    /**
+     * @var RedisWorkerRegistry
+     */
+    protected $workerRegistry;
 
     public function setUp()
     {
@@ -24,7 +28,7 @@ class ForemanTest extends ResqueTestCase
 
     public function testForking()
     {
-        return $this->markTestIncomplete('this is failing, as I need to restore discounting from redis pre-fork');
+        return $this->markTestIncomplete('this is failing, as I need to restore disconnecting from redis on pre-fork');
 
         $me = getmypid();
 
@@ -58,21 +62,22 @@ class ForemanTest extends ResqueTestCase
     public function testWorkerCleansUpDeadWorkersOnStartup()
     {
         // Register a real worker
-        $realWorker = new Worker();
+        $realWorker = $this->getMock('Resque\Component\Worker\Model\WorkerInterface');
+        $realWorker->expects($this->atLeastOnce())->method('getId')->will($this->returnValue('localhost:1:jobs'));
         $this->workerRegistry->register($realWorker);
 
-        $workerId = explode(':', $realWorker);
+        $workerId = explode(':', $realWorker->getId());
 
         // Register some dead workers
-        $worker = new Worker();
-        $worker->setId($workerId[0] . ':1:jobs');
+        $worker = $this->getMock('Resque\Component\Worker\Model\WorkerInterface');
+        $worker->expects($this->atLeastOnce())->method('getId')->will($this->returnValue($workerId[0] . ':1:jobs'));
         $this->workerRegistry->register($worker);
 
-        $worker = new Worker();
-        $worker->setId($workerId[0] . ':2:high,low');
+        $worker = $this->getMock('Resque\Component\Worker\Model\WorkerInterface');
+        $worker->expects($this->atLeastOnce())->method('getId')->will($this->returnValue($workerId[0] . ':2:high,low'));
         $this->workerRegistry->register($worker);
 
-        $this->assertCount(3, $this->workerRegistry->all());
+        $this->assertCount(3, $this->workerRegistry->count());
 
         $this->foreman->pruneDeadWorkers();
 
@@ -84,13 +89,13 @@ class ForemanTest extends ResqueTestCase
     public function testDeadWorkerCleanUpDoesNotCleanUnknownWorkers()
     {
         // Register a dead worker on this machine
-        $localWorker = new Worker();
+        $localWorker = $this->getMock('Resque\Component\Worker\Model\WorkerInterface');
         $workerId = explode(':', $localWorker);
         $localWorker->setId($workerId[0] . ':1:jobs');
         $this->workerRegistry->register($localWorker);
 
         // Register some other false workers
-        $remoteWorker = new Worker();
+        $remoteWorker = $this->getMock('Resque\Component\Worker\Model\WorkerInterface');
         $remoteWorker->setId('my.other.host:1:jobs');
         $this->workerRegistry->register($remoteWorker);
 

@@ -3,10 +3,7 @@
 namespace Resque\Component\Core\Tests;
 
 use Resque\Component\Core\RedisFailure;
-use Resque\Component\Core\RedisQueue;
 use Resque\Component\Core\Test\ResqueTestCase;
-use Resque\Component\Job\Model\Job;
-use Resque\Component\Worker\Worker;
 
 class RedisFailureTest extends ResqueTestCase
 {
@@ -16,11 +13,9 @@ class RedisFailureTest extends ResqueTestCase
 
         $this->assertEquals(0, $backend->count());
 
-        $job = new Job('derp');
-        $queue = new RedisQueue($this->redis);
-        $queue->setName('jobs');
-        $job->setOriginQueue($queue);
-        $worker = new Worker();
+        $job = $this->getMock('Resque\Component\Job\Model\JobInterface');
+        $queue = $this->getMock('Resque\Component\Queue\Model\QueueInterface');
+        $worker = $this->getMock('Resque\Component\Worker\Model\WorkerInterface');
 
         $backend->save(
             $job,

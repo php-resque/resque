@@ -1,4 +1,5 @@
 suites:
-    Core:   { namespace: Resque, spec_path: src/Resque/Component/Core }
-    Job:    { namespace: Resque, spec_path: src/Resque/Component/Job }
-    Worker: { namespace: Resque, spec_path: src/Resque/Component/Worker }
+    Core:   { namespace: Resque\Component\Core, spec_path: src/Resque/Component/Core }
+    Job:    { namespace: Resque\Component\Job, spec_path: src/Resque/Component/Job }
+    Worker: { namespace: Resque\Component\Worker, spec_path: src/Resque/Component/Worker }
+    Queue:  { namespace: Resque\Component\Queue, spec_path: src/Resque/Component/Queue }

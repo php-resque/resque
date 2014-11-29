@@ -1,11 +1,11 @@
 <?php
 
-namespace Resque\Statistic;
+namespace Resque\Component\Statistic;
 
 /**
- * Default redis backend for storing failed jobs.
+ * Stat interface
  */
-class BlackHoleStatistic implements StatisticInterface
+interface StatisticInterface
 {
     /**
      * Get the value of the supplied statistic counter for the specified statistic.
@@ -13,10 +13,7 @@ class BlackHoleStatistic implements StatisticInterface
      * @param string $stat The name of the statistic to get the stats for.
      * @return mixed Value of the statistic.
      */
-    public function get($stat)
-    {
-        return null;
-    }
+    public function get($stat);
 
     /**
      * Increment the value of the specified statistic by a certain amount (default is 1)
@@ -25,10 +22,7 @@ class BlackHoleStatistic implements StatisticInterface
      * @param int $by The amount to increment the statistic by.
      * @return boolean True if successful, false if not.
      */
-    public function increment($stat, $by = 1)
-    {
-        return true;
-    }
+    public function increment($stat, $by = 1);
 
     /**
      * Decrement the value of the specified statistic by a certain amount (default is 1)
@@ -37,10 +31,7 @@ class BlackHoleStatistic implements StatisticInterface
      * @param int $by The amount to decrement the statistic by.
      * @return boolean True if successful, false if not.
      */
-    public function decrement($stat, $by = 1)
-    {
-        return true;
-    }
+    public function decrement($stat, $by = 1);
 
     /**
      * Delete a statistic with the given name.
@@ -48,8 +39,5 @@ class BlackHoleStatistic implements StatisticInterface
      * @param string $stat The name of the statistic to delete.
      * @return boolean True if successful, false if not.
      */
-    public function clear($stat)
-    {
-        return true;
-    }
+    public function clear($stat);
 }

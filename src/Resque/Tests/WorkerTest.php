@@ -13,11 +13,22 @@ use Resque\Component\Worker\Worker;
 
 class WorkerTest extends ResqueTestCase
 {
+    /**
+     * @var Worker
+     */
+    protected $worker;
+
+    public function setup()
+    {
+        $this->worker = new Worker();
+        $statistic = $this->getMock('Resque\Component\Statistic\StatisticInterface');
+        $this->worker->setStatisticsBackend($statistic);
+    }
+
     public function testSetId()
     {
-        $worker = new Worker();
-        $worker->setId('fiddle-sticks');
-        $this->assertSame('fiddle-sticks', (string)$worker);
+        $this->worker->setId('fiddle-sticks');
+        $this->assertSame('fiddle-sticks', (string)$this->worker);
     }
 
     public function testWorkerCanWorkOverMultipleQueues()

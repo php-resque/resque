@@ -2,8 +2,6 @@
 
 namespace Resque\Component\Core\Event;
 
-use Resque\Component\Core\Event\EventDispatcherInterface;
-
 /**
  * Resque simple event dispatcher
  *

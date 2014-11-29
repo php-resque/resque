@@ -3,6 +3,8 @@
 namespace Resque\Component\Core;
 
 use Predis\ClientInterface;
+use Resque\Component\Queue\Model\OriginQueueAwareInterface;
+use Resque\Component\Worker\Factory\WorkerFactoryInterface;
 use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Component\Worker\Registry\WorkerRegistryInterface;
 use Resque\Component\Worker\Worker;
@@ -18,13 +20,19 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisAwareInterfac
     protected $registeredWorkers;
 
     /**
+     * @var WorkerFactoryInterface
+     */
+    protected $workerFactory;
+
+    /**
      * @var ClientInterface Redis connection.
      */
     protected $redis;
 
-    public function __construct(ClientInterface $redis)
+    public function __construct(ClientInterface $redis, WorkerFactoryInterface $workerFactory)
     {
         $this->setRedisClient($redis);
+        $this->workerFactory = $workerFactory;
         $this->registeredWorkers = array();
     }
 
@@ -103,6 +111,14 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisAwareInterfac
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function count()
+    {
+        return $this->redis->scard('workers');
+    }
+
+    /**
      * Given a worker ID, find it and return an instantiated worker class for it.
      *
      * @param string $workerId The ID of the worker.
@@ -118,8 +134,10 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisAwareInterfac
         list($hostname, $pid, $queues) = explode(':', $workerId, 3);
         $queues = explode(',', $queues);
 
-        $worker = new Worker();
+        $worker = $this->workerFactory->createWorker();
+
         $worker->setId($workerId);
+        // @todo use queue factory
 //        foreach ($queues as $queue) {
 //            $worker->addQueue(new RedisQueue($queue));
 //        }
@@ -130,5 +148,32 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisAwareInterfac
         }
 
         return $worker;
+    }
+
+    /**
+     * Save worker state
+     *
+     * @param WorkerInterface $worker The worker persist state to the registry. It must be registered.
+     * @return $this
+     */
+    public function persist(WorkerInterface $worker)
+    {
+        $currentJob = $worker->getCurrentJob();
+
+        if (null === $currentJob) {
+            $this->redis->del('worker:' . $worker->getId());
+
+            return;
+        }
+
+        $payload = json_encode(
+            array(
+                'queue' => ($currentJob instanceof OriginQueueAwareInterface) ? $currentJob->getOriginQueue() : null,
+                'run_at' => date('c'),
+                'payload' => $currentJob::encode($currentJob),
+            )
+        );
+
+        $this->redis->set('worker:' . $worker->getId(), $payload);
     }
 }

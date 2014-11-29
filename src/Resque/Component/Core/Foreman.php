@@ -1,15 +1,13 @@
 <?php
 
-namespace Resque;
+namespace Resque\Component\Core;
 
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Resque\Component\Core\Exception\ResqueRuntimeException;
-use Resque\Component\Core\Process;
 use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Component\Worker\Registry\WorkerRegistryInterface;
-use Resque\Component\Worker\Worker;
 
 /**
  * Resque Foreman
@@ -59,8 +57,8 @@ class Foreman implements LoggerAwareInterface
     /**
      * Work
      *
-     * Given workers this will fork a new process for each and task them to work, registering them with the
-     * worker registry.
+     * Given workers this will fork a new process for each worker and set them to work, whilst registering them with
+     * the worker registry.
      *
      * @param WorkerInterface[] $workers An array of workers you would like forked into child processes and set
      *                          on their way.
@@ -72,7 +70,7 @@ class Foreman implements LoggerAwareInterface
         // @todo Guard multiple calls. Expect ->work() ->halt() ->work() etc
         // @todo Check workers are instanceof WorkerInterface.
 
-        /** @var Worker $worker */
+        /** @var WorkerInterface $worker */
         foreach ($workers as $worker) {
 
             $parent = new Process();
@@ -130,7 +128,7 @@ class Foreman implements LoggerAwareInterface
     public function pruneDeadWorkers()
     {
         $workerPids = $this->getLocalWorkerPids();
-        $workers = $this->registry->all();
+        $workers = $this->registry->all(); // @todo Maybe findWorkersForHost($hostname) ?
         foreach ($workers as $worker) {
             if ($worker instanceof WorkerInterface) {
                 $id = $worker->getId();

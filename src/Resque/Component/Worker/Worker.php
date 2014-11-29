@@ -2,11 +2,10 @@
 
 namespace Resque\Component\Worker;
 
-use Predis\ClientInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use Resque\Component\Core\Event\EventDispatcher;
+use Resque\Component\Core\Event\EventDispatcherInterface;
 use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Core\Process;
 use Resque\Component\Job\Event\JobEvent;
@@ -25,17 +24,6 @@ use Resque\Component\Queue\Model\QueueInterface;
 use Resque\Component\Worker\Event\WorkerEvent;
 use Resque\Component\Worker\Event\WorkerJobEvent;
 use Resque\Component\Worker\Model\WorkerInterface;
-use Resque\Component\Core\Event\EventDispatcherInterface;
-use Resque\Event\JobAfterPerformEvent;
-use Resque\Event\JobBeforePerformEvent;
-use Resque\Event\WorkerAfterForkEvent;
-use Resque\Event\WorkerBeforeForkEvent;
-use Resque\Failure;
-use Resque\Failure\BlackHoleFailure;
-use Resque\Failure\FailureInterface;
-use Resque\Job\Status;
-use Resque\Statistic\BlackHoleStatistic;
-use Resque\Statistic\StatisticInterface;
 
 /**
  * Resque Worker
@@ -85,24 +73,14 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     protected $paused = false;
 
     /**
-     * @var \Resque\Component\Job\Model\JobInterface Current job being processed by this worker.
+     * @var JobInterface Current job being processed by this worker.
      */
     protected $currentJob = null;
 
     /**
-     * @var \Resque\Component\Core\Event\EventDispatcher
+     * @var EventDispatcherInterface
      */
     protected $eventDispatcher;
-
-    /**
-     * @var Failure\FailureInterface
-     */
-    protected $failureBackend;
-
-    /**
-     * @var StatisticInterface
-     */
-    protected $statisticsBackend;
 
     /**
      * @var bool if the worker should fork to perform.
@@ -110,35 +88,20 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     protected $fork = true;
 
     /**
-     * @var ClientInterface Redis connection.
-     */
-    protected $redis;
-
-    /**
      * Constructor
      *
      * Instantiate a new worker, given queues that it should be working on. The list of queues should be supplied in
      * the priority that they should be checked for jobs (first come, first served)
      *
-     * @param QueueInterface|QueueInterface[] $queues A QueueInterface, or an array with multiple.
-     * @param \Resque\Component\Job\Factory\JobInstanceFactoryInterface|null $jobFactory
-     * @param EventDispatcherInterface|null $eventDispatcher
+     * @param JobInstanceFactoryInterface $jobFactory
+     * @param EventDispatcherInterface $eventDispatcher
      */
     public function __construct(
-        $queues = null,
-        JobInstanceFactoryInterface $jobFactory = null,
-        EventDispatcherInterface $eventDispatcher = null
+        JobInstanceFactoryInterface $jobFactory,
+        EventDispatcherInterface $eventDispatcher
     ) {
-        $this->jobFactory = $jobFactory ?: new JobInstanceFactory();
-        $this->eventDispatcher = $eventDispatcher ?: new EventDispatcher();
-
-        if (false === (null === $queues)) {
-            if (!is_array($queues)) {
-                $this->addQueue($queues);
-            } else {
-                $this->addQueues($queues);
-            }
-        }
+        $this->jobFactory = $jobFactory;
+        $this->eventDispatcher = $eventDispatcher;
 
         if (function_exists('gethostname')) {
             $this->hostname = gethostname();
@@ -172,68 +135,9 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      *
      * @return QueueInterface[] Array of queues this worker is dealing with.
      */
-    public function queues()
+    public function getQueues()
     {
         return $this->queues;
-    }
-
-    /**
-     * @param ClientInterface $redis
-     * @return $this
-     */
-    public function setRedisClient(ClientInterface $redis)
-    {
-        $this->redis = $redis;
-
-        return $this;
-    }
-
-    /**
-     * @param FailureInterface $failureBackend
-     * @return $this
-     */
-    public function setFailureBackend(FailureInterface $failureBackend)
-    {
-        $this->failureBackend = $failureBackend;
-
-        return $this;
-    }
-
-    /**
-     * @return FailureInterface
-     */
-    public function getFailureBackend()
-    {
-        if (null === $this->failureBackend) {
-            $this->setFailureBackend(new BlackHoleFailure());
-        }
-
-        return $this->failureBackend;
-    }
-
-    /**
-     * Set statistic backend
-     *
-     * @param StatisticInterface $statisticsBackend
-     * @return $this
-     */
-    public function setStatisticsBackend(StatisticInterface $statisticsBackend)
-    {
-        $this->statisticsBackend = $statisticsBackend;
-
-        return $this;
-    }
-
-    /**
-     * @return StatisticInterface
-     */
-    public function getStatisticsBackend()
-    {
-        if (null === $this->statisticsBackend) {
-            $this->setStatisticsBackend(new BlackHoleStatistic());
-        }
-
-        return $this->statisticsBackend;
     }
 
     /**
@@ -339,7 +243,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                     new WorkerJobEvent($this, $job)
                 );
 
-                $this->redis->disconnect();
+                // $this->redis->disconnect() @todo this should be done in BEFORE_FORK_TO_PERFORM listener.
 
                 $this->childProcess = $this->getProcess()->fork();
 
@@ -355,7 +259,6 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                     exit(0);
                 } else {
                     // We're the parent, sit and wait.
-
                     $title = 'Forked ' . $this->childProcess->getPid() . ' at ' . date('c');
                     $this->getProcess()->setTitle($title);
                     $this->getLogger()->debug($title);
@@ -372,7 +275,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                     }
                 }
 
-                // Child should be dead now.
+                // Child should be dead by now.
                 $this->childProcess = null;
             } else {
                 $this->perform($job);
@@ -400,11 +303,11 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     /**
      * @todo The name reserve doesn't sit well, all it's doing is asking queues for jobs. Change it.
      *
-     * @return \Resque\Component\Job\Model\JobInterface|null Instance of JobInterface if a job is found, null if not.
+     * @return JobInterface|null Instance of JobInterface if a job is found, null if not.
      */
     public function reserve()
     {
-        $queues = $this->queues();
+        $queues = $this->getQueues();
 
         foreach ($queues as $queue) {
             $this->getLogger()->debug('Checking {queue} for jobs', array('queue' => $queue));
@@ -422,7 +325,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     /**
      * Tell Redis which job we're currently working on.
      *
-     * @param \Resque\Component\Job\Model\JobInterface $job The job we're working on.
+     * @param JobInterface $job The job we're working on.
      */
     public function workingOn(JobInterface $job)
     {
@@ -440,7 +343,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      *
      * @throws InvalidJobException if the given job cannot actually be asked to perform.
      *
-     * @param \Resque\Component\Job\Model\JobInterface $job The job to be processed.
+     * @param JobInterface $job The job to be processed.
      * @return bool If job performed or not.
      */
     public function perform(JobInterface $job)
@@ -449,8 +352,12 @@ class Worker implements WorkerInterface, LoggerAwareInterface
         $this->getProcess()->setTitle($status);
         $this->getLogger()->info($status);
 
+        if ($job instanceof TrackableJobInterface) {
+            $job->setState(JobInterface::STATE_PERFORMING);
+        }
+
         try {
-            $jobInstance = $this->jobFactory->createJob($job);
+            $jobInstance = $this->jobFactory->createPerformantJob($job);
 
             if (false === ($jobInstance instanceof PerformantJobInterface)) {
                 throw new InvalidJobException(
@@ -472,7 +379,9 @@ class Worker implements WorkerInterface, LoggerAwareInterface
             return false;
         }
 
-        // $job->updateStatus(Status::STATUS_COMPLETE); @todo update status behaviour
+        if ($job instanceof TrackableJobInterface) {
+            $job->setState(JobInterface::STATE_COMPLETE);
+        }
 
         $this->getLogger()->notice('{job} has successfully processed', array('job' => $job));
 
@@ -484,11 +393,15 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     /**
      * Handle failed job
      *
-     * @param \Resque\Component\Job\Model\JobInterface $job The job that failed.
+     * @param JobInterface $job The job that failed.
      * @param \Exception $exception The reason the job failed.
      */
     protected function handleFailedJob(JobInterface $job, \Exception $exception)
     {
+        if ($job instanceof TrackableJobInterface) {
+            $job->setState(JobInterface::STATE_FAILED);
+        }
+
         $this->getLogger()->error(
             'Perform failure on {job}, {message}',
             array(
@@ -497,11 +410,10 @@ class Worker implements WorkerInterface, LoggerAwareInterface
             )
         );
 
-        $this->getFailureBackend()->save($job, $exception, $this);
-
-        // $job->updateStatus(Status::STATUS_FAILED);
-        $this->getStatisticsBackend()->increment('failed');
-        $this->getStatisticsBackend()->increment('failed:' . $this->getId());
+        // @todo move this to bind to FAILED event
+//        $this->getFailureBackend()->save($job, $exception, $this);
+//        $this->getStatisticsBackend()->increment('failed');
+//        $this->getStatisticsBackend()->increment('failed:' . $this->getId());
 
         $this->eventDispatcher->dispatch(
             ResqueJobEvents::FAILED,
@@ -513,12 +425,13 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      * Notify Redis that we've finished working on a job, clearing the working
      * state and incrementing the job stats.
      *
-     * @param \Resque\Component\Job\Model\JobInterface $job
+     * @param JobInterface $job
      */
     protected function workComplete(JobInterface $job)
     {
-        $this->getStatisticsBackend()->increment('processed');
-        $this->getStatisticsBackend()->increment('processed:' . $this->getId());
+        // @todo bind to PERFORMED event.
+//        $this->getStatisticsBackend()->increment('processed');
+//        $this->getStatisticsBackend()->increment('processed:' . $this->getId());
         $this->setCurrentJob(null);
         $this->getLogger()->debug('Work complete on {job}', array('job' => $job));
     }
@@ -531,7 +444,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     public function getId()
     {
         if (null === $this->id) {
-            $this->setId($this->hostname . ':' . getmypid() . ':' . implode(',', $this->queues()));
+            $this->setId($this->hostname . ':' . getmypid() . ':' . implode(',', $this->getQueues()));
         }
 
         return $this->id;
@@ -649,8 +562,9 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      *
      * Sets which job the worker is currently working on, and records it in redis.
      *
-     * @param \Resque\Component\Job\Model\JobInterface|null $job The job being worked on, or null if the worker isn't processing a job anymore.
+     * @param JobInterface|null $job The job being worked on, or null if the worker isn't processing a job anymore.
      * @throws ResqueRuntimeException when current job is not cleared before setting a different one.
+     * @return $this
      */
     public function setCurrentJob(JobInterface $job = null)
     {
@@ -666,61 +580,54 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
         $this->currentJob = $job;
 
-        if (null === $this->getCurrentJob()) {
-            $this->redis->del('worker:' . $this->getId());
+        // @todo dispatch event, or maybe called WorkerRegistry->persist?
 
-            return;
-        }
-
-        $payload = json_encode(
-            array(
-                'queue' => ($job instanceof OriginQueueAwareInterface) ? $job->getOriginQueue() : null,
-                'run_at' => date('c'),
-                'payload' => $job::encode($job),
-            )
-        );
-
-        $this->redis->set('worker:' . $this->getId(), $payload);
+        return $this;
     }
 
     /**
      * Return the Job this worker is currently working on.
      *
-     * @return \Resque\Component\Job\Model\JobInterface|null The current Job this worker is processing, null if currently not processing a job
+     * @return JobInterface|null The current Job this worker is processing,
+     *                           null if currently not processing a job
      */
     public function getCurrentJob()
     {
         return $this->currentJob;
     }
 
-    /**
-     * Get a statistic belonging to this worker.
-     *
-     * @param string $stat Statistic to fetch.
-     * @return int Statistic value.
-     */
-    public function getStat($stat)
-    {
-        return $this->getStatisticsBackend()->get($stat . ':' . $this->getId());
-    }
+    // @todo remove, and put in stats
+//    /**
+//     * Get a statistic belonging to this worker.
+//     *
+//     * @param string $stat Statistic to fetch.
+//     * @return int Statistic value.
+//     */
+//    public function getStat($stat)
+//    {
+//        return $this->getStatisticsBackend()->get($stat . ':' . $this->getId());
+//    }
+//
+//    /**
+//     * Clear worker stats
+//     */
+//    public function clearStats()
+//    {
+//        $this->getStatisticsBackend()->clear('processed:' . $this->getId());
+//        $this->getStatisticsBackend()->clear('failed:' . $this->getId());
+//    }
 
     /**
-     * Clear worker stats
-     */
-    public function clearStats()
-    {
-        $this->getStatisticsBackend()->clear('processed:' . $this->getId());
-        $this->getStatisticsBackend()->clear('failed:' . $this->getId());
-    }
-
-    /**
-     * "Will fork for food"
+     * Set fork to perform job
      *
      * @param bool $fork If the worker should fork to do work
+     * @return $this
      */
     public function setForkOnPerform($fork)
     {
         $this->fork = (bool)$fork;
+
+        return $this;
     }
 
     /**
@@ -737,7 +644,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     /**
      * Get hostname
      *
-     * @return string $hostname The name of the host the worker is/was running on.
+     * @return string The name of the host the worker is/was running on.
      */
     public function getHostname()
     {
