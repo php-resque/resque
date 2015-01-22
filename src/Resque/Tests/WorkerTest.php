@@ -20,9 +20,9 @@ class WorkerTest extends ResqueTestCase
 
     public function setup()
     {
-        $this->worker = new Worker();
-        $statistic = $this->getMock('Resque\Component\Statistic\StatisticInterface');
-        $this->worker->setStatisticsBackend($statistic);
+        $jobInstanceFactory = $this->getMock('Resque\Component\Job\Factory\JobInstanceFactoryInterface');
+        $eventDispatcher = $this->getMock('Resque\Component\Core\Event\EventDispatcherInterface');
+        $this->worker = new Worker($jobInstanceFactory, $eventDispatcher);
     }
 
     public function testSetId()
@@ -39,20 +39,13 @@ class WorkerTest extends ResqueTestCase
         $queueTwo->setName('queue2');
         $queueTwo->setRedisClient($this->redis);
 
-        $worker = new Worker(
-            array(
-                $queueOne,
-                $queueTwo,
-            )
-        );
-
         $jobOne = new Job('Test_Job_1');
         $jobTwo = new Job('Test_Job_2');
 
         $queueOne->push($jobOne);
         $queueTwo->push($jobTwo);
 
-        $job = $worker->reserve();
+        $job = $this->worker->reserve();
         $this->assertEquals($queueOne, $job->getOriginQueue());
 
         $job = $worker->reserve();
@@ -68,13 +61,9 @@ class WorkerTest extends ResqueTestCase
         $queueLow = new RedisQueue($this->redis);
         $queueLow->setName('low');
 
-        $worker = new Worker(
-            array(
-                $queueHigh,
-                $queueMedium,
-                $queueLow,
-            )
-        );
+        $this->worker->addQueue($queueHigh);
+        $this->worker->addQueue($queueMedium);
+        $this->worker->addQueue($queueLow);
 
         // RedisQueue the jobs in a different order
         $queueLow->push(new Job('Test_Job_1'));
@@ -82,11 +71,11 @@ class WorkerTest extends ResqueTestCase
         $queueMedium->push(new Job('Test_Job_3'));
 
         // Now check we get the jobs back in the right queue order
-        $job = $worker->reserve();
+        $job = $this->worker->reserve();
         $this->assertSame($queueHigh, $job->getOriginQueue());
-        $job = $worker->reserve();
+        $job = $this->worker->reserve();
         $this->assertSame($queueMedium, $job->getOriginQueue());
-        $job = $worker->reserve();
+        $job = $this->worker->reserve();
         $this->assertSame($queueLow, $job->getOriginQueue());
     }
 
@@ -105,8 +94,6 @@ class WorkerTest extends ResqueTestCase
 
     public function testWorkerPerformSendsCorrectArgumentsToJobInstance()
     {
-        $worker = new Worker();
-
         $args = array(
             1,
             array(
@@ -117,7 +104,7 @@ class WorkerTest extends ResqueTestCase
 
         $job = new Job('Resque\Component\Job\Tests\Jobs\Simple', $args);
 
-        $worker->perform($job);
+        $this->worker->perform($job);
 
         $this->assertSame(
             $args,
@@ -239,7 +226,6 @@ class WorkerTest extends ResqueTestCase
         $queue->push($job);
 
         $worker = new Worker($queue, null, $eventDispatcher);
-        $worker->setRedisClient($this->redis);
 
         $worker->work(0);
 
@@ -263,7 +249,6 @@ class WorkerTest extends ResqueTestCase
             ->expects($this->once())
             ->method('workComplete')
             ->will($this->returnValue(null));
-        $mockWorker->setRedisClient($this->redis);
         $mockWorker->work(0);
 
         $currentJob = $mockWorker->getCurrentJob();
@@ -296,7 +281,6 @@ class WorkerTest extends ResqueTestCase
         );
 
         $worker = new Worker($queue, null, $eventDispatcher);
-        $worker->setRedisClient($this->redis);
         $worker->work(0);
 
         $this->assertTrue($callbackTriggered);
@@ -309,7 +293,7 @@ class WorkerTest extends ResqueTestCase
         $queue->push(new Job('Resque\Component\Job\Tests\Jobs\Simple'));
 
         $worker = new Worker($queue);
-        $worker->pauseProcessing();
+        $worker->pause();
 
         $worker->work(0);
 
@@ -322,7 +306,7 @@ class WorkerTest extends ResqueTestCase
 
         $worker = new Worker('*');
         $worker->setLogger(new Resque_Log());
-        $worker->pauseProcessing();
+        $worker->pause();
         Resque::enqueue('jobs', 'Test_Job');
         $worker->work(0);
         $this->assertEquals(0, Resque_Stat::get('processed'));

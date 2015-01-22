@@ -2,44 +2,41 @@
 
 namespace Resque\Component\Core;
 
-use Predis\ClientInterface;
+use Resque\Component\Core\Redis\RedisClientAwareInterface;
+use Resque\Component\Core\Redis\RedisClientInterface;
 use Resque\Component\Queue\Model\OriginQueueAwareInterface;
+use Resque\Component\Worker\Event\WorkerEvent;
 use Resque\Component\Worker\Factory\WorkerFactoryInterface;
 use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Component\Worker\Registry\WorkerRegistryInterface;
+use Resque\Component\Worker\ResqueWorkerEvents;
 use Resque\Component\Worker\Worker;
 
 /**
  * Resque redis worker registry
  */
-class RedisWorkerRegistry implements WorkerRegistryInterface, RedisAwareInterface
+class RedisWorkerRegistry implements WorkerRegistryInterface, RedisClientAwareInterface
 {
-    /**
-     * @var array Workers currently registered in Redis as work() has been called.
-     */
-    protected $registeredWorkers;
-
     /**
      * @var WorkerFactoryInterface
      */
     protected $workerFactory;
 
     /**
-     * @var ClientInterface Redis connection.
+     * @var RedisClientInterface Redis connection.
      */
     protected $redis;
 
-    public function __construct(ClientInterface $redis, WorkerFactoryInterface $workerFactory)
+    public function __construct(RedisClientInterface $redis, WorkerFactoryInterface $workerFactory)
     {
         $this->setRedisClient($redis);
         $this->workerFactory = $workerFactory;
-        $this->registeredWorkers = array();
     }
 
     /**
      * {@inheritDoc}
      */
-    public function setRedisClient(ClientInterface $redis)
+    public function setRedisClient(RedisClientInterface $redis)
     {
         $this->redis = $redis;
 
@@ -51,14 +48,11 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisAwareInterfac
      */
     public function register(WorkerInterface $worker)
     {
-        if (in_array($worker, $this->registeredWorkers, true)) {
-            throw new \Exception('Cannot double register a worker, call deregister(), or halt() to clear');
+        if ($this->isRegistered($worker)) {
+            throw new \Exception('Cannot double register a worker, deregister it before calling register again');
         }
 
         $id = $worker->getId();
-
-        $this->registeredWorkers[$id] = $worker;
-
         $this->redis->sadd('workers', $id);
         $this->redis->set('worker:' . $id . ':started', date('c'));
 
@@ -80,15 +74,16 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisAwareInterfac
     {
         $id = $worker->getId();
 
-        $worker->shutdownNow();
+        $worker->halt();
 
         $this->redis->srem('workers', $id);
         $this->redis->del('worker:' . $id);
         $this->redis->del('worker:' . $id . ':started');
 
-        $worker->clearStats();
+        // @todo restore
+        //$this->eventDispatcher->dispatch(ResqueWorkerEvents::UNREGISTERED, new WorkerEvent($worker));
 
-        unset($this->registeredWorkers[$id]);
+        return $this;
     }
 
     /**
@@ -96,15 +91,15 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisAwareInterfac
      */
     public function all()
     {
-        $workers = $this->redis->smembers('workers');
+        $workerIds = $this->redis->smembers('workers');
 
-        if (!is_array($workers)) {
-            $workers = array();
+        if (!is_array($workerIds)) {
+            return array();
         }
 
         $instances = array();
-        foreach ($workers as $workerId) {
-            $instances[] = $this->findWorkerById($workerId);
+        foreach ($workerIds as $workerId) {
+            $instances[] = $this->workerFactory->createWorkerFromId($workerId);
         }
 
         return $instances;
@@ -119,28 +114,11 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisAwareInterfac
     }
 
     /**
-     * Given a worker ID, find it and return an instantiated worker class for it.
-     *
-     * @param string $workerId The ID of the worker.
-     * @return Worker Instance of the worker. null if the worker does not exist.
+     * {@inheritDoc}
      */
     public function findWorkerById($workerId)
     {
-        if (false === strpos($workerId, ":")) {
-
-            return null;
-        }
-
-        list($hostname, $pid, $queues) = explode(':', $workerId, 3);
-        $queues = explode(',', $queues);
-
-        $worker = $this->workerFactory->createWorker();
-
-        $worker->setId($workerId);
-        // @todo use queue factory
-//        foreach ($queues as $queue) {
-//            $worker->addQueue(new RedisQueue($queue));
-//        }
+        $worker = $this->workerFactory->createWorkerFromId($workerId);
 
         if (false === $this->isRegistered($worker)) {
 
@@ -151,10 +129,7 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisAwareInterfac
     }
 
     /**
-     * Save worker state
-     *
-     * @param WorkerInterface $worker The worker persist state to the registry. It must be registered.
-     * @return $this
+     * {@inheritDoc}
      */
     public function persist(WorkerInterface $worker)
     {
@@ -163,17 +138,19 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisAwareInterfac
         if (null === $currentJob) {
             $this->redis->del('worker:' . $worker->getId());
 
-            return;
+            return $this;
         }
 
         $payload = json_encode(
             array(
                 'queue' => ($currentJob instanceof OriginQueueAwareInterface) ? $currentJob->getOriginQueue() : null,
                 'run_at' => date('c'),
-                'payload' => $currentJob::encode($currentJob),
+                'payload' => $currentJob->encode($currentJob),
             )
         );
 
         $this->redis->set('worker:' . $worker->getId(), $payload);
+
+        return $this;
     }
 }

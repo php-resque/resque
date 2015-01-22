@@ -66,7 +66,7 @@ interface JobInterface
      * @param JobInterface $job
      * @return mixed Encoded data to be saved into redis and at a later date passed to self::decode()
      */
-    public static function encode(JobInterface $job);
+    public function encode(JobInterface $job);
 
     /**
      * Decode
@@ -75,7 +75,7 @@ interface JobInterface
      * created from.
      *
      * @param mixed $payload The encoded data from self::encode()
-     * @return JobInterface
+     * @return static
      */
-    public static function decode($payload);
+    public function decode($payload);
 }

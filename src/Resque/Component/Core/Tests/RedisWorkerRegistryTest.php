@@ -10,29 +10,6 @@ use Resque\Component\Worker\Worker;
 
 class RedisWorkerRegistryTest extends ResqueTestCase
 {
-    /**
-     * @var RedisWorkerRegistry
-     */
-    protected $workerRegistry;
-
-    public function setUp()
-    {
-        parent::setUp();
-
-        $this->workerRegistry = new RedisWorkerRegistry($this->redis);
-    }
-
-    public function testRegistersWorkerInRedisSet()
-    {
-        $worker = new Worker();
-
-        $this->workerRegistry->register($worker);
-
-        // Make sure the worker is in the list
-        $this->assertCount(1, $this->redis->smembers('workers'));
-        $this->assertTrue((bool)$this->redis->sismember('workers', $worker));
-    }
-
     public function testGetAllWorkers()
     {
         $count = 3;
@@ -62,12 +39,6 @@ class RedisWorkerRegistryTest extends ResqueTestCase
         $this->assertFalse($this->workerRegistry->isRegistered($worker));
         $this->assertCount(0, $this->workerRegistry->all());
         $this->assertCount(0, $this->redis->smembers('workers'));
-    }
-
-    public function testUnregisteredWorkerDoesNotExistInRedis()
-    {
-        $worker = new Worker(array());
-        $this->assertFalse($this->workerRegistry->isRegistered($worker));
     }
 
     public function testGetWorkerById()

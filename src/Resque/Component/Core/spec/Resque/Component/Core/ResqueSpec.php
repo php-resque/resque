@@ -21,19 +21,17 @@ class ResqueSpec extends ObjectBehavior
     }
 
     function it_asks_queue_registry_to_create_queue(
-        QueueRegistryInterface $registry,
+        $registry,
         QueueInterface $queue
     ) {
-        $this->beConstructedWith($registry);
         $registry->createQueue('foo')->willReturn($queue);
         $this->getQueue('foo')->shouldReturn($queue);
     }
 
     function it_can_enqueue_a_job(
-       QueueRegistryInterface $registry,
-       QueueInterface $queue
-   ) {
-        $this->beConstructedWith($registry);
+        $registry,
+        QueueInterface $queue
+    ) {
         $registry->createQueue('foo')->willReturn($queue);
         $this->enqueue('foo', 'test')->shouldReturnAnInstanceOf('Resque\Component\Job\Model\JobInterface');
     }

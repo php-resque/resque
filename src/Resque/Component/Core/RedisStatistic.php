@@ -3,19 +3,23 @@
 namespace Resque\Component\Core;
 
 use Predis\ClientInterface;
+use Resque\Component\Core\Redis\RedisClientAwareInterface;
+use Resque\Component\Core\Redis\RedisClientInterface;
+use Resque\Component\Job\Event\JobFailedEvent;
 use Resque\Component\Statistic\StatisticInterface;
+use Resque\Component\Worker\Event\WorkerJobEvent;
 
 /**
  * Default redis backend for storing failed jobs.
  */
-class RedisStatistic implements StatisticInterface, RedisAwareInterface
+class RedisStatistic implements StatisticInterface, RedisClientAwareInterface
 {
     /**
      * @var ClientInterface A redis client.
      */
     protected $redis;
 
-    public function __construct(ClientInterface $redis)
+    public function __construct(RedisClientInterface $redis)
     {
         $this->setRedisClient($redis);
     }
@@ -23,7 +27,7 @@ class RedisStatistic implements StatisticInterface, RedisAwareInterface
     /**
      * {@inheritDoc}
      */
-    public function setRedisClient(ClientInterface $redis)
+    public function setRedisClient(RedisClientInterface $redis)
     {
         $this->redis = $redis;
 
@@ -74,5 +78,23 @@ class RedisStatistic implements StatisticInterface, RedisAwareInterface
     public function clear($stat)
     {
         return (bool)$this->redis->del('stat:' . $stat);
+    }
+
+    /**
+     * @param WorkerJobEvent $event
+     */
+    public function jobProcessed(WorkerJobEvent $event)
+    {
+        $this->increment('processed');
+        $this->increment('processed:' . $event->getWorker()->getId());
+    }
+
+    /**
+     * @param JobFailedEvent $event
+     */
+    public function jobFailed(JobFailedEvent $event)
+    {
+        $this->increment('failed');
+        $this->increment('failed:' . $event->getWorker()->getId());
     }
 }

@@ -2,7 +2,8 @@
 
 namespace Resque\Component\Core;
 
-use Predis\ClientInterface;
+use Resque\Component\Core\Redis\RedisClientAwareInterface;
+use Resque\Component\Core\Redis\RedisClientInterface;
 use Resque\Component\Job\Model\FilterableJobInterface;
 use Resque\Component\Job\Model\Job;
 use Resque\Component\Job\Model\JobInterface;
@@ -14,17 +15,17 @@ use Resque\Component\Queue\Model\OriginQueueAwareInterface;
  *
  * Uses redis to store the queue.
  */
-class RedisQueue extends AbstractQueue implements RedisAwareInterface
+class RedisQueue extends AbstractQueue implements RedisClientAwareInterface
 {
     /**
-     * @var ClientInterface A Predis Redis connection.
+     * @var RedisClientInterface A redis connection.
      */
     protected $redis;
 
     /**
-     * @param ClientInterface $redis
+     * @param RedisClientInterface $redis
      */
-    public function __construct(ClientInterface $redis)
+    public function __construct(RedisClientInterface $redis)
     {
         if (null !== $redis) {
             $this->setRedisClient($redis);
@@ -34,7 +35,7 @@ class RedisQueue extends AbstractQueue implements RedisAwareInterface
     /**
      * {@inheritDoc}
      */
-    public function setRedisClient(ClientInterface $redis)
+    public function setRedisClient(RedisClientInterface $redis)
     {
         $this->redis = $redis;
 
@@ -61,12 +62,12 @@ class RedisQueue extends AbstractQueue implements RedisAwareInterface
      */
     public function push(JobInterface $job)
     {
-        $this->redis->rpush(
+        $result = $this->redis->rpush(
             $this->getRedisKey(),
             $job::encode($job)
         );
 
-        return true;
+        return $result === 1;
     }
 
     /**
@@ -111,6 +112,7 @@ class RedisQueue extends AbstractQueue implements RedisAwareInterface
             if (!empty($payload)) {
                 $job = Job::decode($payload); // @todo should be something like $this->jobEncoderThingy->decode()
                 if ($job instanceof FilterableJobInterface && $job::matchFilter($job, $filter)) {
+                    $this->redis->rpop($tmpKey);
                     $jobsRemoved++;
                 } else {
                     $this->redis->rpoplpush($tmpKey, $enqueueKey);

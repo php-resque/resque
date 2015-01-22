@@ -86,6 +86,15 @@ $redis = new \Predis\Client(
     )
 );
 
+$redisEventListener = new \Resque\Component\Core\RedisEventListener($redis);
+
+$eventDispatcher = new \Resque\Component\Core\Event\EventDispatcher();
+
+$eventDispatcher->addListener(
+    \Resque\Component\Worker\ResqueWorkerEvents::BEFORE_FORK_TO_PERFORM,
+    array($redisEventListener, 'disconnectFromRedis')
+);
+
 $queues = array();
 $configQueues = explode(',', $QUEUE);
 
@@ -102,11 +111,26 @@ if (in_array('*', $configQueues)) {
     unset($configQueue, $q);
 }
 
-$failureBackend = new \Resque\Component\Core\RedisFailure($redis);
-$statisticBackend = new \Resque\Component\Core\RedisStatistic($redis);
+$failureBackend = new \Resque\Component\Core\RedisClientFailure($redis);
+$statisticBackend = new \Resque\Component\Core\RedisClientStatistic($redis);
 $jobInstanceFactory = new \Resque\Component\Job\Factory\JobInstanceFactory();
 $workerFactory = new \Resque\Component\Worker\Factory\WorkerFactory($jobInstanceFactory, $eventDispatcher);
 $workerRegistry = new \Resque\Component\Core\RedisWorkerRegistry($redis, $workerFactory);
+
+// When a job fails, save it into redis.
+$eventDispatcher->addListener(
+    \Resque\Component\Job\ResqueJobEvents::FAILED,
+    function (\Resque\Component\Job\Event\JobFailedEvent $event) use ($failureBackend) {
+        $failureBackend->save($event->getJob(), $event->getException(), $event->getWorker());
+    }
+);
+// When a job performed, remove it from the worker, also update processed numbers.
+$eventDispatcher->addListener(
+    \Resque\Component\Job\ResqueJobEvents::PERFORMED,
+    function (\Resque\Component\Worker\Event\WorkerJobEvent $event) use ($workerRegistry) {
+        $workerRegistry->persist($event->getWorker());
+    }
+);
 
 $foreman = new \Resque\Component\Core\Foreman($workerRegistry);
 $foreman

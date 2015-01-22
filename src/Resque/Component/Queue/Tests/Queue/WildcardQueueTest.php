@@ -1,6 +1,6 @@
 <?php
 
-namespace Resque\Tests\Queue;
+namespace Resque\Component\Queue\Tests\Queue;
 
 use Resque\Component\Core\RedisQueue;
 use Resque\Component\Core\RedisQueueRegistry;
@@ -32,9 +32,9 @@ class WildcardQueueTest extends ResqueTestCase
      * @expectedException \Exception
      * @expectedExceptionMessage Wildcard queue does not support pushing
      */
-    public function testJobCannotBeEnqueued()
+    public function testJobCannotBePushed()
     {
-        $this->wildcard->push(new Job('Test_Job'));
+        $this->wildcard->push($this->getMock('Resque\Component\Job\Model\JobInterface'));
     }
 
     /**

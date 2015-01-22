@@ -216,7 +216,7 @@ class Job implements
     /**
      * {@inheritDoc}
      */
-    public static function encode(JobInterface $job)
+    public function encode(JobInterface $job)
     {
         return json_encode(
             array(
@@ -231,7 +231,7 @@ class Job implements
     /**
      * {@inheritDoc}
      */
-    public static function decode($payload)
+    public function decode($payload)
     {
         $decoded = json_decode($payload, true);
 

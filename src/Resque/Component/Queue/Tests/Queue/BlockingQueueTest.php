@@ -1,6 +1,6 @@
 <?php
 
-namespace Resque\Tests\Queue;
+namespace Resque\Component\Queue\Tests\Queue;
 
 use Resque\Component\Core\Test\ResqueTestCase;
 

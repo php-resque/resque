@@ -3,13 +3,13 @@
 namespace spec\Resque\Component\Core;
 
 use PhpSpec\ObjectBehavior;
-use Predis\ClientInterface;
 use Prophecy\Argument;
+use Resque\Component\Core\Redis\RedisClientInterface;
 
 class RedisStatisticSpec extends ObjectBehavior
 {
     function let(
-        ClientInterface $redis
+        RedisClientInterface $redis
     ) {
         $this->beConstructedWith($redis);
     }

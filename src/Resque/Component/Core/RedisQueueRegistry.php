@@ -2,7 +2,8 @@
 
 namespace Resque\Component\Core;
 
-use Predis\ClientInterface;
+use Resque\Component\Core\Redis\RedisClientAwareInterface;
+use Resque\Component\Core\Redis\RedisClientInterface;
 use Resque\Component\Queue\Model\QueueInterface;
 use Resque\Component\Queue\Registry\QueueRegistryInterface;
 
@@ -11,19 +12,19 @@ use Resque\Component\Queue\Registry\QueueRegistryInterface;
  */
 class RedisQueueRegistry implements
     QueueRegistryInterface,
-    RedisAwareInterface
+    RedisClientAwareInterface
 {
     /**
-     * @var ClientInterface
+     * @var RedisClientInterface
      */
     protected $redis;
 
     /**
      * Constructor
      *
-     * @param ClientInterface $redis
+     * @param RedisClientInterface $redis
      */
-    public function __construct(ClientInterface $redis)
+    public function __construct(RedisClientInterface $redis)
     {
         $this->setRedisClient($redis);
     }
@@ -31,7 +32,7 @@ class RedisQueueRegistry implements
     /**
      * {@inheritDoc}
      */
-    public function setRedisClient(ClientInterface $redis)
+    public function setRedisClient(RedisClientInterface $redis)
     {
         $this->redis = $redis;
 

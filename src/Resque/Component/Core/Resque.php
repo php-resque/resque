@@ -4,7 +4,6 @@ namespace Resque\Component\Core;
 
 use Resque\Component\Job\Model\Job;
 use Resque\Component\Job\Model\JobInterface;
-use Resque\Component\Job\Model\TrackableJobInterface;
 use Resque\Component\Queue\Model\QueueInterface;
 use Resque\Component\Queue\Registry\QueueRegistryInterface;
 

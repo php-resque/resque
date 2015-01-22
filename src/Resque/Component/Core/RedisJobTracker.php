@@ -3,6 +3,7 @@
 namespace Resque\Component\Core;
 
 use Predis\ClientInterface;
+use Resque\Component\Core\Redis\RedisClientAwareInterface;
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Job\Model\JobTrackerInterface;
 use Resque\Component\Job\Model\TrackableJobInterface;
@@ -12,7 +13,7 @@ use Resque\Component\Job\Model\TrackableJobInterface;
  */
 class RedisJobTracker implements
     JobTrackerInterface,
-    RedisAwareInterface
+    RedisClientAwareInterface
 {
     public static $completedStates = array(
         JobInterface::STATE_FAILED,
@@ -29,7 +30,7 @@ class RedisJobTracker implements
         $this->setRedisClient($redis);
     }
 
-    public function setRedisClient(ClientInterface $redis)
+    public function setRedisClient(RedisClientInterface $redis)
     {
         $this->redis = $redis;
     }

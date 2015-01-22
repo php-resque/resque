@@ -31,6 +31,13 @@ final class ResqueWorkerEvents
     const START_UP = 'resque.worker.started';
 
     /**
+     * The event listener receives a Resque\Component\Worker\Event\WorkerEvent instance.
+     *
+     * @var string
+     */
+    const SHUTDOWN = 'resque.worker.shutdown';
+
+    /**
      * The event listener receives a Resque\Component\Worker\Event\WorkerJobEvent instance.
      *
      * @var string
