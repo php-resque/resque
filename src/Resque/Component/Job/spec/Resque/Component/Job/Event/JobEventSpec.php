@@ -18,4 +18,10 @@ class JobEventSpec extends ObjectBehavior
     {
         $this->shouldHaveType('Resque\Component\Job\Event\JobEvent');
     }
+
+    function it_should_return_the_job_it_was_constructed_with(
+        JobInterface $job
+    ) {
+        $this->getJob()->shouldReturn($job);
+    }
 }

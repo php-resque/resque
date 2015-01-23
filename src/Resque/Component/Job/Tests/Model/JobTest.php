@@ -19,14 +19,6 @@ class JobTest extends ResqueTestCase
         new Job('Test_Job', $args);
     }
 
-    public function testHoldsId()
-    {
-        $job = new Job('bar');
-        $id = $job->getId();
-        $this->assertNotNull($id);
-        $this->assertEquals($id, $job->getId());
-    }
-
     public function testCloneDropsId()
     {
         $job = new Job(

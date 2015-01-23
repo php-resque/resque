@@ -64,7 +64,7 @@ class RedisQueue extends AbstractQueue implements RedisClientAwareInterface
     {
         $result = $this->redis->rpush(
             $this->getRedisKey(),
-            $job::encode($job)
+            $job->encode($job)
         );
 
         return $result === 1;

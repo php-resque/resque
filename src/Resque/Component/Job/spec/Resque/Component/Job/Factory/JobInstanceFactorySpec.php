@@ -12,7 +12,7 @@ class JobInstanceFactorySpec extends ObjectBehavior
         $this->shouldHaveType('Resque\Component\Job\Factory\JobInstanceFactory');
     }
 
-    function it_implements()
+    function it_is_job_instance_factory()
     {
         $this->shouldHaveType('Resque\Component\Job\Factory\JobInstanceFactoryInterface');
     }
