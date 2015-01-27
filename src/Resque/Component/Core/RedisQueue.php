@@ -64,7 +64,7 @@ class RedisQueue extends AbstractQueue implements RedisClientAwareInterface
     {
         $result = $this->redis->rpush(
             $this->getRedisKey(),
-            $job->encode($job)
+            $job->encode()
         );
 
         return $result === 1;
@@ -83,7 +83,7 @@ class RedisQueue extends AbstractQueue implements RedisClientAwareInterface
             return null;
         }
 
-        $job = Job::decode($payload); // @todo should be something like $this->jobEncoderThingy->decode()
+        $job = Job::decode($payload);
 
         if ($job instanceof OriginQueueAwareInterface) {
             $job->setOriginQueue($this);

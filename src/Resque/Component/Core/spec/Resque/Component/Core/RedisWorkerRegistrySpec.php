@@ -114,7 +114,7 @@ class RedisWorkerRegistrySpec extends ObjectBehavior
     ) {
         $worker->getCurrentJob()->shouldBeCalled()->willReturn($job);
         $worker->getId()->shouldBeCalled()->willReturn('foo:333');
-        $job->encode($job)->shouldBeCalled()->willReturn('encoded-job');
+        $job->encode()->shouldBeCalled()->willReturn('encoded-job');
         $redis->set('worker:foo:333', Argument::any())->shouldBeCalled();
         $this->persist($worker)->shouldReturn($this);
     }

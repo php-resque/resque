@@ -145,7 +145,7 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisClientAwareIn
             array(
                 'queue' => ($currentJob instanceof OriginQueueAwareInterface) ? $currentJob->getOriginQueue() : null,
                 'run_at' => date('c'),
-                'payload' => $currentJob->encode($currentJob),
+                'payload' => $currentJob->encode(),
             )
         );
 

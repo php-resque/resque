@@ -82,7 +82,7 @@ class JobSpec extends ObjectBehavior
 
     function it_can_encode_itself()
     {
-        $this->encode($this)->shouldBeString();
+        $this->encode()->shouldBeString();
     }
 
     function it_can_decode_a_job()

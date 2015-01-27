@@ -159,7 +159,7 @@ class Job implements
      */
     public function __toString()
     {
-        return 'Job' . $this::encode($this);
+        return 'Job' . $this->encode();
     }
 
     /**
@@ -212,17 +212,16 @@ class Job implements
         return (count(array_unique($results)) === 1) && reset($results) === true;
     }
 
-
     /**
      * {@inheritDoc}
      */
-    public function encode(JobInterface $job)
+    public function encode()
     {
         return json_encode(
             array(
-                'class' => $job->getJobClass(),
-                'args' => array($job->getArguments()),
-                'id' => $job->getId(),
+                'class' => $this->getJobClass(),
+                'args' => array($this->getArguments()),
+                'id' => $this->getId(),
                 'queue_time' => microtime(true), // @todo this isn't queue time. $queue->push() is queue time.
             )
         );
@@ -231,7 +230,7 @@ class Job implements
     /**
      * {@inheritDoc}
      */
-    public function decode($payload)
+    public static function decode($payload)
     {
         $decoded = json_decode($payload, true);
 

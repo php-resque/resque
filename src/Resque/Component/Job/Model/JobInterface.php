@@ -63,10 +63,9 @@ interface JobInterface
      * Given an instance of JobInterface encode it in such a way that the result once passed to self::decode() will
      * result in an identical copy of JobInterface.
      *
-     * @param JobInterface $job
-     * @return mixed Encoded data to be saved into redis and at a later date passed to self::decode()
+     * @return mixed Encoded data to be saved into redis and at a later date passed to self->decode()
      */
-    public function encode(JobInterface $job);
+    public function encode();
 
     /**
      * Decode
@@ -74,8 +73,8 @@ interface JobInterface
      * Decodes data from self::encode() and returns a new instance of JobInterface that the payload was
      * created from.
      *
-     * @param mixed $payload The encoded data from self::encode()
+     * @param mixed $payload The encoded data from self->encode()
      * @return static
      */
-    public function decode($payload);
+    public static function decode($payload);
 }
