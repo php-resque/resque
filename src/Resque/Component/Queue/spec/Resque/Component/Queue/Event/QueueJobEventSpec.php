@@ -18,4 +18,16 @@ class QueueJobEventSpec extends ObjectBehavior
     {
         $this->shouldHaveType('Resque\Component\Queue\Event\QueueJobEvent');
     }
+
+    function it_holds_queue(
+        QueueInterface $queue
+    ) {
+        $this->getQueue()->shouldReturn($queue);
+    }
+
+    function it_holds_job(
+        JobInterface $job
+    ) {
+        $this->getJob()->shouldReturn($job);
+    }
 }

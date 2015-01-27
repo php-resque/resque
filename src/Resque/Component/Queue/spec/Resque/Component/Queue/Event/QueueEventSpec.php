@@ -17,4 +17,10 @@ class QueueEventSpec extends ObjectBehavior
     {
         $this->shouldHaveType('Resque\Component\Queue\Event\QueueEvent');
     }
+
+    function it_holds_queue(
+        QueueInterface $queue
+    ) {
+        $this->getQueue()->shouldReturn($queue);
+    }
 }

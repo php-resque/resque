@@ -554,16 +554,6 @@ class Worker implements WorkerInterface, LoggerAwareInterface
         return $this->currentJob;
     }
 
-//
-//    /**
-//     * Clear worker stats
-//     */
-//    public function clearStats()
-//    {
-//        $this->getStatisticsBackend()->clear('processed:' . $this->getId());
-//        $this->getStatisticsBackend()->clear('failed:' . $this->getId());
-//    }
-
     /**
      * Set fork to perform job
      *
