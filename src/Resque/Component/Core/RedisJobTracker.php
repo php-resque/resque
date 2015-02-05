@@ -2,8 +2,8 @@
 
 namespace Resque\Component\Core;
 
-use Predis\ClientInterface;
 use Resque\Component\Core\Redis\RedisClientAwareInterface;
+use Resque\Component\Core\Redis\RedisClientInterface;
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Job\Model\JobTrackerInterface;
 use Resque\Component\Job\Model\TrackableJobInterface;
@@ -21,20 +21,29 @@ class RedisJobTracker implements
     );
 
     /**
-     * @var ClientInterface
+     * @var RedisClientInterface
      */
     protected $redis;
 
-    public function __construct(ClientInterface $redis)
+    public function __construct(RedisClientInterface $redis)
     {
         $this->setRedisClient($redis);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function setRedisClient(RedisClientInterface $redis)
     {
         $this->redis = $redis;
     }
 
+    /**
+     * Get redis key
+     *
+     * @param JobInterface $job
+     * @return string
+     */
     protected function getRedisKey(JobInterface $job)
     {
         return 'job:' . $job->getId() . ':status';
@@ -90,5 +99,19 @@ class RedisJobTracker implements
     public function stop(JobInterface $job)
     {
         $this->redis->del($this->getRedisKey($job));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function isComplete(JobInterface $job)
+    {
+        $state = $this->get($job);
+
+        if (in_array($state, static::$completedStates)) {
+            return true;
+        }
+
+        return false;
     }
 }

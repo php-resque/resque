@@ -90,7 +90,7 @@ class Foreman implements LoggerAwareInterface
             $this->logger->info(
                 sprintf(
                     'Successfully started worker %s with pid %d',
-                    $worker,
+                    $worker->getId(),
                     $child->getPid()
                 )
             );
@@ -131,13 +131,12 @@ class Foreman implements LoggerAwareInterface
         $workers = $this->registry->all(); // @todo Maybe findWorkersForHost($hostname) ?
         foreach ($workers as $worker) {
             if ($worker instanceof WorkerInterface) {
-                $id = $worker->getId();
-                list($host, $pid, $queues) = explode(':', $id, 3);
-                if ($host != $this->hostname || in_array($pid, $workerPids) || $pid == getmypid()) {
+                $pid = $worker->getProcess()->getPid();
+                if ($worker->getHostname() != $this->hostname || in_array($pid, $workerPids) || $pid == getmypid()) {
 
                     continue;
                 }
-                $this->logger->warning('Pruning dead worker {worker}', array('worker' => $id));
+                $this->logger->warning('Pruning dead worker {worker}', array('worker' => $worker->getId()));
                 $this->registry->deregister($worker);
             }
         }

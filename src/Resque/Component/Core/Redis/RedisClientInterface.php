@@ -17,6 +17,7 @@ interface RedisClientInterface
     public function set($key, $value);
     public function get($key);
     public function exists($key);
+    public function expire($key, $ttl);
 
     /**
      * @return int

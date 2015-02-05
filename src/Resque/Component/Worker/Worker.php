@@ -506,16 +506,6 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     }
 
     /**
-     * Generate a string representation of this worker.
-     *
-     * @return string String identifier for this worker instance.
-     */
-    public function __toString()
-    {
-        return $this->getId();
-    }
-
-    /**
      * Set current job
      *
      * Sets which job the worker is currently working on, and records it in redis.
