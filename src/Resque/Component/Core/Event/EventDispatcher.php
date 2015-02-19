@@ -21,9 +21,9 @@ class EventDispatcher implements EventDispatcherInterface
      * Dispatch an event
      *
      * @param string $event The event to dispatch to relevant listeners.
-     * @param mixed $context The event context.
+     * @param mixed $eventContext The event context.
      */
-    public function dispatch($event, $context)
+    public function dispatch($event, $eventContext)
     {
         if (false === isset($this->listeners[$event])) {
 
@@ -31,7 +31,7 @@ class EventDispatcher implements EventDispatcherInterface
         }
 
         foreach ($this->listeners[$event] as $callback) {
-            call_user_func($callback, $context);
+            call_user_func($callback, $eventContext);
         }
     }
 

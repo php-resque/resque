@@ -20,6 +20,8 @@ class WorkerTest extends ResqueTestCase
 
     public function setup()
     {
+        parent::setup();
+
         $jobInstanceFactory = $this->getMock('Resque\Component\Job\Factory\JobInstanceFactoryInterface');
         $eventDispatcher = $this->getMock('Resque\Component\Core\Event\EventDispatcherInterface');
         $this->worker = new Worker($jobInstanceFactory, $eventDispatcher);
@@ -37,7 +39,6 @@ class WorkerTest extends ResqueTestCase
         $queueOne->setName('queue1');
         $queueTwo = new RedisQueue($this->redis);
         $queueTwo->setName('queue2');
-        $queueTwo->setRedisClient($this->redis);
 
         $jobOne = new Job('Test_Job_1');
         $jobTwo = new Job('Test_Job_2');
@@ -45,10 +46,13 @@ class WorkerTest extends ResqueTestCase
         $queueOne->push($jobOne);
         $queueTwo->push($jobTwo);
 
+        $this->worker->addQueue($queueOne);
+        $this->worker->addQueue($queueTwo);
+
         $job = $this->worker->reserve();
         $this->assertEquals($queueOne, $job->getOriginQueue());
 
-        $job = $worker->reserve();
+        $job = $this->worker->reserve();
         $this->assertEquals($queueTwo, $job->getOriginQueue());
     }
 
@@ -88,8 +92,9 @@ class WorkerTest extends ResqueTestCase
 
         $queueTwo->push(new Job('Test_Job'));
 
-        $worker = new Worker($queueOne);
-        $this->assertNull($worker->reserve());
+        $this->worker->addQueue($queueOne);
+
+        $this->assertNull($this->worker->reserve());
     }
 
     public function testWorkerPerformSendsCorrectArgumentsToJobInstance()
@@ -122,6 +127,8 @@ class WorkerTest extends ResqueTestCase
     public function testWorkerPerformEmitsCorrectEvents($expectedCount, $eventName, $jobClass)
     {
         $eventDispatcher = new EventDispatcher();
+        $this->worker = new Worker($this->getMock('Resque\Component\Job\Factory\JobInstanceFactoryInterface'), $eventDispatcher);
+
         $eventTriggered = 0;
         $eventDispatcher->addListener(
             $eventName,
@@ -130,14 +137,12 @@ class WorkerTest extends ResqueTestCase
             }
         );
 
-        $worker = new Worker(null, null, $eventDispatcher);
-
         $job = new Job($jobClass);
         $queue = new RedisQueue($this->redis);
         $queue->setName('foo');
         $job->setOriginQueue($queue);
 
-        $worker->perform($job);
+        $this->worker->perform($job);
 
         $this->assertEquals(
             $expectedCount,
@@ -173,6 +178,7 @@ class WorkerTest extends ResqueTestCase
     public function testBeforePerformEventCanStopWork()
     {
         $eventDispatcher = new EventDispatcher();
+        $this->worker = new Worker($this->getMock('Resque\Component\Job\Factory\JobInstanceFactoryInterface'), $eventDispatcher);
 
         $eventDispatcher->addListener(
             'resque.job.before_perform',
@@ -189,15 +195,13 @@ class WorkerTest extends ResqueTestCase
             }
         );
 
-        $worker = new Worker(null, null, $eventDispatcher);
-
         $job = new Job('Resque\Component\Job\Tests\Jobs\Simple');
         $queue = new RedisQueue($this->redis);
         $queue->setName('baz');
         $job->setOriginQueue($queue);
 
         $this->assertFalse(
-            $worker->perform($job),
+            $this->worker->perform($job),
             'Job was still performed even though "resque.job.before_perform" throw an exception'
         );
         $this->assertEquals(
@@ -210,6 +214,7 @@ class WorkerTest extends ResqueTestCase
     public function testBeforeForkEvent()
     {
         $eventDispatcher = new EventDispatcher();
+        $this->worker = new Worker($this->getMock('Resque\Component\Job\Factory\JobInstanceFactoryInterface'), $eventDispatcher);
 
         $eventTriggered = 0;
         $eventDispatcher->addListener(
@@ -225,9 +230,7 @@ class WorkerTest extends ResqueTestCase
         $queue->setName('jobs');
         $queue->push($job);
 
-        $worker = new Worker($queue, null, $eventDispatcher);
-
-        $worker->work(0);
+        $this->worker->work(0);
 
         $this->assertEquals(1, $eventTriggered);
     }
@@ -280,8 +283,7 @@ class WorkerTest extends ResqueTestCase
             }
         );
 
-        $worker = new Worker($queue, null, $eventDispatcher);
-        $worker->work(0);
+        $this->worker->work(0);
 
         $this->assertTrue($callbackTriggered);
     }
@@ -292,10 +294,9 @@ class WorkerTest extends ResqueTestCase
         $queue->setName('jobs');
         $queue->push(new Job('Resque\Component\Job\Tests\Jobs\Simple'));
 
-        $worker = new Worker($queue);
-        $worker->pause();
+        $this->worker->pause();
 
-        $worker->work(0);
+        $this->worker->work(0);
 
         $this->assertEquals(1, $queue->count());
     }
@@ -304,14 +305,13 @@ class WorkerTest extends ResqueTestCase
     {
         return self::markTestSkipped();
 
-        $worker = new Worker('*');
-        $worker->setLogger(new Resque_Log());
-        $worker->pause();
+        $this->worker->setLogger(new Resque_Log());
+        $this->worker->pause();
         Resque::enqueue('jobs', 'Test_Job');
-        $worker->work(0);
+        $this->worker->work(0);
         $this->assertEquals(0, Resque_Stat::get('processed'));
-        $worker->unPauseProcessing();
-        $worker->work(0);
+        $this->worker->unPauseProcessing();
+        $this->worker->work(0);
         $this->assertEquals(1, Resque_Stat::get('processed'));
     }
 
@@ -320,29 +320,27 @@ class WorkerTest extends ResqueTestCase
         return self::markTestSkipped();
 
         Resque::enqueue('jobs', 'Test_Job');
-        $worker = new Worker('jobs');
-        $worker->setLogger(new Resque_Log());
-        $job = $worker->reserve();
-        $worker->workingOn($job);
-        $worker->doneWorking();
-        $this->assertEquals(array(), $worker->job());
+        $this->worker->setLogger(new Resque_Log());
+        $job = $this->worker->reserve();
+        $this->worker->workingOn($job);
+        $this->worker->doneWorking();
+        $this->assertEquals(array(), $this->worker->job());
     }
 
     public function testWorkerRecordsWhatItIsWorkingOn()
     {
         return self::markTestSkipped();
 
-        $worker = new Worker('jobs');
-        $worker->setLogger(new Resque_Log());
-        $worker->registerWorker();
+        $this->worker->setLogger(new Resque_Log());
+        $this->worker->registerWorker();
 
         $payload = array(
             'class' => 'Test_Job'
         );
         $job = new Resque_Job('jobs', $payload);
-        $worker->workingOn($job);
+        $this->worker->workingOn($job);
 
-        $job = $worker->job();
+        $job = $this->worker->job();
         $this->assertEquals('jobs', $job['queue']);
         if (!isset($job['run_at'])) {
             $this->fail('Job does not have run_at time');
@@ -354,19 +352,18 @@ class WorkerTest extends ResqueTestCase
     {
         $job = new Job('Resque\Component\Job\Tests\Jobs\Simple');
 
-        $worker = $this->getMock(
+        $this->worker = $this->getMock(
             'Resque\Component\Worker\Worker',
             array('perform', 'reserve'),
             array(null)
         );
-        $worker->expects($this->at(0))->method('reserve')->will($this->returnValue($job));
-        $worker->expects($this->at(1))->method('perform')->will($this->returnValue(null));
-        $worker->expects($this->at(2))->method('reserve')->will($this->returnValue(null));
+        $this->worker->expects($this->at(0))->method('reserve')->will($this->returnValue($job));
+        $this->worker->expects($this->at(1))->method('perform')->will($this->returnValue(null));
+        $this->worker->expects($this->at(2))->method('reserve')->will($this->returnValue(null));
 
-        $worker->setRedisClient($this->redis);
-        $worker->setForkOnPerform(false);
+        $this->worker->setForkOnPerform(false);
 
-        $worker->work(0); // This test fails if the worker forks, as perform is not marked as called in the parent
+        $this->worker->work(0); // This test fails if the worker forks, as perform is not marked as called in the parent
     }
 
     /**
@@ -374,10 +371,7 @@ class WorkerTest extends ResqueTestCase
      */
     public function testCannotSetCurrentJobIfNotNull()
     {
-        $worker = new Worker();
-        $worker->setRedisClient($this->redis);
-
-        $worker->setCurrentJob(new Job());
-        $worker->setCurrentJob(new Job());
+        $this->worker->setCurrentJob(new Job());
+        $this->worker->setCurrentJob(new Job());
     }
 }

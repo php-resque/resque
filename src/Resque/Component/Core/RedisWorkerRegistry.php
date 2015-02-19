@@ -10,7 +10,6 @@ use Resque\Component\Worker\Factory\WorkerFactoryInterface;
 use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Component\Worker\Registry\WorkerRegistryInterface;
 use Resque\Component\Worker\ResqueWorkerEvents;
-use Resque\Component\Worker\Worker;
 
 /**
  * Resque redis worker registry
@@ -80,8 +79,7 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisClientAwareIn
         $this->redis->del('worker:' . $id);
         $this->redis->del('worker:' . $id . ':started');
 
-        // @todo restore
-        //$this->eventDispatcher->dispatch(ResqueWorkerEvents::UNREGISTERED, new WorkerEvent($worker));
+        $this->eventDispatcher->dispatch(ResqueWorkerEvents::UNREGISTERED, new WorkerEvent($worker));
 
         return $this;
     }

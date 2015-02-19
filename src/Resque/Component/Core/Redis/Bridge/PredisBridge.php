@@ -167,4 +167,9 @@ class PredisBridge implements RedisClientInterface
     {
         return $this->predis->multi();
     }
+
+    public function expire($key, $ttl)
+    {
+        return $this->predis->expire($key, $ttl);
+    }
 }
