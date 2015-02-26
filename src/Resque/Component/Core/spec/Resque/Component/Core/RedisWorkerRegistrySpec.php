@@ -4,18 +4,21 @@ namespace spec\Resque\Component\Core;
 
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
+use Resque\Component\Core\Event\EventDispatcherInterface;
 use Resque\Component\Core\Redis\RedisClientInterface;
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Worker\Factory\WorkerFactoryInterface;
 use Resque\Component\Worker\Model\WorkerInterface;
+use Resque\Component\Worker\ResqueWorkerEvents;
 
 class RedisWorkerRegistrySpec extends ObjectBehavior
 {
     function let(
         RedisClientInterface $redis,
+        EventDispatcherInterface $eventDispatcher,
         WorkerFactoryInterface $workerFactory
     ) {
-        $this->beConstructedWith($redis, $workerFactory);
+        $this->beConstructedWith($redis, $eventDispatcher, $workerFactory);
     }
 
     function it_is_initializable()
@@ -41,9 +44,11 @@ class RedisWorkerRegistrySpec extends ObjectBehavior
 
     function it_registers_workers_to_redis(
         RedisClientInterface $redis,
+        EventDispatcherInterface $eventDispatcher,
         WorkerInterface $worker
     ) {
         $worker->getId()->shouldBeCalled()->willReturn('host:123');
+        $eventDispatcher->dispatch(ResqueWorkerEvents::REGISTERED, Argument::any())->shouldBeCalled();
         $redis->sismember('workers', 'host:123')->shouldBeCalled()->willReturn(false);
         $redis->sadd('workers', 'host:123')->shouldBeCalled();
         $redis->set('worker:host:123:started', Argument::any())->shouldBeCalled();
@@ -76,8 +81,10 @@ class RedisWorkerRegistrySpec extends ObjectBehavior
 
     function it_shutdowns_and_removes_workers_from_redis_on_deregister(
         RedisClientInterface $redis,
+        EventDispatcherInterface $eventDispatcher,
         WorkerInterface $worker
     ) {
+        $eventDispatcher->dispatch(ResqueWorkerEvents::UNREGISTERED, Argument::any())->shouldBeCalled();
         $worker->getId()->shouldBeCalled()->willReturn('local:789');
         $worker->halt()->shouldBeCalled();
         $redis->srem('workers', 'local:789')->shouldBeCalled()->willReturn(1);
@@ -109,9 +116,11 @@ class RedisWorkerRegistrySpec extends ObjectBehavior
 
     function it_on_worker_persist_with_current_job_saves_worker_state_to_redis(
         RedisClientInterface $redis,
+        EventDispatcherInterface $eventDispatcher,
         WorkerInterface $worker,
         JobInterface $job
     ) {
+        $eventDispatcher->dispatch(ResqueWorkerEvents::PERSISTED, Argument::any())->shouldBeCalled();
         $worker->getCurrentJob()->shouldBeCalled()->willReturn($job);
         $worker->getId()->shouldBeCalled()->willReturn('foo:333');
         $job->encode()->shouldBeCalled()->willReturn('encoded-job');
@@ -121,8 +130,10 @@ class RedisWorkerRegistrySpec extends ObjectBehavior
 
     function it_on_worker_persist_with_no_current_job_removes_the_worker_entry_from_redis(
         RedisClientInterface $redis,
+        EventDispatcherInterface $eventDispatcher,
         WorkerInterface $worker
     ) {
+        $eventDispatcher->dispatch(ResqueWorkerEvents::PERSISTED, Argument::any())->shouldBeCalled();
         $worker->getCurrentJob()->shouldBeCalled()->willReturn(null);
         $worker->getId()->shouldBeCalled()->willReturn('foo:666');
         $redis->del('worker:foo:666')->shouldBeCalled();

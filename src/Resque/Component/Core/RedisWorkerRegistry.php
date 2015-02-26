@@ -2,6 +2,7 @@
 
 namespace Resque\Component\Core;
 
+use Resque\Component\Core\Event\EventDispatcherInterface;
 use Resque\Component\Core\Redis\RedisClientAwareInterface;
 use Resque\Component\Core\Redis\RedisClientInterface;
 use Resque\Component\Queue\Model\OriginQueueAwareInterface;
@@ -26,9 +27,18 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisClientAwareIn
      */
     protected $redis;
 
-    public function __construct(RedisClientInterface $redis, WorkerFactoryInterface $workerFactory)
-    {
+    /**
+     * @var EventDispatcherInterface
+     */
+    protected $eventDispatcher;
+
+    public function __construct(
+        RedisClientInterface $redis,
+        EventDispatcherInterface $eventDispatcher,
+        WorkerFactoryInterface $workerFactory
+    ) {
         $this->setRedisClient($redis);
+        $this->eventDispatcher = $eventDispatcher;
         $this->workerFactory = $workerFactory;
     }
 
@@ -54,6 +64,8 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisClientAwareIn
         $id = $worker->getId();
         $this->redis->sadd('workers', $id);
         $this->redis->set('worker:' . $id . ':started', date('c'));
+
+        $this->eventDispatcher->dispatch(ResqueWorkerEvents::REGISTERED, new WorkerEvent($worker));
 
         return $this;
     }
@@ -136,6 +148,8 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisClientAwareIn
         if (null === $currentJob) {
             $this->redis->del('worker:' . $worker->getId());
 
+            $this->eventDispatcher->dispatch(ResqueWorkerEvents::PERSISTED, new WorkerEvent($worker));
+
             return $this;
         }
 
@@ -148,6 +162,8 @@ class RedisWorkerRegistry implements WorkerRegistryInterface, RedisClientAwareIn
         );
 
         $this->redis->set('worker:' . $worker->getId(), $payload);
+
+        $this->eventDispatcher->dispatch(ResqueWorkerEvents::PERSISTED, new WorkerEvent($worker));
 
         return $this;
     }

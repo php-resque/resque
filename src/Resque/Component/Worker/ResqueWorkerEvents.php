@@ -28,6 +28,13 @@ final class ResqueWorkerEvents
      *
      * @var string
      */
+    const PERSISTED = 'resque.worker.persisted';
+
+    /**
+     * The event listener receives a Resque\Component\Worker\Event\WorkerEvent instance.
+     *
+     * @var string
+     */
     const START_UP = 'resque.worker.started';
 
     /**
