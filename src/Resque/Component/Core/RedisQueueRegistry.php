@@ -93,7 +93,7 @@ class RedisQueueRegistry implements
         $this->redis->srem('queues', $queue->getName());
         $responses = $this->redis->exec();
 
-        if (isset($responses[0]) && $responses[0]) {
+        if (isset($responses[0])) {
             $this->eventDispatcher->dispatch(ResqueQueueEvents::UNREGISTERED, new QueueEvent($queue));
 
             return $responses[0];

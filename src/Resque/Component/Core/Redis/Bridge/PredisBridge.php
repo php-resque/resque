@@ -78,7 +78,12 @@ class PredisBridge implements RedisClientInterface
      */
     public function llen($key)
     {
-        $this->predis->llen($key);
+        return $this->predis->llen($key);
+    }
+
+    public function lindex($key, $index)
+    {
+        return $this->predis->lindex($key, $index);
     }
 
     /**

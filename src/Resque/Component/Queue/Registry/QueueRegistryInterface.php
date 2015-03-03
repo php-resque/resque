@@ -3,9 +3,8 @@
 namespace Resque\Component\Queue\Registry;
 
 use Resque\Component\Queue\Model\QueueInterface;
-use Resque\Component\Queue\Factory\QueueFactoryInterface;
 
-interface QueueRegistryInterface extends QueueFactoryInterface
+interface QueueRegistryInterface
 {
     /**
      * Registers the given queue in storage

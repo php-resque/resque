@@ -59,6 +59,11 @@ interface RedisClientInterface
     public function llen($key);
 
     /**
+     * @return int
+     */
+    public function lindex($key, $index);
+
+    /**
      * @return string
      */
     public function lpop($key);

@@ -16,7 +16,7 @@ abstract class ResqueTestCase extends PHPUnit_Framework_TestCase
      */
     protected $resque;
     /**
-     * @var Client
+     * @var PredisBridge
      */
     protected $redis;
 

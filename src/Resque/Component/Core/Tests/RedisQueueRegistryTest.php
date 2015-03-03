@@ -2,6 +2,7 @@
 
 namespace Resque\Component\Core\Tests;
 
+use Resque\Component\Core\Event\EventDispatcher;
 use Resque\Component\Core\RedisQueue;
 use Resque\Component\Core\RedisQueueRegistry;
 use Resque\Component\Core\Test\ResqueTestCase;
@@ -23,9 +24,8 @@ class RedisQueueRegistryTest extends ResqueTestCase
     {
         parent::setUp();
 
-        $this->registry = new RedisQueueRegistry($this->redis);
-        $this->queue = new RedisQueue($this->redis);
-        $this->queue->setName('jobs');
+        $this->registry = new RedisQueueRegistry($this->redis, new EventDispatcher());
+        $this->queue = $this->registry->createQueue('jobs');
     }
 
     public function testDeregister()
@@ -52,16 +52,15 @@ class RedisQueueRegistryTest extends ResqueTestCase
         $queues = $this->registry->all();
         $this->assertCount(0, $queues);
 
-        $foo = new RedisQueue($this->redis);
-        $foo->setName('foo');
+        $foo = $this->registry->createQueue('foo');
         $this->registry->register($foo);
 
         $queues = $this->registry->all();
         $this->assertCount(1, $queues);
         $this->assertEquals('foo', $queues['foo']);
 
-        $bar = new RedisQueue($this->redis);
-        $bar->setName('bar');
+
+        $bar = $this->registry->createQueue('bar');
         $this->registry->register($bar);
 
         $queues = $this->registry->all();
