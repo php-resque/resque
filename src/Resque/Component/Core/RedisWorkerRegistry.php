@@ -15,7 +15,9 @@ use Resque\Component\Worker\ResqueWorkerEvents;
 /**
  * Resque redis worker registry
  */
-class RedisWorkerRegistry implements WorkerRegistryInterface, RedisClientAwareInterface
+class RedisWorkerRegistry implements
+    WorkerRegistryInterface,
+    RedisClientAwareInterface
 {
     /**
      * @var WorkerFactoryInterface

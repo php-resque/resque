@@ -98,13 +98,14 @@ $eventDispatcher->addListener(
 $queues = array();
 $configQueues = explode(',', $QUEUE);
 
+$queueRegistry = new \Resque\Component\Core\RedisQueueRegistry($redis, $eventDispatcher);
+
 if (in_array('*', $configQueues)) {
-    $queueRegistry = new \Resque\Component\Core\RedisQueueRegistry($redis);
     $wildcard = new \Resque\Component\Queue\WildcardQueue($queueRegistry);
     $queues[] = $wildcard;
 } else {
     foreach ($configQueues as $configQueue) {
-        $q = new \Resque\Component\Core\RedisQueue($redis);
+        $q = new \Resque\Component\Core\RedisQueue($redis, $eventDispatcher);
         $q->setName($configQueue);
         $queues[] = $q;
     }
@@ -114,8 +115,8 @@ if (in_array('*', $configQueues)) {
 $failureBackend = new \Resque\Component\Core\RedisClientFailure($redis);
 $statisticBackend = new \Resque\Component\Core\RedisClientStatistic($redis);
 $jobInstanceFactory = new \Resque\Component\Job\Factory\JobInstanceFactory();
-$workerFactory = new \Resque\Component\Worker\Factory\WorkerFactory($jobInstanceFactory, $eventDispatcher);
-$workerRegistry = new \Resque\Component\Core\RedisWorkerRegistry($redis, $workerFactory);
+$workerFactory = new \Resque\Component\Worker\Factory\WorkerFactory($queueRegistry, $jobInstanceFactory, $eventDispatcher);
+$workerRegistry = new \Resque\Component\Core\RedisWorkerRegistry($redis, $eventDispatcher, $workerFactory);
 
 // When a job fails, save it into redis.
 $eventDispatcher->addListener(

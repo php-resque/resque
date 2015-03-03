@@ -35,6 +35,9 @@ class RedisFailure implements FailureInterface, RedisClientAwareInterface
         return $this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function save(JobInterface $job, \Exception $exception, WorkerInterface $worker)
     {
         $queue = ($job instanceof OriginQueueAwareInterface) ? $job->getOriginQueue() : null;

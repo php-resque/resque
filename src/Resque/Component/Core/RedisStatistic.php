@@ -12,7 +12,9 @@ use Resque\Component\Worker\Event\WorkerJobEvent;
 /**
  * Default redis backend for storing failed jobs.
  */
-class RedisStatistic implements StatisticInterface, RedisClientAwareInterface
+class RedisStatistic implements
+    StatisticInterface,
+    RedisClientAwareInterface
 {
     /**
      * @var ClientInterface A redis client.

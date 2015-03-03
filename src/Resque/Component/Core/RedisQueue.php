@@ -2,13 +2,16 @@
 
 namespace Resque\Component\Core;
 
+use Resque\Component\Core\Event\EventDispatcherInterface;
 use Resque\Component\Core\Redis\RedisClientAwareInterface;
 use Resque\Component\Core\Redis\RedisClientInterface;
 use Resque\Component\Job\Model\FilterableJobInterface;
 use Resque\Component\Job\Model\Job;
 use Resque\Component\Job\Model\JobInterface;
+use Resque\Component\Queue\Event\QueueJobEvent;
 use Resque\Component\Queue\Model\AbstractQueue;
 use Resque\Component\Queue\Model\OriginQueueAwareInterface;
+use Resque\Component\Queue\ResqueQueueEvents;
 
 /**
  * Resque Redis queue
@@ -23,13 +26,21 @@ class RedisQueue extends AbstractQueue implements RedisClientAwareInterface
     protected $redis;
 
     /**
-     * @param RedisClientInterface $redis
+     * @var EventDispatcherInterface
      */
-    public function __construct(RedisClientInterface $redis)
+    protected $eventDispatcher;
+
+    /**
+     * @param RedisClientInterface $redis
+     * @param EventDispatcherInterface $eventDispatcher
+     */
+    public function __construct(RedisClientInterface $redis, EventDispatcherInterface $eventDispatcher)
     {
         if (null !== $redis) {
             $this->setRedisClient($redis);
         }
+
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     /**
@@ -58,14 +69,18 @@ class RedisQueue extends AbstractQueue implements RedisClientAwareInterface
      * @todo throw a exception when it fails!
      *
      * @param JobInterface $job The Job to enqueue.
-     * @return bool True if successful, false otherwise.
+     * @return bool TRUE if successful, FALSE otherwise.
      */
     public function push(JobInterface $job)
     {
+        $this->eventDispatcher->dispatch(ResqueQueueEvents::JOB_PUSH, new QueueJobEvent($this, $job));
+
         $result = $this->redis->rpush(
             $this->getRedisKey(),
             $job->encode()
         );
+
+        $this->eventDispatcher->dispatch(ResqueQueueEvents::JOB_PUSHED, new QueueJobEvent($this, $job));
 
         return $result === 1;
     }
@@ -83,7 +98,7 @@ class RedisQueue extends AbstractQueue implements RedisClientAwareInterface
             return null;
         }
 
-        $job = Job::decode($payload);
+        $job = Job::decode($payload); // @todo should be something like $this->jobEncoderThingy->decode()
 
         if ($job instanceof OriginQueueAwareInterface) {
             $job->setOriginQueue($this);
