@@ -3,7 +3,7 @@
 namespace Resque\Tests;
 
 use Resque\Component\Core\Event\EventDispatcher;
-use Resque\Component\Core\RedisQueue;
+use Resque\Redis\RedisQueue;
 use Resque\Component\Core\Test\ResqueTestCase;
 use Resque\Component\Job\Model\Job;
 use Resque\Component\Job\ResqueJobEvents;

@@ -1,10 +1,8 @@
 <?php
 
-namespace Resque\Component\Core;
+namespace Resque\Redis;
 
 use Predis\ClientInterface;
-use Resque\Component\Core\Redis\RedisClientAwareInterface;
-use Resque\Component\Core\Redis\RedisClientInterface;
 use Resque\Component\Job\Event\JobFailedEvent;
 use Resque\Component\Statistic\StatisticInterface;
 use Resque\Component\Worker\Event\WorkerJobEvent;

@@ -2,7 +2,7 @@
 
 namespace Resque\Component\Core\Tests;
 
-use Resque\Component\Core\RedisFailure;
+use Resque\Redis\RedisFailure;
 use Resque\Component\Core\Test\ResqueTestCase;
 
 class RedisFailureTest extends ResqueTestCase

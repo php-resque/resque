@@ -1,9 +1,7 @@
 <?php
 
-namespace Resque\Component\Core;
+namespace Resque\Redis;
 
-use Resque\Component\Core\Redis\RedisClientAwareInterface;
-use Resque\Component\Core\Redis\RedisClientInterface;
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Queue\Model\OriginQueueAwareInterface;
 use Resque\Component\Queue\Model\QueueInterface;

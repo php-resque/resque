@@ -1,164 +1,27 @@
 #!/usr/bin/env php
 <?php
 
-use Psr\Log\NullLogger;
-
-// Find and initialize Composer
-$files = array(
-    __DIR__ . '/../../vendor/autoload.php',
-    __DIR__ . '/../../../autoload.php',
-    __DIR__ . '/../../../../autoload.php',
-    __DIR__ . '/../vendor/autoload.php',
-);
-
-foreach ($files as $file) {
+foreach (array(__DIR__ . '/../../autoload.php', __DIR__ . '/../vendor/autoload.php', __DIR__ . '/vendor/autoload.php') as $file) {
     if (file_exists($file)) {
-        require_once $file;
+
         break;
     }
+
+    $file = null;
 }
 
-if (!class_exists('Composer\Autoload\ClassLoader', false)) {
-    throw new \RuntimeException(
+if (true === is_null($file)) {
+    fwrite(STDERR,
         'You need to set up the project dependencies using the following commands:' . PHP_EOL .
-        'curl -s http://getcomposer.org/installer | php' . PHP_EOL .
+        'wget http://getcomposer.org/composer.phar' . PHP_EOL .
         'php composer.phar install' . PHP_EOL
     );
+    exit(1);
 }
 
-$QUEUE = getenv('QUEUE');
-if (empty($QUEUE)) {
-    die("Set QUEUE env var containing the list of queues to work.\n");
-}
+require $file;
 
-$APP_INCLUDE = getenv('APP_INCLUDE');
-if ($APP_INCLUDE) {
-    if (!file_exists($APP_INCLUDE)) {
-        die('APP_INCLUDE (' . $APP_INCLUDE . ") does not exist.\n");
-    }
+unset($file);
 
-    require_once $APP_INCLUDE;
-}
-
-$logLevel = false;
-$LOGGING = getenv('LOGGING');
-$VERBOSE = getenv('VERBOSE');
-$VVERBOSE = getenv('VVERBOSE');
-if (!empty($LOGGING) || !empty($VERBOSE)) {
-    $logLevel = true;
-} else {
-    if (!empty($VVERBOSE)) {
-        $logLevel = true;
-    }
-}
-
-// See if the APP_INCLUDE contains a logger object,
-// If none exists, fallback to internal logger
-if (!isset($logger) || !is_object($logger)) {
-    $logger = new NullLogger(); // @todo restore
-}
-
-$BLOCKING = getenv('BLOCKING') !== false;
-
-$interval = 5;
-$INTERVAL = getenv('INTERVAL');
-if (!empty($INTERVAL)) {
-    $interval = $INTERVAL;
-}
-
-$count = 1;
-$COUNT = getenv('COUNT');
-if (!empty($COUNT) && $COUNT > 1) {
-    $count = $COUNT;
-}
-
-$PREFIX = getenv('PREFIX');
-$redisPrefix = 'resque';
-if (!empty($PREFIX)) {
-    $logger->log(Psr\Log\LogLevel::INFO, 'Prefix set to {prefix}', array('prefix' => $PREFIX));
-    $redisPrefix = $PREFIX;
-}
-
-$redis = new \Predis\Client(
-    getenv('REDIS_BACKEND'),
-    array(
-        'prefix' => $redisPrefix . ':'
-    )
-);
-
-$redisEventListener = new \Resque\Component\Core\RedisEventListener($redis);
-
-$eventDispatcher = new \Resque\Component\Core\Event\EventDispatcher();
-
-$eventDispatcher->addListener(
-    \Resque\Component\Worker\ResqueWorkerEvents::BEFORE_FORK_TO_PERFORM,
-    array($redisEventListener, 'disconnectFromRedis')
-);
-
-$queues = array();
-$configQueues = explode(',', $QUEUE);
-
-$queueRegistry = new \Resque\Component\Core\RedisQueueRegistry($redis, $eventDispatcher);
-
-if (in_array('*', $configQueues)) {
-    $wildcard = new \Resque\Component\Queue\WildcardQueue($queueRegistry);
-    $queues[] = $wildcard;
-} else {
-    foreach ($configQueues as $configQueue) {
-        $q = new \Resque\Component\Core\RedisQueue($redis, $eventDispatcher);
-        $q->setName($configQueue);
-        $queues[] = $q;
-    }
-    unset($configQueue, $q);
-}
-
-$failureBackend = new \Resque\Component\Core\RedisClientFailure($redis);
-$statisticBackend = new \Resque\Component\Core\RedisClientStatistic($redis);
-$jobInstanceFactory = new \Resque\Component\Job\Factory\JobInstanceFactory();
-$workerFactory = new \Resque\Component\Worker\Factory\WorkerFactory($queueRegistry, $jobInstanceFactory, $eventDispatcher);
-$workerRegistry = new \Resque\Component\Core\RedisWorkerRegistry($redis, $eventDispatcher, $workerFactory);
-
-// When a job fails, save it into redis.
-$eventDispatcher->addListener(
-    \Resque\Component\Job\ResqueJobEvents::FAILED,
-    function (\Resque\Component\Job\Event\JobFailedEvent $event) use ($failureBackend) {
-        $failureBackend->save($event->getJob(), $event->getException(), $event->getWorker());
-    }
-);
-// When a job performed, remove it from the worker, also update processed numbers.
-$eventDispatcher->addListener(
-    \Resque\Component\Job\ResqueJobEvents::PERFORMED,
-    function (\Resque\Component\Worker\Event\WorkerJobEvent $event) use ($workerRegistry) {
-        $workerRegistry->persist($event->getWorker());
-    }
-);
-
-$foreman = new \Resque\Component\Core\Foreman($workerRegistry);
-$foreman
-    ->setLogger($logger);
-
-$workers = array();
-for ($i = 0; $i < $count; ++$i) {
-    $worker = $workerFactory->createWorker();
-    $worker
-        ->setLogger($logger);
-
-    foreach ($queues as $queue) {
-        $worker->addQueue($queue);
-    }
-
-    $workers[] = $worker;
-
-    unset($worker);
-}
-
-// clean up before we begin
-$foreman->pruneDeadWorkers();
-
-$foreman->work($workers);
-
-echo sprintf(
-    "%d workers attached to the %s queues successfully started.\n",
-    count($workers),
-    implode($queues, ', ')
-);
+$app = new Resque\Bin\Application;
+$app->run();

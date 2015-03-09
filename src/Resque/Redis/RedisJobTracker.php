@@ -1,9 +1,7 @@
 <?php
 
-namespace Resque\Component\Core;
+namespace Resque\Redis;
 
-use Resque\Component\Core\Redis\RedisClientAwareInterface;
-use Resque\Component\Core\Redis\RedisClientInterface;
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Job\Model\JobTrackerInterface;
 use Resque\Component\Job\Model\TrackableJobInterface;

@@ -4,7 +4,7 @@ namespace spec\Resque\Component\Core;
 
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
-use Resque\Component\Core\Redis\RedisClientInterface;
+use Resque\Redis\RedisClientInterface;
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Job\Model\TrackableJobInterface;
 
@@ -17,7 +17,7 @@ class RedisJobTrackerSpec extends ObjectBehavior
 
     function it_is_initializable()
     {
-        $this->shouldHaveType('Resque\Component\Core\RedisJobTracker');
+        $this->shouldHaveType('Resque\Redis\RedisJobTracker');
     }
 
     function it_is_a_job_tracker()

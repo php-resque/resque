@@ -4,7 +4,7 @@ namespace Resque\Component\Core\Test;
 
 use PHPUnit_Framework_TestCase;
 use Predis\Client;
-use Resque\Component\Core\Redis\Bridge\PredisBridge;
+use Resque\Redis\Bridge\PredisBridge;
 
 /**
  * Resque test case class. Contains setup and teardown methods.

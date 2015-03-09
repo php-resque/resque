@@ -2,8 +2,8 @@
 
 namespace Resque\Component\Queue\Tests\Queue;
 
-use Resque\Component\Core\RedisQueue;
-use Resque\Component\Core\RedisQueueRegistry;
+use Resque\Redis\RedisQueue;
+use Resque\Redis\RedisQueueRegistry;
 use Resque\Component\Core\Test\ResqueTestCase;
 use Resque\Component\Job\Model\Job;
 use Resque\Component\Queue\WildcardQueue;

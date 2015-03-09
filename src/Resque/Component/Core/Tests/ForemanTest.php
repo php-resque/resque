@@ -3,7 +3,7 @@
 namespace Resque\Tests;
 
 use Resque\Component\Core\Foreman;
-use Resque\Component\Core\RedisWorkerRegistry;
+use Resque\Redis\RedisWorkerRegistry;
 use Resque\Component\Core\Test\ResqueTestCase;
 use Resque\Component\Worker\Factory\WorkerFactory;
 
@@ -15,7 +15,7 @@ class ForemanTest extends ResqueTestCase
     protected $foreman;
 
     /**
-     * @var RedisWorkerRegistry
+     * @var \Resque\Redis\RedisWorkerRegistry
      */
     protected $workerRegistry;
 

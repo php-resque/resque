@@ -2,7 +2,7 @@
 
 namespace Resque\Queue;
 
-use Resque\Component\Core\RedisQueue;
+use Resque\Redis\RedisQueue;
 
 /**
  * Resque Blocking RedisQueue

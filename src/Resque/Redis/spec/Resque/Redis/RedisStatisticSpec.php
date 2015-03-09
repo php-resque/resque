@@ -4,7 +4,7 @@ namespace spec\Resque\Component\Core;
 
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
-use Resque\Component\Core\Redis\RedisClientInterface;
+use Resque\Redis\RedisClientInterface;
 
 class RedisStatisticSpec extends ObjectBehavior
 {
@@ -16,7 +16,7 @@ class RedisStatisticSpec extends ObjectBehavior
 
     function it_is_initializable()
     {
-        $this->shouldHaveType('Resque\Component\Core\RedisStatistic');
+        $this->shouldHaveType('Resque\Redis\RedisStatistic');
     }
 
     function it_is_statistic()

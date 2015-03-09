@@ -1,22 +1,16 @@
 <?php
 
-namespace Resque\Component\Core;
+namespace Resque\Redis;
 
-use Resque\Component\Core\Event\EventDispatcherInterface;
-use Resque\Component\Core\Redis\RedisClientAwareInterface;
-use Resque\Component\Core\Redis\RedisClientInterface;
-use Resque\Component\Queue\Event\QueueEvent;
 use Resque\Component\Queue\Factory\QueueFactoryInterface;
 use Resque\Component\Queue\Model\QueueInterface;
 use Resque\Component\Queue\Registry\QueueRegistryInterface;
-use Resque\Component\Queue\ResqueQueueEvents;
 
 /**
  * Resque Redis queue registry
  */
 class RedisQueueRegistry implements
     QueueRegistryInterface,
-    QueueFactoryInterface,
     RedisClientAwareInterface
 {
     /**
@@ -25,20 +19,20 @@ class RedisQueueRegistry implements
     protected $redis;
 
     /**
-     * @var EventDispatcherInterface
+     * @var QueueFactoryInterface
      */
-    protected $eventDispatcher;
+    protected $queueFactory;
 
     /**
      * Constructor
      *
      * @param RedisClientInterface $redis
-     * @param EventDispatcherInterface $eventDispatcher
+     * @param QueueFactoryInterface $queueFactory
      */
-    public function __construct(RedisClientInterface $redis, EventDispatcherInterface $eventDispatcher)
+    public function __construct(RedisClientInterface $redis, QueueFactoryInterface $queueFactory)
     {
+        $this->queueFactory = $queueFactory;
         $this->setRedisClient($redis);
-        $this->eventDispatcher = $eventDispatcher;
     }
 
     /**
@@ -69,8 +63,6 @@ class RedisQueueRegistry implements
     {
         $this->redis->sadd('queues', $queue->getName());
 
-        $this->eventDispatcher->dispatch(ResqueQueueEvents::REGISTERED, new QueueEvent($queue));
-
         return $this;
     }
 
@@ -94,8 +86,6 @@ class RedisQueueRegistry implements
         $responses = $this->redis->exec();
 
         if (isset($responses[0])) {
-            $this->eventDispatcher->dispatch(ResqueQueueEvents::UNREGISTERED, new QueueEvent($queue));
-
             return $responses[0];
         }
 
@@ -111,20 +101,9 @@ class RedisQueueRegistry implements
         $queues = array();
 
         foreach ($queuesNames as $queueName) {
-            $queues[$queueName] = $this->createQueue($queueName);
+            $queues[$queueName] = $this->queueFactory->createQueue($queueName);
         }
 
         return $queues;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function createQueue($name)
-    {
-        $queue = new RedisQueue($this->redis, $this->eventDispatcher);
-        $queue->setName($name);
-
-        return $queue;
     }
 }

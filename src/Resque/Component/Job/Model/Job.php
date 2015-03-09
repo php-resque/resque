@@ -101,7 +101,7 @@ class Job implements
     {
         if (false === is_array($args)) {
             throw new \InvalidArgumentException(
-                'Supplied $args must be an array.'
+                'Supplied $args must be an array'
             );
         }
 

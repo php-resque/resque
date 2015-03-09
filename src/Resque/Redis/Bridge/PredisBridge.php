@@ -1,9 +1,9 @@
 <?php
 
-namespace Resque\Component\Core\Redis\Bridge;
+namespace Resque\Redis\Bridge;
 
 use Predis\ClientInterface;
-use Resque\Component\Core\Redis\RedisClientInterface;
+use Resque\Redis\RedisClientInterface;
 
 class PredisBridge implements RedisClientInterface
 {

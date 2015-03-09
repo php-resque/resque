@@ -57,6 +57,11 @@ class JobSpec extends ObjectBehavior
         $this->getArguments()->shouldReturn(array('foo' => 'bar'));
     }
 
+    function it_should_only_allow_an_array_as_arguments()
+    {
+        $this->shouldThrow(new \InvalidArgumentException('Supplied $args must be an array'))->duringSetArguments(new \stdClass);
+    }
+
     function it_should_have_no_state_by_default()
     {
         $this->getState()->shouldReturn(null);

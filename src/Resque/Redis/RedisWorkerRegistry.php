@@ -1,10 +1,8 @@
 <?php
 
-namespace Resque\Component\Core;
+namespace Resque\Redis;
 
 use Resque\Component\Core\Event\EventDispatcherInterface;
-use Resque\Component\Core\Redis\RedisClientAwareInterface;
-use Resque\Component\Core\Redis\RedisClientInterface;
 use Resque\Component\Queue\Model\OriginQueueAwareInterface;
 use Resque\Component\Worker\Event\WorkerEvent;
 use Resque\Component\Worker\Factory\WorkerFactoryInterface;

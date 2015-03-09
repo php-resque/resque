@@ -3,7 +3,7 @@
 namespace Resque\Component\Core\Tests;
 
 use Resque\Component\Core\Event\EventDispatcher;
-use Resque\Component\Core\RedisQueue;
+use Resque\Redis\RedisQueue;
 use Resque\Component\Core\Test\ResqueTestCase;
 use Resque\Component\Job\Model\Job;
 
@@ -20,16 +20,6 @@ class RedisQueueTest extends ResqueTestCase
 
         $this->queue = new RedisQueue($this->redis, new EventDispatcher());
         $this->queue->setName('jobs');
-    }
-
-    public function testNameIsSet()
-    {
-        $this->assertSame('jobs', $this->queue->getName());
-    }
-
-    public function testJobCanBeEnqueued()
-    {
-        $this->assertTrue($this->queue->push(new Job('Test_Job')));
     }
 
     public function testQueuedJobCanBePopped()

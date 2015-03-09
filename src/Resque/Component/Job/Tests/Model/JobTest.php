@@ -8,17 +8,6 @@ use Resque\Component\Job\Model\Job;
 
 class JobTest extends ResqueTestCase
 {
-    /**
-     * @expectedException \InvalidArgumentException
-     */
-    public function testObjectArgumentsCannotBePassedToJob()
-    {
-        $args = new \stdClass;
-        $args->test = 'somevalue';
-
-        new Job('Test_Job', $args);
-    }
-
     public function testCloneDropsId()
     {
         $job = new Job(

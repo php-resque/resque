@@ -5,7 +5,7 @@ namespace spec\Resque\Component\Core;
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
 use Resque\Component\Core\Event\EventDispatcherInterface;
-use Resque\Component\Core\Redis\RedisClientInterface;
+use Resque\Redis\RedisClientInterface;
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Worker\Factory\WorkerFactoryInterface;
 use Resque\Component\Worker\Model\WorkerInterface;
@@ -23,7 +23,7 @@ class RedisWorkerRegistrySpec extends ObjectBehavior
 
     function it_is_initializable()
     {
-        $this->shouldHaveType('Resque\Component\Core\RedisWorkerRegistry');
+        $this->shouldHaveType('Resque\Redis\RedisWorkerRegistry');
     }
 
     function it_is_a_worker_registry()
@@ -33,7 +33,7 @@ class RedisWorkerRegistrySpec extends ObjectBehavior
 
     function it_is_redis_client_aware()
     {
-        $this->shouldImplement('Resque\Component\Core\Redis\RedisClientAwareInterface');
+        $this->shouldImplement('Resque\Redis\RedisClientAwareInterface');
     }
 
     function its_redis_client_is_mutable(

@@ -3,3 +3,4 @@ suites:
     Job:    { namespace: Resque\Component\Job, spec_path: src/Resque/Component/Job }
     Worker: { namespace: Resque\Component\Worker, spec_path: src/Resque/Component/Worker }
     Queue:  { namespace: Resque\Component\Queue, spec_path: src/Resque/Component/Queue }
+    Redis:  { namespace: Resque\Redis, spec_path: src/Resque/Redis }

@@ -1,10 +1,8 @@
 <?php
 
-namespace Resque\Component\Core;
+namespace Resque\Redis;
 
 use Predis\ClientInterface;
-use Resque\Component\Core\Redis\RedisClientAwareInterface;
-use Resque\Component\Core\Redis\RedisClientInterface;
 use Resque\Component\Worker\Event\WorkerJobEvent;
 
 class RedisEventListener implements RedisClientAwareInterface

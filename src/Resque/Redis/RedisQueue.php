@@ -1,10 +1,8 @@
 <?php
 
-namespace Resque\Component\Core;
+namespace Resque\Redis;
 
 use Resque\Component\Core\Event\EventDispatcherInterface;
-use Resque\Component\Core\Redis\RedisClientAwareInterface;
-use Resque\Component\Core\Redis\RedisClientInterface;
 use Resque\Component\Job\Model\FilterableJobInterface;
 use Resque\Component\Job\Model\Job;
 use Resque\Component\Job\Model\JobInterface;

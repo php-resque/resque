@@ -21,7 +21,7 @@ class ResqueSpec extends ObjectBehavior
     }
 
     function it_asks_queue_registry_to_create_queue(
-        $registry,
+        QueueRegistryInterface $registry,
         QueueInterface $queue
     ) {
         $registry->createQueue('foo')->willReturn($queue);
@@ -29,7 +29,7 @@ class ResqueSpec extends ObjectBehavior
     }
 
     function it_can_enqueue_a_job(
-        $registry,
+        QueueRegistryInterface $registry,
         QueueInterface $queue
     ) {
         $registry->createQueue('foo')->willReturn($queue);

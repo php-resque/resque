@@ -1,6 +1,6 @@
 <?php
 
-namespace Resque\Component\Core\Redis;
+namespace Resque\Redis;
 
 /**
  * Redis client interface

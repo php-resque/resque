@@ -4,7 +4,7 @@ namespace spec\Resque\Component\Core;
 
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
-use Resque\Component\Core\Redis\RedisClientInterface;
+use Resque\Redis\RedisClientInterface;
 
 class RedisEventListenerSpec extends ObjectBehavior
 {
@@ -15,6 +15,6 @@ class RedisEventListenerSpec extends ObjectBehavior
 
     function it_is_initializable()
     {
-        $this->shouldHaveType('Resque\Component\Core\RedisEventListener');
+        $this->shouldHaveType('Resque\Redis\RedisEventListener');
     }
 }
