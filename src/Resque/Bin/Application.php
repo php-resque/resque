@@ -2,6 +2,7 @@
 
 namespace Resque\Bin;
 
+use RuntimeException;
 use Predis\Client;
 use Psr\Log\NullLogger;
 use Resque\Component\Core\Event\EventDispatcher;
@@ -146,7 +147,7 @@ class Application
     protected function validateConfiguration()
     {
         if (empty($this->config['queues']) || count(explode(',', $this->config['queues'])) < 1) {
-            die("Set QUEUE env var containing the list of queues to work.\n");
+            throw new RuntimeException('Set QUEUE env var containing the list of queues to work');
         }
     }
 
@@ -294,7 +295,6 @@ class Application
 
     protected function setupWorkers()
     {
-        print_r($this->config);
         $this->workers = array();
         for ($i = 0; $i < $this->config['worker_count']; ++$i) {
             $worker = $this->workerFactory->createWorker();
@@ -320,7 +320,7 @@ class Application
         $this->foreman->work($this->workers);
 
         echo sprintf(
-            "%d workers attached to the %s queues successfully started.\n",
+            '%d workers attached to the %s queues successfully started.' . PHP_EOL,
             count($this->workers),
             implode($this->queues, ', ')
         );
