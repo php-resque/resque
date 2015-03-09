@@ -95,6 +95,8 @@ class Application
     /**
      * Run
      *
+     * @todo catch and format exceptions
+     *
      * @return int
      */
     public function run()
@@ -162,7 +164,12 @@ class Application
 
         if ($include) {
             if (!file_exists($include) && !class_exists($include)) {
-                die('The APP_INCLUDE (' . $include . ") does not exist.\n");
+                throw new RuntimeException(
+                    sprintf(
+                        'The APP_INCLUDE "%s" does not exist, or could not be found',
+                        $include
+                    )
+                );
             }
 
             if (file_exists($include)) {
