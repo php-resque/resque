@@ -1,6 +1,6 @@
 <?php
 
-namespace spec\Resque\Component\Core;
+namespace spec\Resque\Redis;
 
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
