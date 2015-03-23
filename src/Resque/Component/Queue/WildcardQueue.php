@@ -55,14 +55,6 @@ class WildcardQueue extends AbstractQueue
 
     /**
      * {@inheritdoc}
-     */
-    public function register()
-    {
-        throw new \Exception('Wildcard queue can not be registered');
-    }
-
-    /**
-     * {@inheritdoc}
      *
      * Queues will be searched in alphabetic order.
      */
@@ -84,7 +76,6 @@ class WildcardQueue extends AbstractQueue
 
         foreach ($queues as $queue) {
             if (null !== $job = $queue->pop()) {
-
                 return $job;
             }
         }

@@ -4,8 +4,8 @@ namespace Resque\Component\Core;
 
 use Resque\Component\Job\Model\Job;
 use Resque\Component\Job\Model\JobInterface;
+use Resque\Component\Queue\Factory\QueueFactoryInterface;
 use Resque\Component\Queue\Model\QueueInterface;
-use Resque\Component\Queue\Registry\QueueRegistryInterface;
 
 /**
  * Resque
@@ -15,18 +15,19 @@ class Resque
     const VERSION = 'dev';
 
     /**
-     * @var QueueRegistryInterface  The queue registry
+     * @var QueueFactoryInterface  The queue factory
      */
-    protected $queueRegistry;
+    protected $queueFactory;
 
     /**
      * Constructor
      *
-     * @param QueueRegistryInterface $queueRegistry The queue registry and factory
+     * @param QueueFactoryInterface $queueFactory The queue factory
      */
-    public function __construct(QueueRegistryInterface $queueRegistry)
-    {
-        $this->queueRegistry = $queueRegistry;
+    public function __construct(
+        QueueFactoryInterface $queueFactory
+    ) {
+        $this->queueFactory = $queueFactory;
     }
 
     /**
@@ -59,6 +60,6 @@ class Resque
      */
     public function getQueue($queueName)
     {
-        return $this->queueRegistry->createQueue($queueName);
+        return $this->queueFactory->createQueue($queueName);
     }
 }

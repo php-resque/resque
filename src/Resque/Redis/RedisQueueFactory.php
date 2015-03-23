@@ -26,6 +26,7 @@ class RedisQueueFactory implements
      * Constructor
      *
      * @param RedisClientInterface $redis
+     * @todo remove $eventDispatcher if possible.
      */
     public function __construct(RedisClientInterface $redis, EventDispatcherInterface $eventDispatcher)
     {

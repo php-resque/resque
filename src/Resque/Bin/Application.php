@@ -2,7 +2,9 @@
 
 namespace Resque\Bin;
 
+use Resque\Redis\RedisQueueFactory;
 use Resque\Redis\RedisStatistic;
+use Resque\Component\Queue\Registry\QueueRegistry;
 use RuntimeException;
 use Predis\Client;
 use Psr\Log\NullLogger;
@@ -15,7 +17,6 @@ use Resque\Component\Worker\Factory\WorkerFactory;
 use Resque\Component\Worker\ResqueWorkerEvents;
 use Resque\Redis\RedisEventListener;
 use Resque\Redis\RedisFailure;
-use Resque\Redis\RedisQueueFactory;
 use Resque\Redis\RedisQueueRegistry;
 use Psr\Log\LoggerInterface;
 use Resque\Redis\RedisWorkerRegistry;
@@ -23,7 +24,8 @@ use Resque\Redis\RedisWorkerRegistry;
 /**
  * Resque application
  *
- * A simple class that fires up some workers. It's configuration is similar to that of Resque/Resque 1.x.
+ * A simple class that fires up some workers. It's configuration is based on Resque/Resque 1.x usage
+ * of environment variables.
  */
 class Application
 {
@@ -48,10 +50,6 @@ class Application
     public $eventDispatcher;
 
     /**
-     * @var RedisQueueFactory
-     */
-    public $queueFactory;
-    /**
      * @var RedisQueueRegistry
      */
     public $queueRegistry;
@@ -64,6 +62,11 @@ class Application
      * @var JobInstanceFactory
      */
     public $jobInstanceFactory;
+
+    /**
+     * @var \Resque\Component\Statistic\StatisticInterface
+     */
+    public $statisticBackend;
 
     /**
      * @var WorkerFactory
@@ -107,8 +110,7 @@ class Application
         $this->validateConfiguration();
         $this->setupLogger();
         $this->setupRedis();
-        $this->setupQueueFactory();
-        $this->setupQueueRegistry();
+        $this->setupQueueRegistryFactory();
         $this->setupQueues();
         $this->setupFailureBackend();
         $this->setupStatisticBackend();
@@ -217,17 +219,15 @@ class Application
         }
     }
 
-    protected function setupQueueFactory()
-    {
-        if (null === $this->queueFactory) {
-            $this->queueFactory = new RedisQueueFactory($this->redisClient, $this->eventDispatcher);
-        }
-    }
-
-    protected function setupQueueRegistry()
+    protected function setupQueueRegistryFactory()
     {
         if (null === $this->queueRegistry) {
-            $this->queueRegistry = new RedisQueueRegistry($this->redisClient, $this->queueFactory);
+            $factory = new RedisQueueFactory($this->redisClient, $this->eventDispatcher);
+            $this->queueRegistry = new QueueRegistry(
+                $this->eventDispatcher,
+                new RedisQueueRegistry($this->redisClient, $factory),
+                $factory
+            );
         }
     }
 
@@ -241,7 +241,7 @@ class Application
                 $queues[] = $wildcard;
             } else {
                 foreach ($configQueues as $configQueue) {
-                    $this->queues[] = $this->queueFactory->createQueue($configQueue);
+                    $this->queues[] = $this->queueRegistry->createQueue($configQueue);
                 }
             }
         }
@@ -297,7 +297,7 @@ class Application
     {
         if (null === $this->workerFactory) {
             $this->workerFactory = new WorkerFactory(
-                $this->queueFactory,
+                $this->queueRegistry,
                 $this->jobInstanceFactory,
                 $this->eventDispatcher
             );
@@ -358,7 +358,7 @@ class Application
 
         echo sprintf(
             'Workers (%s)' . PHP_EOL,
-            implode($this->workers)
+            implode(', ', $this->workers)
         );
     }
 }

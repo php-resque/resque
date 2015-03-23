@@ -592,7 +592,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      */
     public function setHostname($hostname)
     {
-        // TODO: Implement setHostname() method.
+        $this->hostname = $hostname;
     }
 
     /**
@@ -600,13 +600,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      */
     public function getHostname()
     {
-        if (function_exists('gethostname')) {
-            $hostname = gethostname();
-        } else {
-            $hostname = php_uname('n');
-        }
-
-        return $hostname;
+        return $this->hostname;
     }
 
     public function __toString()

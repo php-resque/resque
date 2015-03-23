@@ -14,6 +14,9 @@ interface PerformantJobInterface
      *
      * This is how your task is invoked.
      *
+     * A clean exit is what considers the job as complete. Be mindful of this with your exception
+     * handling and exit codes.
+     *
      * @param array $arguments The arguments passed in to the original enqueue call.
      *
      * @return void
