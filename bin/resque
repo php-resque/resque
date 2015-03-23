@@ -24,4 +24,5 @@ require $file;
 unset($file);
 
 $app = new Resque\Bin\Application;
-$app->run();
+$app->setup();
+$app->work();

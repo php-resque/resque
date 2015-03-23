@@ -88,10 +88,10 @@ class Foreman implements LoggerAwareInterface
             $worker->setProcess($child);
 
             $this->logger->info(
-                sprintf(
-                    'Successfully started worker %s with pid %d',
-                    $worker->getId(),
-                    $child->getPid()
+                'Successfully started worker {worker} with pid {childPid}',
+                array(
+                    'worker' => $worker,
+                    'childPid' => $child->getPid(),
                 )
             );
         }
@@ -105,7 +105,7 @@ class Foreman implements LoggerAwareInterface
                 } else {
                     throw new ResqueRuntimeException(
                         sprintf(
-                            "Foreman error with worker %s wait on pid %d.\n",
+                            'Foreman error with worker %s wait on pid %d',
                             $worker->getId(),
                             $process->getPid()
                         )
@@ -136,7 +136,7 @@ class Foreman implements LoggerAwareInterface
 
                     continue;
                 }
-                $this->logger->warning('Pruning dead worker {worker}', array('worker' => $worker->getId()));
+                $this->logger->warning('Pruning dead worker {worker}', array('worker' => $worker));
                 $this->registry->deregister($worker);
             }
         }

@@ -207,6 +207,13 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                     break;
                 }
 
+                $this->eventDispatcher->dispatch(
+                    ResqueWorkerEvents::WAIT_NO_JOB,
+                    new WorkerEvent($this)
+                );
+
+                $this->getProcess()->setTitle('Waiting for ' . implode(',', $this->queues));
+
                 usleep($interval * 1000000);
 
                 continue;
@@ -249,7 +256,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
                     if (false === $this->childProcess->isCleanExit()) {
                         $exception = new DirtyExitException(
-                            'Job exited with exit code ' . $this->childProcess->getExitCode()
+                            'Job dirty exited with code ' . $this->childProcess->getExitCode()
                         );
 
                         $this->handleFailedJob($job, $exception);
@@ -271,7 +278,6 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      */
     protected function startup()
     {
-        $this->getProcess()->setPidFromCurrentProcess();
         $this->getProcess()->setTitle('Starting');
         $this->registerSignalHandlers();
 
@@ -288,13 +294,22 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      */
     public function reserve()
     {
-        $queues = $this->getQueues();
-
-        foreach ($queues as $queue) {
-            $this->getLogger()->debug('Checking {queue} for jobs', array('queue' => $queue));
+        foreach ($this->queues as $queue) {
+            $this->getLogger()->debug(
+                'Checking {queue} for jobs',
+                array(
+                    'queue' => $queue
+                )
+            );
             $job = $queue->pop();
             if (false === (null === $job)) {
-                $this->getLogger()->info('Found job on {queue}', array('queue' => $queue));
+                $this->getLogger()->info(
+                    'Found job {job} on queue {queue}',
+                    array(
+                        'job' => $job,
+                        'queue' => $queue,
+                    )
+                );
 
                 return $job;
             }
@@ -401,7 +416,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     public function getId()
     {
         if (null === $this->id) {
-            $this->setId($this->hostname . ':' . getmypid() . ':' . implode(',', $this->getQueues()));
+            $this->setId($this->getHostname() . ':' . $this->getProcess()->getPid() . ':' . implode(',', $this->queues));
         }
 
         return $this->id;
@@ -435,7 +450,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
         pcntl_signal(SIGTERM, array($this, 'halt'));
         pcntl_signal(SIGINT, array($this, 'halt'));
-        pcntl_signal(SIGQUIT, array($this, 'shutdown'));
+        pcntl_signal(SIGQUIT, array($this, 'stop'));
         pcntl_signal(SIGUSR1, array($this, 'haltCurrentJob'));
         pcntl_signal(SIGUSR2, array($this, 'pause'));
         pcntl_signal(SIGCONT, array($this, 'resume'));
@@ -495,12 +510,27 @@ class Worker implements WorkerInterface, LoggerAwareInterface
             return;
         }
 
+        $this->getLogger()->warning(
+            'Worker {worker} killing active child {childPid}',
+            array(
+                'worker' => $this,
+                'childProcess' => $this->childProcess,
+                'childPid' => $this->childProcess->getPid()
+            )
+        );
+
         $this->childProcess->kill();
 
         if (null !== $currentJob) {
             $this->handleFailedJob(
                 $currentJob,
-                new DirtyExitException('Worker forced shutdown killed job ' . $currentJob->getId())
+                new DirtyExitException(
+                    sprintf(
+                        'Worker %s forcibly killed job %s due to halt',
+                        $this,
+                        $currentJob->getId()
+                    )
+                )
             );
         }
     }
@@ -570,6 +600,17 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      */
     public function getHostname()
     {
-        // TODO: Implement getHostname() method.
+        if (function_exists('gethostname')) {
+            $hostname = gethostname();
+        } else {
+            $hostname = php_uname('n');
+        }
+
+        return $hostname;
+    }
+
+    public function __toString()
+    {
+        return $this->getId();
     }
 }

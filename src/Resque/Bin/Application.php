@@ -2,6 +2,7 @@
 
 namespace Resque\Bin;
 
+use Resque\Redis\RedisStatistic;
 use RuntimeException;
 use Predis\Client;
 use Psr\Log\NullLogger;
@@ -99,7 +100,7 @@ class Application
      *
      * @return int
      */
-    public function run()
+    public function setup()
     {
         $this->configure();
         $this->handleAppInclude();
@@ -116,8 +117,6 @@ class Application
         $this->setupWorkerRegistry();
         $this->setupWorkers();
         $this->setupForeman();
-
-        $this->work();
     }
 
     /**
@@ -183,6 +182,12 @@ class Application
     protected function setupLogger()
     {
         if (null === $this->logger) {
+            if ($this->config['verbose'] || $this->config['very_verbose']) {
+                $this->logger = new Logger();
+
+                return;
+            }
+
             $this->logger = new NullLogger();
         }
     }
@@ -203,6 +208,10 @@ class Application
 
             $this->eventDispatcher->addListener(
                 ResqueWorkerEvents::BEFORE_FORK_TO_PERFORM,
+                array($redisEventListener, 'disconnectFromRedis')
+            );
+            $this->eventDispatcher->addListener(
+                ResqueWorkerEvents::WAIT_NO_JOB,
                 array($redisEventListener, 'disconnectFromRedis')
             );
         }
@@ -257,8 +266,24 @@ class Application
 
     protected function setupStatisticBackend()
     {
-        // @todo
-        // $statisticBackend = new \Resque\Component\Core\RedisClientStatistic($redis);
+        if (null === $this->statisticBackend) {
+            $this->statisticBackend = new RedisStatistic($this->redisClient);
+        }
+
+        $statisticBackend = $this->statisticBackend;
+
+        $this->eventDispatcher->addListener(
+            ResqueJobEvents::PERFORMED,
+            function ($event) use ($statisticBackend) {
+                $statisticBackend->jobProcessed($event);
+            }
+        );
+        $this->eventDispatcher->addListener(
+            ResqueJobEvents::FAILED,
+            function ($event) use ($statisticBackend) {
+                $statisticBackend->jobFailed($event);
+            }
+        );
     }
 
     protected function setupJobInstanceFactory()
@@ -321,15 +346,19 @@ class Application
         $this->foreman->setLogger($this->logger);
     }
 
-    protected function work()
+    public function work()
     {
         $this->foreman->pruneDeadWorkers();
         $this->foreman->work($this->workers);
-
         echo sprintf(
             '%d workers attached to the %s queues successfully started.' . PHP_EOL,
             count($this->workers),
             implode($this->queues, ', ')
+        );
+
+        echo sprintf(
+            'Workers (%s)' . PHP_EOL,
+            implode($this->workers)
         );
     }
 }

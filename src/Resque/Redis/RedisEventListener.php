@@ -28,10 +28,7 @@ class RedisEventListener implements RedisClientAwareInterface
         return $this;
     }
 
-    /**
-     * @param WorkerJobEvent $event
-     */
-    public function disconnectFromRedis(WorkerJobEvent $event)
+    public function disconnectFromRedis()
     {
         $this->redis->disconnect();
     }
