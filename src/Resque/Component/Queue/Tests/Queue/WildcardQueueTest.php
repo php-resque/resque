@@ -3,7 +3,7 @@
 namespace Resque\Component\Queue\Tests\Queue;
 
 use Resque\Redis\RedisQueue;
-use Resque\Redis\RedisQueueRegistry;
+use Resque\Redis\RedisQueueRegistryAdapter;
 use Resque\Component\Core\Test\ResqueTestCase;
 use Resque\Component\Job\Model\Job;
 use Resque\Component\Queue\WildcardQueue;
@@ -16,7 +16,7 @@ class WildcardQueueTest extends ResqueTestCase
     protected $wildcard;
 
     /**
-     * @var RedisQueueRegistry
+     * @var RedisQueueRegistryAdapter
      */
     protected $registry;
 
@@ -24,7 +24,7 @@ class WildcardQueueTest extends ResqueTestCase
     {
         parent::setUp();
 
-        $this->registry = new RedisQueueRegistry($this->redis);
+        $this->registry = new RedisQueueRegistryAdapter($this->redis);
         $this->wildcard = new WildcardQueue($this->registry);
     }
 

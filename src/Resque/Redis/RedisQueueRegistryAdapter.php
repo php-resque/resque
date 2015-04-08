@@ -2,15 +2,16 @@
 
 namespace Resque\Redis;
 
-use Resque\Component\Queue\Factory\QueueFactoryInterface;
 use Resque\Component\Queue\Model\QueueInterface;
-use Resque\Component\Queue\Registry\QueueRegistryInterface;
+use Resque\Component\Queue\Registry\QueueRegistryAdapterInterface;
 
 /**
- * Resque Redis queue registry
+ * Redis queue registry adapter
+ *
+ * Connects redis in to the Resque core, and stores queues the Resque way.
  */
-class RedisQueueRegistry implements
-    QueueRegistryInterface,
+class RedisQueueRegistryAdapter implements
+    QueueRegistryAdapterInterface,
     RedisClientAwareInterface
 {
     /**
@@ -19,19 +20,12 @@ class RedisQueueRegistry implements
     protected $redis;
 
     /**
-     * @var QueueFactoryInterface
-     */
-    protected $queueFactory;
-
-    /**
      * Constructor
      *
      * @param RedisClientInterface $redis
-     * @param QueueFactoryInterface $queueFactory
      */
-    public function __construct(RedisClientInterface $redis, QueueFactoryInterface $queueFactory)
+    public function __construct(RedisClientInterface $redis)
     {
-        $this->queueFactory = $queueFactory;
         $this->setRedisClient($redis);
     }
 
@@ -59,7 +53,7 @@ class RedisQueueRegistry implements
     /**
      * {@inheritDoc}
      */
-    public function register(QueueInterface $queue)
+    public function save(QueueInterface $queue)
     {
         $this->redis->sadd('queues', $queue->getName());
 
@@ -69,7 +63,7 @@ class RedisQueueRegistry implements
     /**
      * {@inheritDoc}
      */
-    public function isRegistered(QueueInterface $queue)
+    public function has(QueueInterface $queue)
     {
         return $this->redis->exists($this->getRedisKey($queue));
     }
@@ -77,7 +71,7 @@ class RedisQueueRegistry implements
     /**
      * {@inheritDoc}
      */
-    public function deregister(QueueInterface $queue)
+    public function delete(QueueInterface $queue)
     {
         $this->redis->multi();
         $this->redis->llen($this->getRedisKey($queue));
@@ -97,13 +91,6 @@ class RedisQueueRegistry implements
      */
     public function all()
     {
-        $queuesNames = $this->redis->smembers('queues');
-        $queues = array();
-
-        foreach ($queuesNames as $queueName) {
-            $queues[$queueName] = $this->queueFactory->createQueue($queueName);
-        }
-
-        return $queues;
+        return $this->redis->smembers('queues');
     }
 }

@@ -4,6 +4,7 @@ namespace Resque\Redis;
 
 use Resque\Component\Core\Event\EventDispatcherInterface;
 use Resque\Component\Queue\Factory\QueueFactoryInterface;
+use Resque\Component\Queue\Model\Queue;
 
 /**
  * Resque Redis queue registry
@@ -49,8 +50,11 @@ class RedisQueueFactory implements
      */
     public function createQueue($name)
     {
-        $queue = new RedisQueue($this->redis, $this->eventDispatcher);
-        $queue->setName($name);
+        $queue = new Queue(
+            $name,
+            new RedisQueue($this->redis),
+            $this->eventDispatcher
+        );
 
         return $queue;
     }

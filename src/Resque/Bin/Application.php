@@ -17,7 +17,7 @@ use Resque\Component\Worker\Factory\WorkerFactory;
 use Resque\Component\Worker\ResqueWorkerEvents;
 use Resque\Redis\RedisEventListener;
 use Resque\Redis\RedisFailure;
-use Resque\Redis\RedisQueueRegistry;
+use Resque\Redis\RedisQueueRegistryAdapter;
 use Psr\Log\LoggerInterface;
 use Resque\Redis\RedisWorkerRegistry;
 
@@ -50,7 +50,7 @@ class Application
     public $eventDispatcher;
 
     /**
-     * @var RedisQueueRegistry
+     * @var RedisQueueRegistryAdapter
      */
     public $queueRegistry;
     /**
@@ -225,7 +225,7 @@ class Application
             $factory = new RedisQueueFactory($this->redisClient, $this->eventDispatcher);
             $this->queueRegistry = new QueueRegistry(
                 $this->eventDispatcher,
-                new RedisQueueRegistry($this->redisClient, $factory),
+                new RedisQueueRegistryAdapter($this->redisClient, $factory),
                 $factory
             );
         }

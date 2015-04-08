@@ -7,7 +7,6 @@ use Resque\Component\Job\Model\FilterableJobInterface;
 use Resque\Component\Job\Model\Job;
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Queue\Event\QueueJobEvent;
-use Resque\Component\Queue\Model\AbstractQueue;
 use Resque\Component\Queue\Model\OriginQueueAwareInterface;
 use Resque\Component\Queue\ResqueQueueEvents;
 
@@ -16,7 +15,8 @@ use Resque\Component\Queue\ResqueQueueEvents;
  *
  * Uses redis to store the queue.
  */
-class RedisQueue extends AbstractQueue implements RedisClientAwareInterface
+class RedisQueue implements
+    RedisClientAwareInterface
 {
     /**
      * @var RedisClientInterface A redis connection.

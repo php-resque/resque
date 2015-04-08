@@ -36,4 +36,11 @@ final class ResqueQueueEvents
      * @var string
      */
     const JOB_PUSHED = 'resque.queue.job_pushed';
+
+    /**
+     * The event listener receives a Resque\Component\Queue\Event\QueueJobEvent instance.
+     *
+     * @var string
+     */
+    const JOB_POPPED = 'resque.queue.job_popped';
 }

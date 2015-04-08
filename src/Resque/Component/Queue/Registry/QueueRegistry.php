@@ -20,16 +20,19 @@ class QueueRegistry implements
      */
     protected $eventDispatcher;
 
+    protected $factory;
+    protected $adapter;
+
     /**
      * Constructor
      *
      * @param EventDispatcherInterface $eventDispatcher
-     * @param QueueRegistryInterface $adapter
+     * @param QueueRegistryAdapterInterface $adapter
      * @param QueueFactoryInterface $factory
      */
     public function __construct(
         EventDispatcherInterface $eventDispatcher,
-        QueueRegistryInterface $adapter,
+        QueueRegistryAdapterInterface $adapter,
         QueueFactoryInterface $factory
     ) {
         $this->eventDispatcher = $eventDispatcher;
@@ -42,7 +45,7 @@ class QueueRegistry implements
      */
     public function register(QueueInterface $queue)
     {
-        $this->adapter->register($queue);
+        $this->adapter->save($queue);
 
         $this->eventDispatcher->dispatch(ResqueQueueEvents::REGISTERED, new QueueEvent($queue));
 
@@ -54,7 +57,7 @@ class QueueRegistry implements
      */
     public function isRegistered(QueueInterface $queue)
     {
-        return $this->adapter->isRegistered($queue);
+        return $this->adapter->has($queue);
     }
 
     /**
@@ -62,7 +65,7 @@ class QueueRegistry implements
      */
     public function deregister(QueueInterface $queue)
     {
-        $result = $this->adapter->deregister($queue);
+        $result = $this->adapter->delete($queue);
 
         if ($result) {
             $this->eventDispatcher->dispatch(ResqueQueueEvents::UNREGISTERED, new QueueEvent($queue));
