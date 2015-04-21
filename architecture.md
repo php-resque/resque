@@ -14,7 +14,7 @@ You can get known Queues, and Workers from Redis through it, among other things.
 Examples:
 
     $resque->getAllQueues(); // Returns an array of all currently known queues in redis.
-    $resque->push('asd', $job); // Sticks the job in to redis.
+    $resque->enqueue('asd', $job); // Sticks the job in to redis.
     $resque->work(); // Simply
     $resque->getAllWorkers(); // Returns an array of all currently known workers in redis.
 ### The Foreman
@@ -27,7 +27,7 @@ Controls it's own run loop, asks for Jobs from Queues, and tells the Foreman abo
 
 ### The RedisQueue
 
-You can push and pop Jobs from it, as well interrogate the list.
+You can enqueue and dequeue Jobs from it, as well interrogate the list.
 
 Examples:
 
@@ -50,11 +50,11 @@ Examples:
             $args
         );
 
-        $queue->push($job); //
+        $queue->enqueue($job); //
         // or
-        $resque->push($queue, $job); // internally just calls $queue->push($job);
+        $resque->enqueue($queue, $job); // internally just calls $queue->enqueue($job);
         // or
-        $resque->push('foo', $job); // internally just calls, $resque->getQueue('foo'), $queue->push($job);
+        $resque->enqueue('foo', $job); // internally just calls, $resque->getQueue('foo'), $queue->enqueue($job);
 
 ### The Job
 

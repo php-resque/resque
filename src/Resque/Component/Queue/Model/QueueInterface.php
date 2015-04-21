@@ -5,40 +5,48 @@ namespace Resque\Component\Queue\Model;
 use Resque\Component\Job\Model\JobInterface;
 
 /**
- * Resque QueueInterface
+ * Resque Queue
  *
- * Defines the basic interface of a RedisQueue needed by a worker.
+ * Defines the basic interface of a queue needed by a worker, or job creator.
  */
 interface QueueInterface
 {
     /**
+     * Set name.
+     *
      * @param string $name The name of the queue.
-     * @return self
      */
     public function setName($name);
 
     /**
+     * Get name.
+     *
      * @return string The name of the queue.
      */
     public function getName();
 
     /**
-     * Push a job to the end of a specific queue. If the queue does not
-     * exist, then create it as well.
+     * Enqueue.
      *
-     * @param JobInterface $job The Job to enqueue/push.
+     * Places a job at the end of a this queue.
+     *
+     * @param JobInterface $job The Job to enqueue.
      * @return bool True if successful, false otherwise.
      */
-    public function push(JobInterface $job);
+    public function enqueue(JobInterface $job);
 
     /**
-     * Pop a job off the end of the specified queue, decode it and return it.
+     * Dequeue.
      *
-     * @return JobInterface|null Decoded job from the queue, or null if no jobs.
+     * Grabs a job off the front of this queue, and returns it.
+     *
+     * @return JobInterface|null The job from the queue, or null if no jobs.
      */
-    public function pop();
+    public function dequeue();
 
     /**
+     * Job count.
+     *
      * Return the number of pending jobs in the queue
      *
      * @return int The size of the queue.

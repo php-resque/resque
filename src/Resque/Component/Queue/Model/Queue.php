@@ -2,7 +2,7 @@
 
 namespace Resque\Component\Queue\Model;
 
-use Resque\Component\Queue\Registry\QueueStorageInterface;
+use Resque\Component\Queue\Storage\QueueStorageInterface;
 use Resque\Component\Queue\ResqueQueueEvents;
 use Resque\Component\Core\Event\EventDispatcherInterface;
 use Resque\Component\Job\Model\JobInterface;
@@ -29,15 +29,17 @@ class Queue implements QueueInterface
     protected $eventDispatcher;
 
     /**
+     * Constructor.
+     *
      * @param string $name
      * @param QueueStorageInterface $storage
      * @param EventDispatcherInterface $eventDispatcher
      */
     public function __construct($name, QueueStorageInterface $storage, EventDispatcherInterface $eventDispatcher)
     {
-        $this->setName($name);
         $this->storage = $storage;
         $this->eventDispatcher = $eventDispatcher;
+        $this->setName($name);
     }
 
     /**
@@ -46,8 +48,6 @@ class Queue implements QueueInterface
     public function setName($name)
     {
         $this->name = $name;
-
-        return $this;
     }
 
     /**
@@ -61,11 +61,11 @@ class Queue implements QueueInterface
     /**
      * {@inheritDoc}
      */
-    public function push(JobInterface $job)
+    public function enqueue(JobInterface $job)
     {
         $this->eventDispatcher->dispatch(ResqueQueueEvents::JOB_PUSH, new QueueJobEvent($this, $job));
 
-        if ($this->storage->push($this, $job)) {
+        if ($this->storage->enqueue($this, $job)) {
             $this->eventDispatcher->dispatch(ResqueQueueEvents::JOB_PUSHED, new QueueJobEvent($this, $job));
 
             return true;
@@ -77,9 +77,9 @@ class Queue implements QueueInterface
     /**
      * {@inheritDoc}
      */
-    public function pop()
+    public function dequeue()
     {
-        $job = $this->storage->pop($this);
+        $job = $this->storage->dequeue($this);
 
         if (!$job) {
             return null;

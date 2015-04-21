@@ -4,9 +4,9 @@ The following is a step-by-step breakdown of how php-resque operates.
 
 ## Enqueue Job ##
 
-What happens when you call `Resque::push()`?
+What happens when you call `Resque::enqueue()`?
 
-1. `Resque::push()` calls `Job::create()` with the same arguments it
+1. `Resque::enqueue()` calls `Job::create()` with the same arguments it
    received.
 2. `Job::create()` checks that your `$args` (the third argument) are
    either `null` or in an array
@@ -19,9 +19,9 @@ What happens when you call `Resque::push()`?
 6. `Resque_Job_Status::create()` creates a key in Redis with the job ID in its
    name, and the current status (as well as a couple of timestamps) as its
    value, then returns control to `Job::create()`
-7. `Job::create()` returns control to `Resque::push()`, with the job
+7. `Job::create()` returns control to `Resque::enqueue()`, with the job
    ID as a return value
-8. `Resque::push()` triggers the `afterEnqueue` event, then returns control
+8. `Resque::enqueue()` triggers the `afterEnqueue` event, then returns control
    to your application, again with the job ID as its return value
 
 ## Workers At Work ##
@@ -51,7 +51,7 @@ How do the workers process the queues?
     1. `Worker->reserve()` iterates through the queue list, calling
        `Job::reserve()` with the current queue's name as the sole
        argument on each pass
-    2. `Job::reserve()` passes the queue name on to `Resque::pop()`,
+    2. `Job::reserve()` passes the queue name on to `Resque::dequeue()`,
        which in turn calls Redis' `lpop` with the same argument, then returns
        control (and the job content, if any) to `Job::reserve()`
     3. `Job::reserve()` checks whether the job content is an array (as

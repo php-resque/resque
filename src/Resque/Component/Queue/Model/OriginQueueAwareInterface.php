@@ -3,22 +3,24 @@
 namespace Resque\Component\Queue\Model;
 
 /**
- * Job queue aware interface
+ * Origin queue aware interface
+ *
+ * A job maybe be origin queue aware, if it wants to know what queue it was dequeued from.
  */
 interface OriginQueueAwareInterface
 {
     /**
-     * Set origin RedisQueue
+     * Set origin queue.
      *
-     * @param QueueInterface $queue
+     * @param QueueInterface $queue The queue the subject came from.
      * @return $this
      */
     public function setOriginQueue(QueueInterface $queue);
 
     /**
-     * Returns origin QueueInterface, if it has been set.
+     * Get origin queue.
      *
-     * @return QueueInterface|null
+     * @return QueueInterface|null The origin queue the subject came from, if one at all.
      */
     public function getOriginQueue();
 }

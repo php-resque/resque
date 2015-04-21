@@ -75,7 +75,7 @@ class WildcardQueue extends AbstractQueue
         ksort($queues);
 
         foreach ($queues as $queue) {
-            if (null !== $job = $queue->pop()) {
+            if (null !== $job = $queue->dequeue()) {
                 return $job;
             }
         }

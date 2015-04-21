@@ -9,7 +9,7 @@ use Resque\Component\Queue\Model\QueueInterface;
 use Resque\Component\Queue\ResqueQueueEvents;
 
 /**
- * Resque queue registry
+ * Queue registry
  */
 class QueueRegistry implements
     QueueRegistryInterface,
@@ -20,7 +20,14 @@ class QueueRegistry implements
      */
     protected $eventDispatcher;
 
+    /**
+     * @var QueueFactoryInterface
+     */
     protected $factory;
+
+    /**
+     * @var QueueRegistryAdapterInterface
+     */
     protected $adapter;
 
     /**

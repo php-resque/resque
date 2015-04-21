@@ -7,7 +7,7 @@ use Resque\Redis\RedisQueue;
 /**
  * Resque Blocking RedisQueue
  *
- * Blocks on pop return immediately if queue push
+ * Blocks on dequeue return immediately if queue enqueue
  *
  * @todo this is really just to hold blpop usage until I decided how it should be a part of normal queues.
  *       it could be like wildcard, but takes a bunch of queues?
@@ -15,10 +15,10 @@ use Resque\Redis\RedisQueue;
 class BlockingRedisQueue extends RedisQueue
 {
     /**
-     * Pop an item off the end of the specified queues, using blocking list pop,
+     * Pop an item off the end of the specified queues, using blocking list dequeue,
      * decode it and return it.
      *
-     * @deprecated should just pop() but queue might have setBlocking()?
+     * @deprecated should just dequeue() but queue might have setBlocking()?
      *
      * @param array $queues
      * @param int $timeout

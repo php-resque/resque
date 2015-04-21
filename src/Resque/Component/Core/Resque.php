@@ -45,7 +45,7 @@ class Resque
     {
         $queue = $this->getQueue($queueName);
         $job = new Job($jobClass, $arguments);
-        $queue->push($job);
+        $queue->enqueue($job);
 
         return $job;
     }

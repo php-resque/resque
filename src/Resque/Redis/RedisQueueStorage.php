@@ -8,15 +8,18 @@ use Resque\Component\Job\Model\Job;
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Queue\Event\QueueJobEvent;
 use Resque\Component\Queue\Model\OriginQueueAwareInterface;
+use Resque\Component\Queue\Model\QueueInterface;
 use Resque\Component\Queue\ResqueQueueEvents;
+use Resque\Component\Queue\Storage\QueueStorageInterface;
 
 /**
  * Resque Redis queue
  *
  * Uses redis to store the queue.
  */
-class RedisQueue implements
-    RedisClientAwareInterface
+class RedisQueueStorage implements
+    RedisClientAwareInterface,
+    QueueStorageInterface
 {
     /**
      * @var RedisClientInterface A redis connection.
@@ -24,21 +27,15 @@ class RedisQueue implements
     protected $redis;
 
     /**
-     * @var EventDispatcherInterface
-     */
-    protected $eventDispatcher;
-
-    /**
+     * Constructor.
+     *
      * @param RedisClientInterface $redis
-     * @param EventDispatcherInterface $eventDispatcher
      */
-    public function __construct(RedisClientInterface $redis, EventDispatcherInterface $eventDispatcher)
+    public function __construct(RedisClientInterface $redis)
     {
         if (null !== $redis) {
             $this->setRedisClient($redis);
         }
-
-        $this->eventDispatcher = $eventDispatcher;
     }
 
     /**
@@ -54,43 +51,30 @@ class RedisQueue implements
     /**
      * @return string Key name for redis.
      */
-    protected function getRedisKey()
+    protected function getRedisKey(QueueInterface $queue)
     {
-        return 'queue:' . $this->getName();
+        return 'queue:' . $queue->getName();
     }
 
     /**
-     * Push a job into the queue
-     *
-     * It should also make sure the queue is registered.
-     *
-     * @todo throw a exception when it fails!
-     *
-     * @param JobInterface $job The Job to enqueue.
-     * @return bool TRUE if successful, FALSE otherwise.
+     * {@inheritDoc}
      */
-    public function push(JobInterface $job)
+    public function enqueue(QueueInterface $queue, JobInterface $job)
     {
-        $this->eventDispatcher->dispatch(ResqueQueueEvents::JOB_PUSH, new QueueJobEvent($this, $job));
-
         $result = $this->redis->rpush(
-            $this->getRedisKey(),
+            $this->getRedisKey($queue),
             $job->encode()
         );
-
-        $this->eventDispatcher->dispatch(ResqueQueueEvents::JOB_PUSHED, new QueueJobEvent($this, $job));
 
         return $result === 1;
     }
 
     /**
-     * Pop a job from the queue
-     *
-     * @return JobInterface|null Decoded job from the queue, or null if no jobs.
+     * {@inheritDoc}
      */
-    public function pop()
+    public function dequeue(QueueInterface $queue)
     {
-        $payload = $this->redis->lpop($this->getRedisKey());
+        $payload = $this->redis->lpop($this->getRedisKey($queue));
 
         if (!$payload) {
             return null;
@@ -106,16 +90,13 @@ class RedisQueue implements
     }
 
     /**
-     * Remove jobs matching the filter
-     *
-     * @param array $filter
-     * @return int The number of jobs removed
+     * {@inheritDoc}
      */
-    public function remove($filter = array())
+    public function remove(QueueInterface $queue, $filter = array())
     {
         $jobsRemoved = 0;
 
-        $queueKey = $this->getRedisKey();
+        $queueKey = $this->getRedisKey($queue);
         $tmpKey = $queueKey . ':removal:' . time() . ':' . uniqid();
         $enqueueKey = $tmpKey . ':enqueue';
 
@@ -150,17 +131,10 @@ class RedisQueue implements
     }
 
     /**
-     * Return the number of pending jobs in the queue
-     *
-     * @return int The size of the queue.
+     * {@inheritDoc}
      */
-    public function count()
+    public function count(QueueInterface $queue)
     {
-        return $this->redis->llen($this->getRedisKey());
-    }
-
-    public function __toString()
-    {
-        return $this->getName();
+        return $this->redis->llen($this->getRedisKey($queue));
     }
 }

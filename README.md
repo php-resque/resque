@@ -108,11 +108,11 @@ job. The status information will allow you to check if a job is in the
 queue, is currently being run, has finished, or has failed.
 
 To track the status of a job, pass `true` as the fourth argument to
-`Resque::push`. A token used for tracking the job status will be
+`Resque::enqueue`. A token used for tracking the job status will be
 returned:
 
 ```php
-$token = Resque::push('default', 'My_Job', $args, true);
+$token = Resque::enqueue('default', 'My_Job', $args, true);
 echo $token;
 ```
 
@@ -349,7 +349,7 @@ The event contains the following:
 
 #### afterEnqueue
 
-Called after a job has been queued using the `Resque::push` method. Arguments passed
+Called after a job has been queued using the `Resque::enqueue` method. Arguments passed
 (in this order) include:
 
 * Class - string containing the name of scheduled job

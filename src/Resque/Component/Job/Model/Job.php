@@ -165,7 +165,7 @@ class Job implements
     /**
      * Clone
      *
-     * On clone, remove the id. This allows recreation of a job via $queue->push(clone $job);
+     * On clone, remove the id. This allows recreation of a job via $queue->enqueue(clone $job);
      */
     public function __clone()
     {
@@ -222,7 +222,7 @@ class Job implements
                 'class' => $this->getJobClass(),
                 'args' => array($this->getArguments()),
                 'id' => $this->getId(),
-                'queue_time' => microtime(true), // @todo this isn't queue time. $queue->push() is queue time.
+                'queue_time' => microtime(true), // @todo this isn't queue time. $queue->enqueue() is queue time.
             )
         );
     }
