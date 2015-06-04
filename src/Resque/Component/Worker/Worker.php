@@ -301,7 +301,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                     'queue' => $queue
                 )
             );
-            $job = $queue->pop();
+            $job = $queue->dequeue();
             if (false === (null === $job)) {
                 $this->getLogger()->info(
                     'Found job {job} on queue {queue}',

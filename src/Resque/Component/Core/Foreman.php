@@ -31,6 +31,11 @@ class Foreman implements LoggerAwareInterface
      */
     protected $logger;
 
+    /**
+     * @var bool If the foreman was last called to work(), halt() will reset when implemented
+     */
+    protected $working;
+
     public function __construct(WorkerRegistryInterface $workerRegistry)
     {
         $this->logger = new NullLogger();
@@ -67,7 +72,14 @@ class Foreman implements LoggerAwareInterface
      */
     public function work($workers, $wait = false)
     {
-        // @todo Guard multiple calls. Expect ->work() ->halt() ->work() etc
+        if($this->working){
+            throw new ResqueRuntimeException(
+                'Foreman error was last called to work, must be halted first'
+            );
+        }
+
+        $this->working = true;
+
         // @todo Check workers are instanceof WorkerInterface.
 
         /** @var WorkerInterface $worker */
@@ -97,20 +109,24 @@ class Foreman implements LoggerAwareInterface
         }
 
         if ($wait) {
-            foreach ($workers as $worker) {
-                $process = $worker->getProcess();
-                $process->wait();
-                if ($process->isCleanExit()) {
-                    $this->registry->deregister($worker);
-                } else {
-                    throw new ResqueRuntimeException(
-                        sprintf(
-                            'Foreman error with worker %s wait on pid %d',
-                            $worker->getId(),
-                            $process->getPid()
-                        )
-                    );
-                }
+            $this->wait($workers);
+        }
+    }
+
+    public function wait($workers){
+        foreach ($workers as $worker) {
+            $process = $worker->getProcess();
+            $process->wait();
+            if ($process->isCleanExit()) {
+                $this->registry->deregister($worker);
+            } else {
+                throw new ResqueRuntimeException(
+                    sprintf(
+                        'Foreman error with worker %s wait on pid %d',
+                        $worker->getId(),
+                        $process->getPid()
+                    )
+                );
             }
         }
     }

@@ -3,12 +3,15 @@
 namespace Resque\Redis;
 
 use Resque\Component\Core\Event\EventDispatcherInterface;
+use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Queue\Model\OriginQueueAwareInterface;
 use Resque\Component\Worker\Event\WorkerEvent;
 use Resque\Component\Worker\Factory\WorkerFactoryInterface;
 use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Component\Worker\Registry\WorkerRegistryInterface;
 use Resque\Component\Worker\ResqueWorkerEvents;
+use Resque\Redis\Bridge\PredisBridge;
+use X4B\JobSystem;
 
 /**
  * Resque redis worker registry
@@ -32,6 +35,8 @@ class RedisWorkerRegistry implements
      */
     protected $eventDispatcher;
 
+    protected $myPid;
+
     public function __construct(
         RedisClientInterface $redis,
         EventDispatcherInterface $eventDispatcher,
@@ -40,6 +45,7 @@ class RedisWorkerRegistry implements
         $this->setRedisClient($redis);
         $this->eventDispatcher = $eventDispatcher;
         $this->workerFactory = $workerFactory;
+        $this->myPid = getmypid();
     }
 
     /**
@@ -57,12 +63,16 @@ class RedisWorkerRegistry implements
      */
     public function register(WorkerInterface $worker)
     {
+        $this->redis = new PredisBridge(JobSystem::getRedis(true));
+        $id = $worker->getId();
         if ($this->isRegistered($worker)) {
-            throw new \Exception('Cannot double register a worker, deregister it before calling register again');
+            throw new ResqueRuntimeException(sprintf(
+                'Cannot double register worker %s, deregister it before calling register again',
+                $id
+            ));
         }
 
-        $id = $worker->getId();
-        $this->redis->sadd('workers', $id);
+        $this->redis->sadd('workers:'.$this->myPid, $id);
         $this->redis->set('worker:' . $id . ':started', date('c'));
 
         $this->eventDispatcher->dispatch(ResqueWorkerEvents::REGISTERED, new WorkerEvent($worker));
@@ -75,7 +85,7 @@ class RedisWorkerRegistry implements
      */
     public function isRegistered(WorkerInterface $worker)
     {
-        return (bool)$this->redis->sismember('workers', $worker->getId());
+        return $this->redis->sismember('workers:'.$this->myPid, $worker->getId());
     }
 
     /**
@@ -87,7 +97,7 @@ class RedisWorkerRegistry implements
 
         $worker->halt();
 
-        $this->redis->srem('workers', $id);
+        $this->redis->srem('workers:'.$this->myPid, $id);
         $this->redis->del('worker:' . $id);
         $this->redis->del('worker:' . $id . ':started');
 
@@ -101,7 +111,7 @@ class RedisWorkerRegistry implements
      */
     public function all()
     {
-        $workerIds = $this->redis->smembers('workers');
+        $workerIds = $this->redis->smembers('workers:'.$this->myPid);
 
         if (!is_array($workerIds)) {
             return array();
@@ -120,7 +130,7 @@ class RedisWorkerRegistry implements
      */
     public function count()
     {
-        return $this->redis->scard('workers');
+        return $this->redis->scard('workers:'.$this->myPid);
     }
 
     /**

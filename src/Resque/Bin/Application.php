@@ -360,5 +360,6 @@ class Application
             'Workers (%s)' . PHP_EOL,
             implode(', ', $this->workers)
         );
+        $this->foreman->wait($this->workers);
     }
 }
