@@ -2,7 +2,7 @@
 
 namespace Resque\Component\Queue\Tests\Queue;
 
-use Resque\Redis\RedisQueueStorage;
+use Resque\Redis\RedisQueue;
 use Resque\Redis\RedisQueueRegistryAdapter;
 use Resque\Component\Core\Test\ResqueTestCase;
 use Resque\Component\Job\Model\Job;
@@ -53,11 +53,11 @@ class WildcardQueueTest extends ResqueTestCase
 
     public function testPopsFromAllQueues()
     {
-        $queueBaz = new RedisQueueStorage($this->redis);
+        $queueBaz = new RedisQueue($this->redis);
         $queueBaz->setName('baz');
         $queueBaz->push(new Job('Foo'));
 
-        $queueFoo = new RedisQueueStorage($this->redis);
+        $queueFoo = new RedisQueue($this->redis);
         $queueFoo->setName('foo');
         $queueFoo->push(new Job('Foo'));
 
@@ -75,11 +75,11 @@ class WildcardQueueTest extends ResqueTestCase
 
         $this->assertSame('foo*', $wildcard->getName());
 
-        $queueBaz = new RedisQueueStorage($this->redis);
+        $queueBaz = new RedisQueue($this->redis);
         $queueBaz->setName('baz');
         $queueBaz->push(new Job('Foo'));
 
-        $queueFoo = new RedisQueueStorage($this->redis);
+        $queueFoo = new RedisQueue($this->redis);
         $queueFoo->setName('foo');
         $jobFoo = new Job('Foo');
         $queueFoo->push($jobFoo);

@@ -3,7 +3,7 @@
 namespace Resque\Component\Core\Tests;
 
 use Resque\Component\Core\Event\EventDispatcher;
-use Resque\Redis\RedisQueueStorage;
+use Resque\Redis\RedisQueue;
 use Resque\Redis\RedisQueueRegistryAdapter;
 use Resque\Component\Core\Test\ResqueTestCase;
 use Resque\Component\Job\Model\Job;
@@ -16,7 +16,7 @@ class RedisQueueRegistryTest extends ResqueTestCase
     protected $registry;
 
     /**
-     * @var \Resque\Redis\RedisQueueStorage
+     * @var \Resque\Redis\RedisQueue
      */
     protected $queue;
 

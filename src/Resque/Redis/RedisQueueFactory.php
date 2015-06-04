@@ -52,7 +52,7 @@ class RedisQueueFactory implements
     {
         $queue = new Queue(
             $name,
-            new RedisQueueStorage($this->redis),
+            new RedisQueue($this->redis),
             $this->eventDispatcher
         );
 
