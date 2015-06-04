@@ -3,14 +3,15 @@
 namespace Resque\Component\Core\Tests;
 
 use Resque\Component\Core\Event\EventDispatcher;
-use Resque\Redis\RedisQueue;
+use Resque\Redis\RedisQueueStorage;
 use Resque\Component\Core\Test\ResqueTestCase;
 use Resque\Component\Job\Model\Job;
+use Resque\Redis\RedisQueueStorage;
 
 class RedisQueueTest extends ResqueTestCase
 {
     /**
-     * @var RedisQueue
+     * @var RedisQueueStorage
      */
     protected $queue;
 
@@ -18,7 +19,7 @@ class RedisQueueTest extends ResqueTestCase
     {
         parent::setUp();
 
-        $this->queue = new RedisQueue($this->redis, new EventDispatcher());
+        $this->queue = new RedisQueueStorage($this->redis, new EventDispatcher());
         $this->queue->setName('jobs');
     }
 

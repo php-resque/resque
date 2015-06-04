@@ -3,13 +3,14 @@
 namespace Resque\Tests;
 
 use Resque\Component\Core\Event\EventDispatcher;
-use Resque\Redis\RedisQueue;
+use Resque\Redis\RedisQueueStorage;
 use Resque\Component\Core\Test\ResqueTestCase;
 use Resque\Component\Job\Model\Job;
 use Resque\Component\Job\ResqueJobEvents;
 use Resque\Component\Job\Tests\Jobs\Simple;
 use Resque\Component\Worker\ResqueWorkerEvents;
 use Resque\Component\Worker\Worker;
+use Resque\Redis\RedisQueueStorage;
 
 class WorkerTest extends ResqueTestCase
 {
@@ -35,9 +36,9 @@ class WorkerTest extends ResqueTestCase
 
     public function testWorkerCanWorkOverMultipleQueues()
     {
-        $queueOne = new RedisQueue($this->redis);
+        $queueOne = new RedisQueueStorage($this->redis);
         $queueOne->setName('queue1');
-        $queueTwo = new RedisQueue($this->redis);
+        $queueTwo = new RedisQueueStorage($this->redis);
         $queueTwo->setName('queue2');
 
         $jobOne = new Job('Test_Job_1');
@@ -58,11 +59,11 @@ class WorkerTest extends ResqueTestCase
 
     public function testWorkerWorksQueuesInSpecifiedOrder()
     {
-        $queueHigh = new RedisQueue($this->redis);
+        $queueHigh = new RedisQueueStorage($this->redis);
         $queueHigh->setName('high');
-        $queueMedium = new RedisQueue($this->redis);
+        $queueMedium = new RedisQueueStorage($this->redis);
         $queueMedium->setName('medium');
-        $queueLow = new RedisQueue($this->redis);
+        $queueLow = new RedisQueueStorage($this->redis);
         $queueLow->setName('low');
 
         $this->worker->addQueue($queueHigh);
@@ -85,9 +86,9 @@ class WorkerTest extends ResqueTestCase
 
     public function testWorkerDoesNotWorkOnUnknownQueues()
     {
-        $queueOne = new RedisQueue($this->redis);
+        $queueOne = new RedisQueueStorage($this->redis);
         $queueOne->setName('queue1');
-        $queueTwo = new RedisQueue($this->redis);
+        $queueTwo = new RedisQueueStorage($this->redis);
         $queueTwo->setName('queue2');
 
         $queueTwo->push(new Job('Test_Job'));
@@ -138,7 +139,7 @@ class WorkerTest extends ResqueTestCase
         );
 
         $job = new Job($jobClass);
-        $queue = new RedisQueue($this->redis);
+        $queue = new RedisQueueStorage($this->redis);
         $queue->setName('foo');
         $job->setOriginQueue($queue);
 
@@ -196,7 +197,7 @@ class WorkerTest extends ResqueTestCase
         );
 
         $job = new Job('Resque\Component\Job\Tests\Jobs\Simple');
-        $queue = new RedisQueue($this->redis);
+        $queue = new RedisQueueStorage($this->redis);
         $queue->setName('baz');
         $job->setOriginQueue($queue);
 
@@ -226,7 +227,7 @@ class WorkerTest extends ResqueTestCase
 
         $job = new Job('Resque\Component\Job\Tests\Jobs\Simple');
 
-        $queue = new RedisQueue($this->redis);
+        $queue = new RedisQueueStorage($this->redis);
         $queue->setName('jobs');
         $queue->push($job);
 
@@ -237,7 +238,7 @@ class WorkerTest extends ResqueTestCase
 
     public function testWorkerTracksCurrentJobCorrectly()
     {
-        $queue = new RedisQueue($this->redis);
+        $queue = new RedisQueueStorage($this->redis);
         $queue->setName('jobs');
 
         $job = new Job('Resque\Component\Job\Tests\Jobs\Simple');
@@ -266,7 +267,7 @@ class WorkerTest extends ResqueTestCase
 
     public function testWorkerRecoversFromChildDirtyExit()
     {
-        $queue = new RedisQueue($this->redis);
+        $queue = new RedisQueueStorage($this->redis);
         $queue->setName('jobs');
 
         $job = new Job('Resque\Component\Job\Tests\Jobs\DirtyExit');
@@ -290,7 +291,7 @@ class WorkerTest extends ResqueTestCase
 
     public function testPausedWorkerDoesNotPickUpJobs()
     {
-        $queue = new RedisQueue($this->redis);
+        $queue = new RedisQueueStorage($this->redis);
         $queue->setName('jobs');
         $queue->push(new Job('Resque\Component\Job\Tests\Jobs\Simple'));
 

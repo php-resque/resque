@@ -2,7 +2,7 @@
 
 namespace Resque\Queue;
 
-use Resque\Redis\RedisQueue;
+use Resque\Redis\RedisQueueStorage;
 
 /**
  * Resque Blocking RedisQueue
@@ -12,7 +12,7 @@ use Resque\Redis\RedisQueue;
  * @todo this is really just to hold blpop usage until I decided how it should be a part of normal queues.
  *       it could be like wildcard, but takes a bunch of queues?
  */
-class BlockingRedisQueue extends RedisQueue
+class BlockingRedisQueue extends RedisQueueStorage
 {
     /**
      * Pop an item off the end of the specified queues, using blocking list dequeue,
