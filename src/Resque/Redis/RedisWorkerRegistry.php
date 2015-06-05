@@ -11,7 +11,6 @@ use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Component\Worker\Registry\WorkerRegistryInterface;
 use Resque\Component\Worker\ResqueWorkerEvents;
 use Resque\Redis\Bridge\PredisBridge;
-use X4B\JobSystem;
 
 /**
  * Resque redis worker registry
@@ -63,7 +62,6 @@ class RedisWorkerRegistry implements
      */
     public function register(WorkerInterface $worker)
     {
-        $this->redis = new PredisBridge(JobSystem::getRedis(true));
         $id = $worker->getId();
         if ($this->isRegistered($worker)) {
             throw new ResqueRuntimeException(sprintf(
