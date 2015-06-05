@@ -110,6 +110,7 @@ class Application
         $this->validateConfiguration();
         $this->setupLogger();
         $this->setupRedis();
+        $this->setupRedisEvents();
         $this->setupQueueRegistryFactory();
         $this->setupQueues();
         $this->setupFailureBackend();
@@ -205,18 +206,20 @@ class Application
                     )
                 )
             );
-
-            $redisEventListener = new RedisEventListener($this->redisClient);
-
-            $this->eventDispatcher->addListener(
-                ResqueWorkerEvents::BEFORE_FORK_TO_PERFORM,
-                array($redisEventListener, 'disconnectFromRedis')
-            );
-            $this->eventDispatcher->addListener(
-                ResqueWorkerEvents::WAIT_NO_JOB,
-                array($redisEventListener, 'disconnectFromRedis')
-            );
         }
+    }
+
+    protected function setupRedisEvents(){
+        $redisEventListener = new RedisEventListener($this->redisClient);
+
+        $this->eventDispatcher->addListener(
+            ResqueWorkerEvents::BEFORE_FORK_TO_PERFORM,
+            array($redisEventListener, 'disconnectFromRedis')
+        );
+        $this->eventDispatcher->addListener(
+            ResqueWorkerEvents::WAIT_NO_JOB,
+            array($redisEventListener, 'disconnectFromRedis')
+        );
     }
 
     protected function setupQueueRegistryFactory()
