@@ -198,7 +198,12 @@ class Worker implements WorkerInterface, LoggerAwareInterface
                 continue;
             }
 
-            $job = $this->reserve();
+            try {
+                $job = $this->reserve();
+            }catch(\Exception $ex){
+                $this->getLogger()->error('Failed to reserve due to exception "{message}", skipping', array('message'=>$ex->getMessage()));
+                continue;
+            }
 
             if (null === $job) {
                 // For an interval of 0, break now - helps with unit testing etc

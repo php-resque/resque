@@ -80,8 +80,6 @@ class RedisQueueStorage implements
             return null;
         }
 
-        echo var_dump($payload, $this->getRedisKey($queue));
-
         $job = Job::decode($payload); // @todo should be something like $this->jobEncoderThingy->decode()
 
         if ($job instanceof OriginQueueAwareInterface) {
