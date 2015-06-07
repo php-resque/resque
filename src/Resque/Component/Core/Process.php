@@ -142,6 +142,9 @@ class Process
             );
         }
 
+        //TODO: needs logger
+        //$this->getLogger()->notice('Sending {signal} to process {pid}', array('signal'=>$signal, 'pid'=>$this->getPid()));
+
         // @todo Work out if I care to check the result, and if I did what to do about it... Exception?
         posix_kill($this->getPid(), $signal);
         $this->setPid(null);

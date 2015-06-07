@@ -184,7 +184,6 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
         while (true) {
             if ($this->shutdown) {
-
                 break;
             }
 
@@ -223,7 +222,10 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
                 $this->getProcess()->setTitle('Waiting for ' . implode(',', $this->queues));
 
-                usleep($interval * 1000000);
+
+                $this->getLogger()->debug('Sleeping for {seconds}s, no jobs on {queues}', array('queues'=>implode(', ',array_map(function($a){return $a->getName();}, $this->getQueues())), 'seconds'=>$interval));
+
+                sleep($interval);
 
                 continue;
             }
@@ -457,12 +459,22 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
         declare(ticks = 100);
 
-        pcntl_signal(SIGTERM, array($this, 'halt'));
-        pcntl_signal(SIGINT, array($this, 'halt'));
-        pcntl_signal(SIGQUIT, array($this, 'stop'));
-        pcntl_signal(SIGUSR1, array($this, 'haltCurrentJob'));
-        pcntl_signal(SIGUSR2, array($this, 'pause'));
-        pcntl_signal(SIGCONT, array($this, 'resume'));
+        $worker = $this;
+        $signal_handler = function($cbname) use($worker){
+            return function($signo) use($worker, $cbname){
+                $worker->getLogger()->debug("Signal {signo} at pid:{pid} received, doing {action}", array('signo'=>$signo, 'action'=>$cbname, 'pid'=>getmypid()));
+                return $worker->$cbname($signo);
+            };
+        };
+
+        //Signal handlers
+        pcntl_signal(SIGTERM, $signal_handler('halt'));
+        pcntl_signal(SIGINT, $signal_handler('halt'));
+        pcntl_signal(SIGQUIT, $signal_handler('stop'));
+        pcntl_signal(SIGUSR1, $signal_handler('haltCurrentJob'));
+        pcntl_signal(SIGUSR2, $signal_handler('pause'));
+        pcntl_signal(SIGCONT, $signal_handler('resume'));
+
         $this->getLogger()->debug('Registered signals');
     }
 
@@ -471,8 +483,14 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      */
     public function pause()
     {
-        $this->getLogger()->notice('SIGUSR2 received; pausing job processing');
         $this->paused = true;
+
+        if($this->getProcess()->getPid() == getmypid()) {
+            $this->getLogger()->notice('SIGUSR2 received; pausing job processing');
+        }else{
+            $this->getProcess()->kill(SIGUSR2);
+        }
+
     }
 
     /**
@@ -481,8 +499,13 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      */
     public function resume()
     {
-        $this->getLogger()->notice('SIGCONT received; resuming job processing');
         $this->paused = false;
+
+        if($this->getProcess()->getPid() == getmypid()) {
+            $this->getLogger()->notice('SIGCONT received; resuming job processing');
+        }else{
+            $this->getProcess()->kill(SIGCONT);
+        }
     }
 
     /**
@@ -491,8 +514,12 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      */
     public function halt()
     {
-        $this->stop();
-        $this->haltCurrentJob();
+        if($this->getProcess()->getPid() == getmypid()) {
+            $this->stop();
+            $this->haltCurrentJob();
+        }else{
+            $this->getProcess()->kill(SIGINT);
+        }
     }
 
     /**
@@ -502,7 +529,11 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     public function stop()
     {
         $this->shutdown = true;
-        $this->getLogger()->notice('Worker {worker} shutting down', array('worker' => $this));
+        if($this->getProcess()->getPid() == getmypid()) {
+            $this->getLogger()->notice('Worker {worker} shutting down', array('worker' => $this));
+        }else{
+            $this->getProcess()->kill(SIGINT);
+        }
     }
 
     /**
