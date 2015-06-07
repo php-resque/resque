@@ -115,7 +115,7 @@ class Process
      *
      * @return $this
      */
-    public function wait($options = 0)
+    public function wait($options = 0, &$status = null)
     {
         if (!$this->getPid()) {
             throw new ResqueRuntimeException(
@@ -123,7 +123,7 @@ class Process
             );
         }
 
-        pcntl_waitpid($this->pid, $this->status, $options);
+        $status = pcntl_waitpid($this->pid, $this->status, $options);
 
         return $this;
     }
