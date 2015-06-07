@@ -506,6 +506,14 @@ class Worker implements WorkerInterface, LoggerAwareInterface
     }
 
     /**
+     * Get worker ready to start again.
+     */
+    public function reset(){
+        $this->shutdown = false;
+        $this->getLogger()->notice('Worker {worker} reset', array('worker' => $this));
+    }
+
+    /**
      * Kill a forked child job immediately. The job it is processing will not
      * be completed.
      */
