@@ -345,7 +345,7 @@ class Application
 
     protected function setupForeman()
     {
-        $this->foreman = new Foreman($this->workerRegistry);
+        $this->foreman = new Foreman($this->workerRegistry, $this->redisClient);
         $this->foreman->setLogger($this->logger);
     }
 

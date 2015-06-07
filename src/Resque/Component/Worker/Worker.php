@@ -98,6 +98,10 @@ class Worker implements WorkerInterface, LoggerAwareInterface
         $this->eventDispatcher = $eventDispatcher;
     }
 
+    public function isShutdown(){
+        return $this->shutdown;
+    }
+
     /**
      * {@inheritdoc}
      */

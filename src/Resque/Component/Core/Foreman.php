@@ -8,6 +8,8 @@ use Psr\Log\NullLogger;
 use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Component\Worker\Registry\WorkerRegistryInterface;
+use Resque\Component\Worker\Worker;
+use Resque\Redis\RedisClientInterface;
 
 /**
  * Resque Foreman
@@ -36,10 +38,13 @@ class Foreman implements LoggerAwareInterface
      */
     protected $working;
 
-    public function __construct(WorkerRegistryInterface $workerRegistry)
+    protected $redis;
+
+    public function __construct(WorkerRegistryInterface $workerRegistry, RedisClientInterface $redis)
     {
         $this->logger = new NullLogger();
         $this->registry = $workerRegistry;
+        $this->redis = $redis;
 
         if (function_exists('gethostname')) {
             $this->hostname = gethostname();
@@ -57,6 +62,32 @@ class Foreman implements LoggerAwareInterface
     public function setLogger(LoggerInterface $logger)
     {
         $this->logger = $logger;
+    }
+
+    public function startWorker(Worker $worker){
+        $parent = new Process();
+
+        $this->redis->disconnect();
+        $child = $parent->fork();
+
+        if (null === $child) {
+            // This is worker process, it will process jobs until told to exit.
+            $this->registry->register($worker);
+            $worker->work();
+            $this->registry->deregister($worker);
+
+            exit(0);
+        }
+
+        $worker->setProcess($child);
+
+        $this->logger->info(
+            'Successfully started worker {worker} with pid {childPid}',
+            array(
+                'worker' => $worker,
+                'childPid' => $child->getPid(),
+            )
+        );
     }
 
     /**
@@ -84,28 +115,7 @@ class Foreman implements LoggerAwareInterface
 
         /** @var WorkerInterface $worker */
         foreach ($workers as $worker) {
-
-            $parent = new Process();
-            $child = $parent->fork();
-
-            if (null === $child) {
-                // This is worker process, it will process jobs until told to exit.
-                $this->registry->register($worker);
-                $worker->work();
-                $this->registry->deregister($worker);
-
-                exit(0);
-            }
-
-            $worker->setProcess($child);
-
-            $this->logger->info(
-                'Successfully started worker {worker} with pid {childPid}',
-                array(
-                    'worker' => $worker,
-                    'childPid' => $child->getPid(),
-                )
-            );
+            $this->startWorker($worker);
         }
 
         if ($wait) {
