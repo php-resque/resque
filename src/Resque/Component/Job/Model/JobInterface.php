@@ -67,6 +67,8 @@ interface JobInterface
      */
     public function encode();
 
+    public function getOriginQueue();
+
     /**
      * Decode
      *

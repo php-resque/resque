@@ -339,7 +339,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      */
     public function perform(JobInterface $job)
     {
-        $status = 'Performing job ' . $job->getId();
+        $status = sprintf('Performing job %s:%s', $job->getOriginQueue(), $job->getId());
         $this->getProcess()->setTitle($status);
         $this->getLogger()->info($status);
 
@@ -532,7 +532,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
         if($this->getProcess()->getPid() == getmypid()) {
             $this->getLogger()->notice('Worker {worker} shutting down', array('worker' => $this));
         }else{
-            $this->getProcess()->kill(SIGINT);
+            $this->getProcess()->kill(SIGQUIT);
         }
     }
 
@@ -540,6 +540,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
      * Get worker ready to start again.
      */
     public function reset(){
+        $this->setId(null);
         $this->shutdown = false;
         $this->getLogger()->notice('Worker {worker} reset', array('worker' => $this));
     }

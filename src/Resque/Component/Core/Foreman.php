@@ -71,6 +71,8 @@ class Foreman implements LoggerAwareInterface
         $child = $parent->fork();
 
         if (null === $child) {
+            $worker->getProcess()->setPid(getmypid());
+
             // This is worker process, it will process jobs until told to exit.
             $this->registry->register($worker);
             $worker->work();

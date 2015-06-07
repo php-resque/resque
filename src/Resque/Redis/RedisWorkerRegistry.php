@@ -34,8 +34,6 @@ class RedisWorkerRegistry implements
      */
     protected $eventDispatcher;
 
-    protected $myPid;
-
     public function __construct(
         RedisClientInterface $redis,
         EventDispatcherInterface $eventDispatcher,
@@ -44,7 +42,6 @@ class RedisWorkerRegistry implements
         $this->setRedisClient($redis);
         $this->eventDispatcher = $eventDispatcher;
         $this->workerFactory = $workerFactory;
-        $this->myPid = getmypid();
     }
 
     /**
@@ -70,7 +67,7 @@ class RedisWorkerRegistry implements
             ));
         }
 
-        $this->redis->sadd('workers:'.$this->myPid, $id);
+        $this->redis->sadd('workers', $id);
         $this->redis->set('worker:' . $id . ':started', date('c'));
 
         $this->eventDispatcher->dispatch(ResqueWorkerEvents::REGISTERED, new WorkerEvent($worker));
@@ -83,7 +80,7 @@ class RedisWorkerRegistry implements
      */
     public function isRegistered(WorkerInterface $worker)
     {
-        return $this->redis->sismember('workers:'.$this->myPid, $worker->getId());
+        return $this->redis->sismember('workers', $worker->getId());
     }
 
     /**
@@ -93,9 +90,9 @@ class RedisWorkerRegistry implements
     {
         $id = $worker->getId();
 
-        $worker->halt();
-
-        $this->redis->srem('workers:'.$this->myPid, $id);
+        if(!$this->redis->srem('workers', $id)){
+            //Log
+        }
         $this->redis->del('worker:' . $id);
         $this->redis->del('worker:' . $id . ':started');
 
@@ -109,7 +106,7 @@ class RedisWorkerRegistry implements
      */
     public function all()
     {
-        $workerIds = $this->redis->smembers('workers:'.$this->myPid);
+        $workerIds = $this->redis->smembers('workers');
 
         if (!is_array($workerIds)) {
             return array();
@@ -128,7 +125,7 @@ class RedisWorkerRegistry implements
      */
     public function count()
     {
-        return $this->redis->scard('workers:'.$this->myPid);
+        return $this->redis->scard('workers');
     }
 
     /**

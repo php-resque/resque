@@ -3,6 +3,7 @@
 namespace Resque\Component\Worker\Factory;
 
 use Resque\Component\Core\Event\EventDispatcherInterface;
+use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Core\Process;
 use Resque\Component\Job\Factory\JobInstanceFactoryInterface;
 use Resque\Component\Queue\Factory\QueueFactoryInterface;
@@ -43,6 +44,19 @@ class WorkerFactory implements WorkerFactoryInterface
         $this->eventDispatcher = $eventDispatcher;
     }
 
+    public function getHostname(){
+        if (function_exists('gethostname')) {
+            $hostname = gethostname();
+        } else {
+            $hostname = php_uname('n');
+        }
+        return $hostname;
+    }
+
+    function isOwned(Worker $worker){
+        return $worker->getHostname() == $this->getHostname();
+    }
+
     /**
      * Create worker
      *
@@ -55,13 +69,7 @@ class WorkerFactory implements WorkerFactoryInterface
             $this->eventDispatcher
         );
 
-        if (function_exists('gethostname')) {
-            $hostname = gethostname();
-        } else {
-            $hostname = php_uname('n');
-        }
-
-        $worker->setHostname($hostname);
+        $worker->setHostname($this->getHostname());
 
         return $worker;
     }
@@ -72,12 +80,15 @@ class WorkerFactory implements WorkerFactoryInterface
     public function createWorkerFromId($workerId)
     {
         if (false === strpos($workerId, ":")) {
-
             return null;
         }
 
         list($hostname, $pid, $queues) = explode(':', $workerId, 3);
         $queues = explode(',', $queues);
+
+        if(!$queues){
+            throw new ResqueRuntimeException(sprintf("Invalid worker ID \"%s\"", $workerId));
+        }
 
         $worker = new Worker(
             $this->jobInstanceFactory,
