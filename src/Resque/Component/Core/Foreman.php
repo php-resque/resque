@@ -69,6 +69,7 @@ class Foreman implements LoggerAwareInterface
 
         $this->redis->disconnect();
         $child = $parent->fork();
+        $worker->setId(null);
 
         if (null === $child) {
             $worker->getProcess()->setPid(getmypid());
