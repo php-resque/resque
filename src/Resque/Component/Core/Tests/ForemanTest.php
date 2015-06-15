@@ -1,6 +1,6 @@
 <?php
 
-namespace Resque\Tests;
+namespace Resque\Component\Core\Tests;
 
 use Resque\Component\Core\Foreman;
 use Resque\Redis\RedisWorkerRegistry;
@@ -21,10 +21,37 @@ class ForemanTest extends ResqueTestCase
 
     public function testForking()
     {
-        return $this->markTestIncomplete('this is failing, as I need to restore disconnecting from redis on pre-fork');
 
         $this->workerRegistry = new RedisWorkerRegistry($this->redis, $this->getMock('Resque\Component\Worker\Factory\WorkerFactoryInterface'));
         $this->foreman = new Foreman($this->workerRegistry);
+
+
+        function it_starts_workers(
+            WorkerInterface $worker1,
+            WorkerInterface $worker2,
+            WorkerInterface $worker3,
+            EventDispatcherInterface $eventDispatcher
+        ) {
+            $eventDispatcher->dispatch(ResqueEvents::BEFORE_FORK, null)->shouldBeCalled(3);
+
+            $worker1->work()->shouldBeCalled();
+            $worker1->setProcess(Argument::type('Resque\Component\Core\Process'))->shouldBeCalled();
+            $worker1->getId()->shouldBeCalled()->willReturn('earth:1:lunch');
+            $worker2->work()->shouldBeCalled();
+            $worker2->setProcess(Argument::type('Resque\Component\Core\Process'))->shouldBeCalled();
+            $worker2->getId()->shouldBeCalled()->willReturn('earth:2:high');
+            $worker3->work()->shouldBeCalled();
+            $worker3->setProcess(Argument::type('Resque\Component\Core\Process'))->shouldBeCalled();
+            $worker3->getId()->shouldBeCalled()->willReturn('earth:3:test');
+
+            $workers = array(
+                $worker1,
+                $worker2,
+                $worker3
+            );
+
+            $this->work($workers);
+        }
 
         $me = getmypid();
 

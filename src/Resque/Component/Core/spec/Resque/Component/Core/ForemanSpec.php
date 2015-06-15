@@ -4,16 +4,19 @@ namespace spec\Resque\Component\Core;
 
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
+use Resque\Component\Core\Event\EventDispatcherInterface;
 use Resque\Component\Core\Process;
+use Resque\Component\core\ResqueEvents;
 use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Component\Worker\Registry\WorkerRegistryInterface;
 
 class ForemanSpec extends ObjectBehavior
 {
     function let(
-        WorkerRegistryInterface $workerRegistry
+        WorkerRegistryInterface $workerRegistry,
+        EventDispatcherInterface $eventDispatcher
     ) {
-        $this->beConstructedWith($workerRegistry);
+        $this->beConstructedWith($workerRegistry, $eventDispatcher);
     }
 
     function it_is_initializable()
@@ -21,31 +24,7 @@ class ForemanSpec extends ObjectBehavior
         $this->shouldHaveType('Resque\Component\Core\Foreman');
     }
 
-    function it_starts_workers(
-        WorkerInterface $worker1,
-        WorkerInterface $worker2,
-        WorkerInterface $worker3
-    ) {
-        $me = getmypid();
-
-        $worker1->work()->shouldBeCalled();
-        $worker1->setProcess(Argument::type('Resque\Component\Core\Process'))->shouldBeCalled();
-        $worker1->getId()->shouldBeCalled()->willReturn('earth:1:lunch');
-        $worker2->work()->shouldBeCalled();
-        $worker2->setProcess(Argument::type('Resque\Component\Core\Process'))->shouldBeCalled();
-        $worker2->getId()->shouldBeCalled()->willReturn('earth:2:high');
-        $worker3->work()->shouldBeCalled();
-        $worker3->setProcess(Argument::type('Resque\Component\Core\Process'))->shouldBeCalled();
-        $worker3->getId()->shouldBeCalled()->willReturn('earth:3:test');
-
-        $workers = array(
-            $worker1,
-            $worker2,
-            $worker3
-        );
-
-        $this->work($workers);
-    }
+    // $this->work is tested with phpunit, due to process forking. I can't work out how to do it sanely in phpspec.
 
     function it_cleans_up_dead_workers(
         WorkerRegistryInterface $workerRegistry,

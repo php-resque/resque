@@ -5,6 +5,7 @@ namespace Resque\Component\Core;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Resque\Component\Core\Event\EventDispatcherInterface;
 use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Component\Worker\Registry\WorkerRegistryInterface;
@@ -27,14 +28,22 @@ class Foreman implements LoggerAwareInterface
     protected $registry;
 
     /**
+     * @var EventDispatcherInterface An event dispatcher.
+     */
+    protected $eventDispatcher;
+
+    /**
      * @var LoggerInterface Logging object that implements the PSR-3 LoggerInterface
      */
     protected $logger;
 
-    public function __construct(WorkerRegistryInterface $workerRegistry)
-    {
+    public function __construct(
+        WorkerRegistryInterface $workerRegistry,
+        EventDispatcherInterface $eventDispatcher
+    ) {
         $this->logger = new NullLogger();
         $this->registry = $workerRegistry;
+        $this->eventDispatcher = $eventDispatcher;
 
         if (function_exists('gethostname')) {
             $this->hostname = gethostname();
@@ -74,6 +83,8 @@ class Foreman implements LoggerAwareInterface
         foreach ($workers as $worker) {
 
             $parent = new Process();
+
+            $this->eventDispatcher->dispatch(ResqueEvents::BEFORE_FORK, null);
             $child = $parent->fork();
 
             if (null === $child) {

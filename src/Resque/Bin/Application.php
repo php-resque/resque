@@ -2,6 +2,7 @@
 
 namespace Resque\Bin;
 
+use Resque\Component\core\ResqueEvents;
 use Resque\Redis\RedisQueueFactory;
 use Resque\Redis\RedisStatistic;
 use Resque\Component\Queue\Registry\QueueRegistry;
@@ -213,6 +214,10 @@ class Application
                 array($redisEventListener, 'disconnectFromRedis')
             );
             $this->eventDispatcher->addListener(
+                ResqueEvents::BEFORE_FORK,
+                array($redisEventListener, 'disconnectFromRedis')
+            );
+            $this->eventDispatcher->addListener(
                 ResqueWorkerEvents::WAIT_NO_JOB,
                 array($redisEventListener, 'disconnectFromRedis')
             );
@@ -342,7 +347,7 @@ class Application
 
     protected function setupForeman()
     {
-        $this->foreman = new Foreman($this->workerRegistry);
+        $this->foreman = new Foreman($this->workerRegistry, $this->eventDispatcher);
         $this->foreman->setLogger($this->logger);
     }
 
