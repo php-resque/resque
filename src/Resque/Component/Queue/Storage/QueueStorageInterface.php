@@ -14,6 +14,12 @@ interface QueueStorageInterface
 {
     public function enqueue(QueueInterface $queue, JobInterface $job);
 
+    /**
+     * Dequeue
+     *
+     * @param QueueInterface $queue
+     * @return JobInterface
+     */
     public function dequeue(QueueInterface $queue);
 
     public function remove(QueueInterface $queue, $filter);

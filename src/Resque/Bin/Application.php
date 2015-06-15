@@ -2,7 +2,7 @@
 
 namespace Resque\Bin;
 
-use Resque\Redis\RedisQueueFactory;
+use Resque\Redis\QueueFactory;
 use Resque\Redis\RedisStatistic;
 use Resque\Component\Queue\Registry\QueueRegistry;
 use RuntimeException;
@@ -225,7 +225,7 @@ class Application
     protected function setupQueueRegistryFactory()
     {
         if (null === $this->queueRegistry) {
-            $factory = new RedisQueueFactory($this->redisClient, $this->eventDispatcher);
+            $factory = new QueueFactory($this->redisClient, $this->eventDispatcher);
             $this->queueRegistry = new QueueRegistry(
                 $this->eventDispatcher,
                 new RedisQueueRegistryAdapter($this->redisClient, $factory),

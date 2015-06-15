@@ -27,10 +27,12 @@ use Resque\Component\Worker\Model\WorkerInterface;
  *
  * The worker handles querying issued queues for jobs, processing them and handling the result.
  */
-class Worker implements WorkerInterface, LoggerAwareInterface
+class Worker implements
+    WorkerInterface,
+    LoggerAwareInterface
 {
     /**
-     * @var string String identifying this worker.
+     * @var string Identifier of this worker.
      */
     protected $id;
 

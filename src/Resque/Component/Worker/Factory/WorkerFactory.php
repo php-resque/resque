@@ -94,10 +94,12 @@ class WorkerFactory implements WorkerFactoryInterface
             $this->jobInstanceFactory,
             $this->eventDispatcher
         );
-        $process = new Process();
+        $worker->setHostname($hostname);
+
+        $process = new Process(); // @todo When worker is on another host, Process is over kill.
         $process->setPid($pid);
         $worker->setProcess($process);
-        $worker->setHostname($hostname);
+
         foreach ($queues as $queue) {
             $worker->addQueue($this->queueFactory->createQueue($queue)); // @todo what about wildcard queues? :(
         }

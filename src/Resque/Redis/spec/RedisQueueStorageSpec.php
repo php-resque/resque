@@ -25,7 +25,7 @@ class RedisQueueStorageSpec extends ObjectBehavior
         $this->shouldImplement('Resque\Component\Queue\Storage\QueueStorageInterface');
     }
 
-    function it_stores_enqueued_jobs_in_redis(
+    function it_pushes_enqueued_jobs_into_redis(
         RedisClientInterface $redis,
         QueueInterface $queue,
         JobInterface $job
@@ -36,13 +36,13 @@ class RedisQueueStorageSpec extends ObjectBehavior
         $this->enqueue($queue, $job)->shouldReturn(true);
     }
 
-    function it_dequeues_jobs_from_redis(
+    function it_pops_jobs_from_redis_list(
         RedisClientInterface $redis,
         QueueInterface $queue
     ) {
         $queue->getName()->shouldBeCalled()->willReturn('high');
-        $redis->lpop('queue:high', '{"encoded":"job"}')->shouldBeCalled()->willReturn(1);
-        $this->dequeue($queue)->shouldReturnInstanceOf('Resque\Component\Job\Model\JobInterface');
+        $redis->lpop('queue:high')->shouldBeCalled()->willReturn('{"class":"stdClass","args":[[]],"id":"123"}');
+        $this->dequeue($queue)->shouldReturnAnInstanceOf('Resque\Component\Job\Model\JobInterface');
     }
 
     function it_on_pop_with_no_jobs_returns_null(
@@ -63,6 +63,6 @@ class RedisQueueStorageSpec extends ObjectBehavior
     function it_can_remove_pushed_jobs_with_a_filter(
         QueueInterface $queue
     ) {
-        $this->remove([]);
+        $this->remove(array());
     }
 }

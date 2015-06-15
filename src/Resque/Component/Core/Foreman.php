@@ -153,6 +153,8 @@ class Foreman implements LoggerAwareInterface
      * This is a form of garbage collection to handle cases where the
      * server may have been killed and the Resque workers did not die gracefully
      * and therefore leave state information in Redis.
+     *
+     * @todo remove usage of getmypid()
      */
     public function pruneDeadWorkers()
     {

@@ -59,11 +59,14 @@ class ForemanSpec extends ObjectBehavior
         $workerRegistry->all()->shouldBeCalled()->willReturn(array($worker, $deadWorker1, $deadWorker2));
 
         $worker->getId()->shouldBeCalled()->willReturn('localhost:50:jobs');
+        $worker->getHostname()->shouldBeCalled->willreturn('localhost');
         $worker->getProcess()->shouldBeCalled()->willReturn($workerProcess);
         $workerProcess->getPid()->shouldBeCalled()->willReturn('50');
+
         $deadWorker1->getId()->shouldBeCalled()->willReturn('localhost:1:jobs');
         $deadWorker1->getProcess()->shouldBeCalled()->willReturn($deadWorker1Process);
         $deadWorker1Process->getPid()->shouldBeCalled()->willReturn('1');
+
         $deadWorker2->getId()->shouldBeCalled()->willReturn('localhost:2:high,low');
         $deadWorker2->getProcess()->shouldBeCalled()->willReturn($deadWorker2Process);
         $deadWorker2Process->getPid()->shouldBeCalled()->willReturn('2');
