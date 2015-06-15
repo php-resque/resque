@@ -113,9 +113,10 @@ class Process
     /**
      * Wait for process to exit/die
      *
-     * @return $this
+     * @param $options
+     * @return int The status code from the process exit.
      */
-    public function wait($options = 0, &$status = null)
+    public function wait($options = 0)
     {
         if (!$this->getPid()) {
             throw new ResqueRuntimeException(
@@ -123,9 +124,7 @@ class Process
             );
         }
 
-        $status = pcntl_waitpid($this->pid, $this->status, $options);
-
-        return $this;
+        return pcntl_waitpid($this->pid, $this->status, $options);
     }
 
     /**
