@@ -11,7 +11,7 @@ use Resque\Component\Job\Tests\Jobs\Simple;
 use Resque\Component\Worker\ResqueWorkerEvents;
 use Resque\Component\Worker\Worker;
 
-class WorkerTest extends ResqueTestCase
+class WorkerTest extends PHPUnit_Framework_TestCase
 {
     /**
      * @var Worker
