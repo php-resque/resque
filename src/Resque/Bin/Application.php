@@ -2,7 +2,7 @@
 
 namespace Resque\Bin;
 
-use Resque\Redis\QueueFactory;
+use Resque\Component\Core\ResqueEvents;
 use Resque\Redis\RedisStatistic;
 use Resque\Component\Queue\Registry\QueueRegistry;
 use RuntimeException;
@@ -26,6 +26,10 @@ use Resque\Redis\RedisWorkerRegistry;
  *
  * A simple class that fires up some workers. It's configuration is based on Resque/Resque 1.x usage
  * of environment variables.
+ *
+ * You may use APP_INCLUDE to override and or add functionality. If APP_INCLUDE is set to a class name, that class
+ * will be initiated and $this injected into it's constructor. If APP_INCLUDE is a file, that class will be
+ * included, much like the behaviour of Resque/Resque 1.x.
  */
 class Application
 {
@@ -176,6 +180,8 @@ class Application
 
             if (file_exists($include)) {
                 require_once $include;
+
+                return;
             }
 
             new $include($this);
@@ -209,11 +215,16 @@ class Application
         }
     }
 
-    protected function setupRedisEvents(){
+    protected function setupRedisEvents()
+    {
         $redisEventListener = new RedisEventListener($this->redisClient);
 
         $this->eventDispatcher->addListener(
             ResqueWorkerEvents::BEFORE_FORK_TO_PERFORM,
+            array($redisEventListener, 'disconnectFromRedis')
+        );
+        $this->eventDispatcher->addListener(
+            ResqueEvents::BEFORE_FORK,
             array($redisEventListener, 'disconnectFromRedis')
         );
         $this->eventDispatcher->addListener(
@@ -225,7 +236,7 @@ class Application
     protected function setupQueueRegistryFactory()
     {
         if (null === $this->queueRegistry) {
-            $factory = new QueueFactory($this->redisClient, $this->eventDispatcher);
+            $factory = new QueueF($this->redisClient, $this->eventDispatcher);
             $this->queueRegistry = new QueueRegistry(
                 $this->eventDispatcher,
                 new RedisQueueRegistryAdapter($this->redisClient, $factory),
@@ -345,7 +356,7 @@ class Application
 
     protected function setupForeman()
     {
-        $this->foreman = new Foreman($this->workerRegistry, $this->redisClient);
+        $this->foreman = new Foreman($this->workerRegistry, $this->eventDispatcher);
         $this->foreman->setLogger($this->logger);
     }
 

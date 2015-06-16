@@ -8,6 +8,8 @@ use Resque\Component\Queue\Model\Queue;
 
 /**
  * Resque Redis queue registry
+ *
+ * @deprecated Just use queue component factory, and inject the RedisQueueStorage into it.
  */
 class RedisQueueFactory implements
     QueueFactoryInterface,
@@ -27,7 +29,7 @@ class RedisQueueFactory implements
      * Constructor
      *
      * @param RedisClientInterface $redis
-     * @todo remove $eventDispatcher if possible.
+     * @param EventDispatcherInterface $eventDispatcher
      */
     public function __construct(RedisClientInterface $redis, EventDispatcherInterface $eventDispatcher)
     {

@@ -1,38 +1,26 @@
 <?php
 
-namespace Resque\Tests;
+namespace Resque\Component\Core\Tests;
 
+use PHPUnit_Framework_TestCase;
 use Resque\Component\Core\Foreman;
-use Resque\Redis\RedisWorkerRegistry;
-use Resque\Component\Core\Test\ResqueTestCase;
-use Resque\Component\Worker\Factory\WorkerFactory;
 
-class ForemanTest extends ResqueTestCase
+class ForemanTest extends PHPUnit_Framework_TestCase
 {
-    /**
-     * @var Foreman
-     */
-    protected $foreman;
-
-    /**
-     * @var \Resque\Redis\RedisWorkerRegistry
-     */
-    protected $workerRegistry;
-
-    public function testForking()
+    public function testForkToWork()
     {
-        return $this->markTestIncomplete('this is failing, as I need to restore disconnecting from redis on pre-fork');
-
-        $this->workerRegistry = new RedisWorkerRegistry($this->redis, $this->getMock('Resque\Component\Worker\Factory\WorkerFactoryInterface'));
-        $this->foreman = new Foreman($this->workerRegistry);
-
         $me = getmypid();
+        $workerRegistry = $this->getMock('Resque\Component\Worker\Registry\WorkerRegistryInterface');
+        $jobInstanceFactory = $this->getMock('Resque\Component\Job\Factory\JobInstanceFactoryInterface');
+        $eventDispatcher = $this->getMock('Resque\Component\Core\Event\EventDispatcherInterface');
+        $foreman = new Foreman($workerRegistry, $eventDispatcher);
 
         $mockWorker = $this->getMock(
             'Resque\Component\Worker\Worker',
             array('work'),
-            array(array())
+            array($jobInstanceFactory, $eventDispatcher)
         );
+
         $mockWorker
             ->expects($this->any())
             ->method('work')
@@ -42,11 +30,9 @@ class ForemanTest extends ResqueTestCase
             clone $mockWorker,
             clone $mockWorker,
             clone $mockWorker,
-            clone $mockWorker,
-            clone $mockWorker,
         );
 
-        $this->foreman->work($workers, true);
+        $foreman->work($workers, true);
 
         // Check the workers hold different PIDs
         foreach ($workers as $worker) {
