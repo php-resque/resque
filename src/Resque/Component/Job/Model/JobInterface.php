@@ -67,6 +67,7 @@ interface JobInterface
      */
     public function encode();
 
+    // @todo establish is this is to be optional (via OriginQueueAwareInterface) or always on a JobInterface.
     public function getOriginQueue();
 
     /**

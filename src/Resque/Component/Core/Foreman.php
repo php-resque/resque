@@ -56,6 +56,7 @@ class Foreman implements LoggerAwareInterface
         $this->registry = $workerRegistry;
         $this->eventDispatcher = $eventDispatcher;
 
+        // @todo work out how to only have this in one place (like environment->getHostname), or something like that.
         if (function_exists('gethostname')) {
             $this->hostname = gethostname();
         } else {

@@ -3,6 +3,8 @@
 namespace Resque\Bin;
 
 use Resque\Component\Core\ResqueEvents;
+use Resque\Component\Queue\Factory\QueueFactory;
+use Resque\Redis\RedisQueueStorage;
 use Resque\Redis\RedisStatistic;
 use Resque\Component\Queue\Registry\QueueRegistry;
 use RuntimeException;
@@ -54,9 +56,25 @@ class Application
     public $eventDispatcher;
 
     /**
-     * @var RedisQueueRegistryAdapter
+     * @var \Resque\Component\Queue\Storage\QueueStorageInterface
+     */
+    public $queueStorage;
+
+    /**
+     * @var \Resque\Component\Queue\Factory\QueueFactoryInterface
+     */
+    public $queueFactory;
+
+    /**
+     * @var \Resque\Component\Queue\Registry\QueueRegistryAdapterInterface
+     */
+    public $queueRegistryAdapter;
+
+    /**
+     * @var \Resque\Component\Queue\Registry\QueueRegistryInterface
      */
     public $queueRegistry;
+
     /**
      * @var QueueInterface[]
      */
@@ -76,10 +94,12 @@ class Application
      * @var WorkerFactory
      */
     public $workerFactory;
+
     /**
      * @var RedisWorkerRegistry
      */
     public $workerRegistry;
+
     /**
      * @var WorkerInterface[]
      */
@@ -115,7 +135,10 @@ class Application
         $this->setupLogger();
         $this->setupRedis();
         $this->setupRedisEvents();
-        $this->setupQueueRegistryFactory();
+        $this->setupQueueStorage();
+        $this->setupQueueFactory();
+        $this->setupQueueRegistryAdapter();
+        $this->setupQueueRegistry();
         $this->setupQueues();
         $this->setupFailureBackend();
         $this->setupStatisticBackend();
@@ -233,14 +256,34 @@ class Application
         );
     }
 
-    protected function setupQueueRegistryFactory()
+    protected function setupQueueStorage()
+    {
+        if (null === $this->queueStorage) {
+            $this->queueStorage = new RedisQueueStorage($this->redisClient);
+        }
+    }
+
+    protected function setupQueueFactory()
+    {
+        if (null === $this->queueFactory) {
+            $this->queueFactory = new QueueFactory($this->queueStorage, $this->eventDispatcher);
+        }
+    }
+
+    protected function setupQueueRegistryAdapter()
+    {
+        if (null === $this->queueRegistryAdapter) {
+            $this->queueRegistryAdapter = new RedisQueueRegistryAdapter($this->redisClient);
+        }
+    }
+
+    protected function setupQueueRegistry()
     {
         if (null === $this->queueRegistry) {
-            $factory = new QueueF($this->redisClient, $this->eventDispatcher);
             $this->queueRegistry = new QueueRegistry(
                 $this->eventDispatcher,
-                new RedisQueueRegistryAdapter($this->redisClient, $factory),
-                $factory
+                $this->queueRegistryAdapter,
+                $this->queueFactory
             );
         }
     }
@@ -311,7 +354,7 @@ class Application
     {
         if (null === $this->workerFactory) {
             $this->workerFactory = new WorkerFactory(
-                $this->queueRegistry,
+                $this->queueFactory,
                 $this->jobInstanceFactory,
                 $this->eventDispatcher
             );
@@ -374,6 +417,7 @@ class Application
             'Workers (%s)' . PHP_EOL,
             implode(', ', $this->workers)
         );
-        $this->foreman->wait($this->workers);
+
+        // $this->foreman->wait($this->workers); @todo this is not intended, work out why this is needed.
     }
 }

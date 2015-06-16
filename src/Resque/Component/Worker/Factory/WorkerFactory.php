@@ -44,6 +44,7 @@ class WorkerFactory implements WorkerFactoryInterface
         $this->eventDispatcher = $eventDispatcher;
     }
 
+    // @todo work out how to only have this in one place (like environment->getHostname), or something like that.
     public function getHostname(){
         if (function_exists('gethostname')) {
             $hostname = gethostname();
@@ -51,10 +52,6 @@ class WorkerFactory implements WorkerFactoryInterface
             $hostname = php_uname('n');
         }
         return $hostname;
-    }
-
-    function isOwned(Worker $worker){
-        return $worker->getHostname() == $this->getHostname();
     }
 
     /**
