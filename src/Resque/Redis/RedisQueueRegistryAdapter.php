@@ -65,7 +65,7 @@ class RedisQueueRegistryAdapter implements
      */
     public function has(QueueInterface $queue)
     {
-        return $this->redis->exists($this->getRedisKey($queue));
+        return $this->redis->exists($this->getRedisKey($queue)) == 1 ? true : false;
     }
 
     /**
