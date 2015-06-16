@@ -1,0 +1,6 @@
+suites:
+    Core:   { namespace: Resque\Component\Core, spec_path: src/Resque/Component/Core, psr4_prefix: Resque\Component\Core }
+    Job:    { namespace: Resque\Component\Job, spec_path: src/Resque/Component/Job, psr4_prefix: Resque\Component\Job }
+    Queue:  { namespace: Resque\Component\Queue, spec_path: src/Resque/Component/Queue, psr4_prefix: Resque\Component\Queue }
+    Worker: { namespace: Resque\Component\Worker, spec_path: src/Resque/Component/Worker, psr4_prefix: Resque\Component\Worker }
+    Redis:  { namespace: Resque\Redis, spec_path: src/Resque/Redis, psr4_prefix: Resque\Redis }
