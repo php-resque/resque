@@ -23,7 +23,7 @@ class EventDispatcher implements EventDispatcherInterface
      * @param string $event The event to dispatch to relevant listeners.
      * @param mixed $eventContext The event context.
      */
-    public function dispatch($event, $eventContext)
+    public function dispatch($event, $eventContext = null)
     {
         if (false === isset($this->listeners[$event])) {
 

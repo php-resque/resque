@@ -84,7 +84,7 @@ class Foreman implements LoggerAwareInterface
 
             $parent = new Process();
 
-            $this->eventDispatcher->dispatch(ResqueEvents::BEFORE_FORK, null);
+            $this->eventDispatcher->dispatch(ResqueEvents::BEFORE_FORK);
             $child = $parent->fork();
 
             if (null === $child) {
