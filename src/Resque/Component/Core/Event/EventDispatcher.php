@@ -81,9 +81,16 @@ class EventDispatcher implements EventDispatcherInterface
 
     /**
      * Get registered listeners.
+     *
+     * @param string|null $event The name of the event get registered listeners for.
+     * @return array If $event is null all event listeners are returned, keyed by event name.
      */
-    public function getListeners()
+    public function getListeners($event = null)
     {
+        if (null !== $event) {
+            return isset($this->listeners[$event]) ? $this->listeners[$event] : array();
+        }
+
         return $this->listeners;
     }
 
