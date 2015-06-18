@@ -80,7 +80,7 @@ class RedisWorkerRegistry implements
      */
     public function isRegistered(WorkerInterface $worker)
     {
-        return $this->redis->sismember('workers', $worker->getId());
+        return $this->redis->sismember('workers', $worker->getId()) == 1 ? true : false;
     }
 
     /**
