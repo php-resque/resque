@@ -2,7 +2,7 @@
 
 namespace Resque\Component\Queue\Tests\Queue;
 
-use Resque\Component\Core\Test\ResqueTestCase;
+use Resque\Redis\Test\ResqueTestCase;
 
 class BlockingQueueTest extends ResqueTestCase
 {

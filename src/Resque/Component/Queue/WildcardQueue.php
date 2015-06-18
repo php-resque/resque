@@ -4,6 +4,7 @@ namespace Resque\Component\Queue;
 
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Queue\Model\AbstractQueue;
+use Resque\Component\Queue\Model\Queue;
 use Resque\Component\Queue\Model\QueueInterface;
 use Resque\Component\Queue\Registry\QueueRegistryInterface;
 
@@ -14,7 +15,7 @@ use Resque\Component\Queue\Registry\QueueRegistryInterface;
  * can be used, useful if you use a single redis instance that multiple projects talk too and you give projects queue
  * prefixes.
  */
-class WildcardQueue extends AbstractQueue
+class WildcardQueue extends Queue
 {
     /**
      * @var QueueRegistryInterface A queue registry.

@@ -2,7 +2,7 @@
 
 namespace Resque\Component\Job\Tests\Model;
 
-use Resque\Component\Core\Test\ResqueTestCase;
+use Resque\Redis\Test\ResqueTestCase;
 use Resque\Component\Job\Model\FilterableJobInterface;
 use Resque\Component\Job\Model\Job;
 
