@@ -63,6 +63,6 @@ class RedisQueueStorageSpec extends ObjectBehavior
     function it_can_remove_pushed_jobs_with_a_filter(
         QueueInterface $queue
     ) {
-        $this->remove(array());
+        $this->remove($queue, array());
     }
 }
