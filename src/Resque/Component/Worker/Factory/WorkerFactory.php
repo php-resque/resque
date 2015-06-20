@@ -44,6 +44,7 @@ class WorkerFactory implements WorkerFactoryInterface
         $this->eventDispatcher = $eventDispatcher;
     }
 
+    // @todo work out how to only have this in one place (like environment->getHostname), or something like that.
     public function getHostname(){
         if (function_exists('gethostname')) {
             $hostname = gethostname();
@@ -51,10 +52,6 @@ class WorkerFactory implements WorkerFactoryInterface
             $hostname = php_uname('n');
         }
         return $hostname;
-    }
-
-    function isOwned(Worker $worker){
-        return $worker->getHostname() == $this->getHostname();
     }
 
     /**
@@ -94,10 +91,12 @@ class WorkerFactory implements WorkerFactoryInterface
             $this->jobInstanceFactory,
             $this->eventDispatcher
         );
-        $process = new Process();
+        $worker->setHostname($hostname);
+
+        $process = new Process(); // @todo When worker is on another host, Process is over kill.
         $process->setPid($pid);
         $worker->setProcess($process);
-        $worker->setHostname($hostname);
+
         foreach ($queues as $queue) {
             $worker->addQueue($this->queueFactory->createQueue($queue)); // @todo what about wildcard queues? :(
         }

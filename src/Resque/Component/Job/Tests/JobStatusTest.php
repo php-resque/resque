@@ -3,7 +3,7 @@
 namespace Resque\Tests\Job;
 
 use Resque\Component\Core\Resque;
-use Resque\Component\Core\Test\ResqueTestCase;
+use Resque\Redis\Test\ResqueTestCase;
 
 class JobStatusTest extends ResqueTestCase
 {

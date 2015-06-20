@@ -8,7 +8,7 @@ use Resque\Component\Queue\Registry\QueueRegistryAdapterInterface;
 /**
  * Redis queue registry adapter
  *
- * Connects redis in to the Resque core, and stores queues the Resque way.
+ * Connects redis in to the Resque core, and stores queues the original Resque way.
  */
 class RedisQueueRegistryAdapter implements
     QueueRegistryAdapterInterface,
@@ -65,7 +65,7 @@ class RedisQueueRegistryAdapter implements
      */
     public function has(QueueInterface $queue)
     {
-        return $this->redis->exists($this->getRedisKey($queue));
+        return $this->redis->exists($this->getRedisKey($queue)) == 1 ? true : false;
     }
 
     /**

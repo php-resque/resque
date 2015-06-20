@@ -1,0 +1,36 @@
+#!/usr/bin/env php
+<?php
+
+foreach (array(__DIR__ . '/../../autoload.php', __DIR__ . '/../vendor/autoload.php', __DIR__ . '/vendor/autoload.php') as $file) {
+    if (file_exists($file)) {
+
+        break;
+    }
+
+    $file = null;
+}
+
+if (true === is_null($file)) {
+    fwrite(STDERR,
+        'You need to set up the project dependencies using the following commands:' . PHP_EOL .
+        'curl -s http://getcomposer.org/installer | php' . PHP_EOL .
+        'php composer.phar install' . PHP_EOL
+    );
+    exit(1);
+}
+
+require $file;
+
+unset($file);
+
+$app = new Resque\Bin\Application;
+$app->setup();
+
+for ($i=0;$i<1000000;$i++) {
+    $q = $app->queueFactory->createQueue('high');
+    $q->push(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\DirtyExit'));
+    $q->push(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\Failure'));
+    $q->push(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\NoPerformMethod'));
+    $q->push(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\PhpError'));
+    $q->push(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\Simple'));
+}

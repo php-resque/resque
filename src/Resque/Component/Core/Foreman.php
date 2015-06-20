@@ -5,11 +5,10 @@ namespace Resque\Component\Core;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Resque\Component\Core\Event\EventDispatcherInterface;
 use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Component\Worker\Registry\WorkerRegistryInterface;
-use Resque\Component\Worker\Worker;
-use Resque\Redis\RedisClientInterface;
 
 /**
  * Resque Foreman
@@ -29,6 +28,11 @@ class Foreman implements LoggerAwareInterface
     protected $registry;
 
     /**
+     * @var EventDispatcherInterface An event dispatcher.
+     */
+    protected $eventDispatcher;
+
+    /**
      * @var LoggerInterface Logging object that implements the PSR-3 LoggerInterface
      */
     protected $logger;
@@ -38,14 +42,21 @@ class Foreman implements LoggerAwareInterface
      */
     protected $working;
 
-    protected $redis;
-
-    public function __construct(WorkerRegistryInterface $workerRegistry, RedisClientInterface $redis)
-    {
+    /**
+     * Constructor.
+     *
+     * @param WorkerRegistryInterface $workerRegistry
+     * @param EventDispatcherInterface $eventDispatcher
+     */
+    public function __construct(
+        WorkerRegistryInterface $workerRegistry,
+        EventDispatcherInterface $eventDispatcher
+    ) {
         $this->logger = new NullLogger();
         $this->registry = $workerRegistry;
-        $this->redis = $redis;
+        $this->eventDispatcher = $eventDispatcher;
 
+        // @todo work out how to only have this in one place (like environment->getHostname), or something like that.
         if (function_exists('gethostname')) {
             $this->hostname = gethostname();
         } else {
@@ -54,47 +65,18 @@ class Foreman implements LoggerAwareInterface
     }
 
     /**
-     * Inject a logging object into the worker
+     * Set PSR-3 logger.
      *
      * @param LoggerInterface $logger
-     * @return null|void
+     * @return void
      */
     public function setLogger(LoggerInterface $logger)
     {
         $this->logger = $logger;
     }
 
-    public function startWorker(Worker $worker){
-        $parent = new Process();
-
-        $this->redis->disconnect();
-        $child = $parent->fork();
-        $worker->setId(null);
-
-        if (null === $child) {
-            $worker->getProcess()->setPid(getmypid());
-
-            // This is worker process, it will process jobs until told to exit.
-            $this->registry->register($worker);
-            $worker->work();
-            $this->registry->deregister($worker);
-
-            exit(0);
-        }
-
-        $worker->setProcess($child);
-
-        $this->logger->info(
-            'Successfully started worker {worker} with pid {childPid}',
-            array(
-                'worker' => $worker,
-                'childPid' => $child->getPid(),
-            )
-        );
-    }
-
     /**
-     * Work
+     * Work.
      *
      * Given workers this will fork a new process for each worker and set them to work, whilst registering them with
      * the worker registry.
@@ -103,6 +85,7 @@ class Foreman implements LoggerAwareInterface
      *                          on their way.
      * @param bool $wait If true, this Foreman will wait for the workers to complete. This will guarantee workers are
      *                   cleaned up after correctly, however this is not really practical for most purposes.
+     * @return void
      */
     public function work($workers, $wait = false)
     {
@@ -122,37 +105,87 @@ class Foreman implements LoggerAwareInterface
         }
 
         if ($wait) {
-            $this->wait($workers);
-        }
-    }
-
-    public function wait($workers){
-        foreach ($workers as $worker) {
-            $process = $worker->getProcess();
-            $process->wait();
-            if ($process->isCleanExit()) {
-                $this->registry->deregister($worker);
-            } else {
-                throw new ResqueRuntimeException(
-                    sprintf(
-                        'Foreman error with worker %s wait on pid %d',
-                        $worker->getId(),
-                        $process->getPid()
-                    )
-                );
+            foreach ($workers as $worker) {
+                $this->deregisterOnWorkerExit($worker);
             }
         }
     }
 
     /**
-     * Prune dead workers
+     * Start worker.
+     *
+     * @param WorkerInterface $worker The worker to start.
+     * @return void
+     */
+    public function startWorker(WorkerInterface $worker)
+    {
+        $parent = new Process();
+
+        $this->eventDispatcher->dispatch(ResqueEvents::BEFORE_FORK);
+        $child = $parent->fork();
+
+        // This exists because workers that get reset after a crash still hold their old id.
+        // @todo this shouldn't be needed if id was always derived.. hmm.
+        $worker->setId(null);
+
+        if (null === $child) {
+            // This is spawned worker process, it will process jobs until told to exit.
+            $worker->getProcess()->setPid(getmypid()); // @todo shouldn't this happen automagically?
+
+            $this->registry->register($worker);
+            $worker->work();
+            $this->registry->deregister($worker);
+
+            exit(0);
+        }
+
+        $worker->setProcess($child);
+
+        $this->logger->info(
+            'Successfully started worker {worker} with pid {childPid}',
+            array(
+                'worker' => $worker,
+                'childPid' => $child->getPid(),
+            )
+        );
+    }
+
+    /**
+     * Deregister on worker exit.
+     *
+     * @param WorkerInterface $worker The worker to wait for exit and then deregister.
+     * @throws ResqueRuntimeException when $worker fails to exit cleanly.
+     * @return void
+     */
+    public function deregisterOnWorkerExit(WorkerInterface $worker)
+    {
+        $process = $worker->getProcess();
+        $process->wait();
+        if ($process->isCleanExit()) {
+            $this->registry->deregister($worker);
+        } else {
+            throw new ResqueRuntimeException(
+                sprintf(
+                    'Foreman error with worker %s wait on pid %d',
+                    $worker->getId(),
+                    $process->getPid()
+                )
+            );
+        }
+    }
+
+    /**
+     * Prune dead workers.
      *
      * Look for any workers which should be running on this server and if
      * they're not, remove them from Redis.
      *
      * This is a form of garbage collection to handle cases where the
-     * server may have been killed and the Resque workers did not die gracefully
+     * server may have been killed and the workers did not exit gracefully
      * and therefore leave state information in Redis.
+     *
+     * @todo remove usage of getmypid(), try and consolidate everything to Process.
+     * @return void
      */
     public function pruneDeadWorkers()
     {
@@ -172,11 +205,11 @@ class Foreman implements LoggerAwareInterface
     }
 
     /**
-     * Local worker process IDs
+     * Get local worker process IDs.
      *
-     * Return an array of process IDs for all of the Resque workers currently running on this machine.
+     * Return an array of process IDs for all of the workers currently running on this machine.
      *
-     * @return array An array of Resque worker process IDs.
+     * @return array An array of worker process IDs.
      */
     public function getLocalWorkerPids()
     {

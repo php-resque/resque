@@ -2,7 +2,9 @@
 
 namespace Resque\Bin;
 
-use Resque\Redis\RedisQueueFactory;
+use Resque\Component\Core\ResqueEvents;
+use Resque\Component\Queue\Factory\QueueFactory;
+use Resque\Redis\RedisQueueStorage;
 use Resque\Redis\RedisStatistic;
 use Resque\Component\Queue\Registry\QueueRegistry;
 use RuntimeException;
@@ -26,6 +28,10 @@ use Resque\Redis\RedisWorkerRegistry;
  *
  * A simple class that fires up some workers. It's configuration is based on Resque/Resque 1.x usage
  * of environment variables.
+ *
+ * You may use APP_INCLUDE to override and or add functionality. If APP_INCLUDE is set to a class name, that class
+ * will be initiated and $this injected into it's constructor. If APP_INCLUDE is a file, that class will be
+ * included, much like the behaviour of Resque/Resque 1.x.
  */
 class Application
 {
@@ -50,9 +56,25 @@ class Application
     public $eventDispatcher;
 
     /**
-     * @var RedisQueueRegistryAdapter
+     * @var \Resque\Component\Queue\Storage\QueueStorageInterface
+     */
+    public $queueStorage;
+
+    /**
+     * @var \Resque\Component\Queue\Factory\QueueFactoryInterface
+     */
+    public $queueFactory;
+
+    /**
+     * @var \Resque\Component\Queue\Registry\QueueRegistryAdapterInterface
+     */
+    public $queueRegistryAdapter;
+
+    /**
+     * @var \Resque\Component\Queue\Registry\QueueRegistryInterface
      */
     public $queueRegistry;
+
     /**
      * @var QueueInterface[]
      */
@@ -72,10 +94,12 @@ class Application
      * @var WorkerFactory
      */
     public $workerFactory;
+
     /**
      * @var RedisWorkerRegistry
      */
     public $workerRegistry;
+
     /**
      * @var WorkerInterface[]
      */
@@ -111,7 +135,10 @@ class Application
         $this->setupLogger();
         $this->setupRedis();
         $this->setupRedisEvents();
-        $this->setupQueueRegistryFactory();
+        $this->setupQueueStorage();
+        $this->setupQueueFactory();
+        $this->setupQueueRegistryAdapter();
+        $this->setupQueueRegistry();
         $this->setupQueues();
         $this->setupFailureBackend();
         $this->setupStatisticBackend();
@@ -176,6 +203,8 @@ class Application
 
             if (file_exists($include)) {
                 require_once $include;
+
+                return;
             }
 
             new $include($this);
@@ -209,11 +238,16 @@ class Application
         }
     }
 
-    protected function setupRedisEvents(){
+    protected function setupRedisEvents()
+    {
         $redisEventListener = new RedisEventListener($this->redisClient);
 
         $this->eventDispatcher->addListener(
             ResqueWorkerEvents::BEFORE_FORK_TO_PERFORM,
+            array($redisEventListener, 'disconnectFromRedis')
+        );
+        $this->eventDispatcher->addListener(
+            ResqueEvents::BEFORE_FORK,
             array($redisEventListener, 'disconnectFromRedis')
         );
         $this->eventDispatcher->addListener(
@@ -222,14 +256,34 @@ class Application
         );
     }
 
-    protected function setupQueueRegistryFactory()
+    protected function setupQueueStorage()
+    {
+        if (null === $this->queueStorage) {
+            $this->queueStorage = new RedisQueueStorage($this->redisClient);
+        }
+    }
+
+    protected function setupQueueFactory()
+    {
+        if (null === $this->queueFactory) {
+            $this->queueFactory = new QueueFactory($this->queueStorage, $this->eventDispatcher);
+        }
+    }
+
+    protected function setupQueueRegistryAdapter()
+    {
+        if (null === $this->queueRegistryAdapter) {
+            $this->queueRegistryAdapter = new RedisQueueRegistryAdapter($this->redisClient);
+        }
+    }
+
+    protected function setupQueueRegistry()
     {
         if (null === $this->queueRegistry) {
-            $factory = new RedisQueueFactory($this->redisClient, $this->eventDispatcher);
             $this->queueRegistry = new QueueRegistry(
                 $this->eventDispatcher,
-                new RedisQueueRegistryAdapter($this->redisClient, $factory),
-                $factory
+                $this->queueRegistryAdapter,
+                $this->queueFactory
             );
         }
     }
@@ -300,7 +354,7 @@ class Application
     {
         if (null === $this->workerFactory) {
             $this->workerFactory = new WorkerFactory(
-                $this->queueRegistry,
+                $this->queueFactory,
                 $this->jobInstanceFactory,
                 $this->eventDispatcher
             );
@@ -345,7 +399,7 @@ class Application
 
     protected function setupForeman()
     {
-        $this->foreman = new Foreman($this->workerRegistry, $this->redisClient);
+        $this->foreman = new Foreman($this->workerRegistry, $this->eventDispatcher);
         $this->foreman->setLogger($this->logger);
     }
 
@@ -363,6 +417,7 @@ class Application
             'Workers (%s)' . PHP_EOL,
             implode(', ', $this->workers)
         );
-        $this->foreman->wait($this->workers);
+
+        // $this->foreman->wait($this->workers); @todo this is not intended, work out why this is needed.
     }
 }

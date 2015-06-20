@@ -80,7 +80,7 @@ class RedisWorkerRegistry implements
      */
     public function isRegistered(WorkerInterface $worker)
     {
-        return $this->redis->sismember('workers', $worker->getId());
+        return $this->redis->sismember('workers', $worker->getId()) == 1 ? true : false;
     }
 
     /**
@@ -90,8 +90,8 @@ class RedisWorkerRegistry implements
     {
         $id = $worker->getId();
 
-        if(!$this->redis->srem('workers', $id)){
-            //Log
+        if (!$this->redis->srem('workers', $id)) {
+            // @todo log warning or info, and return?
         }
         $this->redis->del('worker:' . $id);
         $this->redis->del('worker:' . $id . ':started');
