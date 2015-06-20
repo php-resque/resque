@@ -8,9 +8,9 @@ interface EventDispatcherInterface
      * Dispatch an event
      *
      * @param string $eventName The name of the event being dispatched.
-     * @param mixed $eventContext The context (generally an object) for this event.
+     * @param mixed $eventContext The context (generally an object) for this event, can be null.
      *
      * @return void
      */
-    public function dispatch($eventName, $eventContext);
+    public function dispatch($eventName, $eventContext = null);
 }

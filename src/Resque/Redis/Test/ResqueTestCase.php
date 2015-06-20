@@ -1,6 +1,6 @@
 <?php
 
-namespace Resque\Component\Core\Test;
+namespace Resque\Redis\Test;
 
 use PHPUnit_Framework_TestCase;
 use Predis\Client;

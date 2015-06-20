@@ -23,7 +23,7 @@ class EventDispatcher implements EventDispatcherInterface
      * @param string $event The event to dispatch to relevant listeners.
      * @param mixed $eventContext The event context.
      */
-    public function dispatch($event, $eventContext)
+    public function dispatch($event, $eventContext = null)
     {
         if (false === isset($this->listeners[$event])) {
 
@@ -81,9 +81,16 @@ class EventDispatcher implements EventDispatcherInterface
 
     /**
      * Get registered listeners.
+     *
+     * @param string|null $event The name of the event get registered listeners for.
+     * @return array If $event is null all event listeners are returned, keyed by event name.
      */
-    public function getListeners()
+    public function getListeners($event = null)
     {
+        if (null !== $event) {
+            return isset($this->listeners[$event]) ? $this->listeners[$event] : array();
+        }
+
         return $this->listeners;
     }
 

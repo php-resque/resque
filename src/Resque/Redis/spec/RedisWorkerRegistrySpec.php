@@ -79,14 +79,13 @@ class RedisWorkerRegistrySpec extends ObjectBehavior
         $this->isRegistered($worker)->shouldReturn(true);
     }
 
-    function it_shutdowns_and_removes_workers_from_redis_on_deregister(
+    function it_removes_workers_from_redis_on_deregister(
         RedisClientInterface $redis,
         EventDispatcherInterface $eventDispatcher,
         WorkerInterface $worker
     ) {
         $eventDispatcher->dispatch(ResqueWorkerEvents::UNREGISTERED, Argument::any())->shouldBeCalled();
         $worker->getId()->shouldBeCalled()->willReturn('local:789');
-        $worker->halt()->shouldBeCalled();
         $redis->srem('workers', 'local:789')->shouldBeCalled()->willReturn(1);
         $redis->del('worker:local:789')->shouldBeCalled()->willReturn(1);
         $redis->del('worker:local:789:started')->shouldBeCalled()->willReturn(1);
