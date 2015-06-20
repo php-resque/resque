@@ -4,26 +4,23 @@ namespace Resque\Component\Job\Event;
 
 use Resque\Component\Job\Model\JobInterface;
 use Resque\Component\Job\PerformantJobInterface;
+use Resque\Component\Worker\Event\WorkerJobEvent;
+use Resque\Component\Worker\Model\WorkerInterface;
 
 /**
  * JobInstanceEvent
  */
-class JobInstanceEvent
+class JobInstanceEvent extends WorkerJobEvent
 {
-    /**
-     * @var JobInterface The job that just performed, or is about to.
-     */
-    protected $job;
-
     /**
      * @var PerformantJobInterface The instance of $job->getClassName() that has just performed, or is about to.
      */
     protected $instance;
 
-    public function __construct(JobInterface $job, PerformantJobInterface $instance)
+    public function __construct(WorkerInterface $worker, JobInterface $job, PerformantJobInterface $instance)
     {
-        $this->job = $job;
         $this->instance = $instance;
+        parent::__construct($worker,$job);
     }
 
     /**
@@ -32,13 +29,5 @@ class JobInstanceEvent
     public function getJobInstance()
     {
         return $this->instance;
-    }
-
-    /**
-     * @return JobInterface
-     */
-    public function getJob()
-    {
-        return $this->job;
     }
 }

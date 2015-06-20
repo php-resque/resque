@@ -358,7 +358,7 @@ class Worker implements WorkerInterface, LoggerAwareInterface
 
             $this->eventDispatcher->dispatch(
                 ResqueJobEvents::BEFORE_PERFORM,
-                new JobInstanceEvent($job, $jobInstance)
+                new JobInstanceEvent($this, $job, $jobInstance)
             );
 
             $jobInstance->perform($job->getArguments());

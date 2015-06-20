@@ -10,6 +10,7 @@ use Resque\Component\Job\PerformantJobInterface;
 class JobInstanceEventSpec extends ObjectBehavior
 {
     function let(
+        WorkerInterface $worker,
         JobInterface $job,
         PerformantJobInterface $jobInstance
     ) {
