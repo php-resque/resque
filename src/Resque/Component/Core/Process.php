@@ -190,6 +190,10 @@ class Process
      */
     public function setTitle($title)
     {
+        if(getmypid() != $this->getPid()){
+            throw new ResqueRuntimeException("This function wont work unless called from the same process.");
+        }
+
         // @todo, it is the workers domain to set this, move this logic back to the worker.
         $processTitle = 'resque-' . Resque::VERSION . ': ' . $title;
 
