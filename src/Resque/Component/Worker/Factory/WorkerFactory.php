@@ -7,6 +7,7 @@ use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Core\Process;
 use Resque\Component\Job\Factory\JobInstanceFactoryInterface;
 use Resque\Component\Queue\Factory\QueueFactoryInterface;
+use Resque\Component\System\SystemInterface;
 use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Component\Worker\Worker;
 
@@ -28,35 +29,34 @@ class WorkerFactory implements WorkerFactoryInterface
     protected $eventDispatcher;
 
     /**
+     * @var SystemInterface
+     */
+    protected $system;
+
+    /**
      * Constructor
      *
      * @param QueueFactoryInterface $queueFactory
      * @param JobInstanceFactoryInterface $jobFactory
      * @param EventDispatcherInterface $eventDispatcher
+     * @param SystemInterface $system
      */
     public function __construct(
         QueueFactoryInterface $queueFactory,
         JobInstanceFactoryInterface $jobFactory,
-        EventDispatcherInterface $eventDispatcher
+        EventDispatcherInterface $eventDispatcher,
+        SystemInterface $system
     ) {
         $this->queueFactory = $queueFactory;
         $this->jobInstanceFactory = $jobFactory;
         $this->eventDispatcher = $eventDispatcher;
-    }
-
-    // @todo work out how to only have this in one place (like environment->getHostname), or something like that.
-    public function getHostname(){
-        if (function_exists('gethostname')) {
-            $hostname = gethostname();
-        } else {
-            $hostname = php_uname('n');
-        }
-        return $hostname;
+        $this->system = $system;
     }
 
     /**
      * Create worker
      *
+     * @param Process $process
      * @return WorkerInterface
      */
     public function createWorker(Process $process = null)
@@ -66,7 +66,7 @@ class WorkerFactory implements WorkerFactoryInterface
             $this->eventDispatcher
         );
 
-        $worker->setHostname($this->getHostname());
+        $worker->setHostname($this->system->getHostname());
         if($process) {
             $worker->setProcess($process);
         }

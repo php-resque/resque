@@ -5,6 +5,7 @@ use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Core\ResqueEvents;
 use Resque\Component\Log\SimpleLogger;
 use Resque\Component\Queue\Factory\QueueFactory;
+use Resque\Component\System\StandardSystem;
 use Resque\Redis\RedisQueueStorage;
 use Resque\Redis\RedisStatistic;
 use Resque\Component\Queue\Registry\QueueRegistry;
@@ -116,9 +117,15 @@ class Application
      */
     public $foreman;
 
+    /**
+     * @var \Resque\Component\System\SystemInterface
+     */
+    public $system;
+
     public function __construct()
     {
         $this->eventDispatcher = new EventDispatcher();
+        $this->system = new StandardSystem();
     }
 
     /**
@@ -359,7 +366,8 @@ class Application
             $this->workerFactory = new WorkerFactory(
                 $this->queueFactory,
                 $this->jobInstanceFactory,
-                $this->eventDispatcher
+                $this->eventDispatcher,
+                $this->system
             );
         }
     }
@@ -407,7 +415,7 @@ class Application
 
     protected function setupForeman()
     {
-        $this->foreman = new Foreman($this->workerRegistry, $this->eventDispatcher);
+        $this->foreman = new Foreman($this->workerRegistry, $this->eventDispatcher, $this->system);
         $this->foreman->setLogger($this->logger);
     }
 

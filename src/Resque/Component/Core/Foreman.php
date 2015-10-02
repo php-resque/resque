@@ -7,6 +7,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Resque\Component\Core\Event\EventDispatcherInterface;
 use Resque\Component\Core\Exception\ResqueRuntimeException;
+use Resque\Component\System\SystemInterface;
 use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Component\Worker\Registry\WorkerRegistryInterface;
 
@@ -17,11 +18,6 @@ use Resque\Component\Worker\Registry\WorkerRegistryInterface;
  */
 class Foreman implements LoggerAwareInterface
 {
-    /**
-     * @var string The hostname of the current machine.
-     */
-    protected $hostname;
-
     /**
      * @var WorkerRegistryInterface A worker registry.
      */
@@ -43,25 +39,26 @@ class Foreman implements LoggerAwareInterface
     protected $working;
 
     /**
+     * @var SystemInterface
+     */
+    protected $system;
+
+    /**
      * Constructor.
      *
      * @param WorkerRegistryInterface $workerRegistry
      * @param EventDispatcherInterface $eventDispatcher
+     * @param SystemInterface $system
      */
     public function __construct(
         WorkerRegistryInterface $workerRegistry,
-        EventDispatcherInterface $eventDispatcher
+        EventDispatcherInterface $eventDispatcher,
+        SystemInterface $system
     ) {
         $this->logger = new NullLogger();
         $this->registry = $workerRegistry;
         $this->eventDispatcher = $eventDispatcher;
-
-        // @todo work out how to only have this in one place (like environment->getHostname), or something like that.
-        if (function_exists('gethostname')) {
-            $this->hostname = gethostname();
-        } else {
-            $this->hostname = php_uname('n');
-        }
+        $this->system = $system;
     }
 
     /**
@@ -191,10 +188,11 @@ class Foreman implements LoggerAwareInterface
     {
         $workerPids = $this->getLocalWorkerPids();
         $workers = $this->registry->all(); // @todo Maybe findWorkersForHost($hostname) ?
+        $hostname = $this->system->getHostname();
         foreach ($workers as $worker) {
             if ($worker instanceof WorkerInterface) {
                 $pid = $worker->getProcess()->getPid();
-                if ($worker->getHostname() != $this->hostname || in_array($pid, $workerPids) || $pid == getmypid()) {
+                if ($worker->getHostname() != $hostname || in_array($pid, $workerPids) || $pid == getmypid()) {
 
                     continue;
                 }
