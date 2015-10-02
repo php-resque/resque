@@ -1,8 +1,9 @@
 <?php
+namespace Resque;
 
-namespace Resque\Bin;
-
+use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Core\ResqueEvents;
+use Resque\Component\Log\SimpleLogger;
 use Resque\Component\Queue\Factory\QueueFactory;
 use Resque\Redis\RedisQueueStorage;
 use Resque\Redis\RedisStatistic;
@@ -76,9 +77,9 @@ class Application
     public $queueRegistry;
 
     /**
-     * @var QueueInterface[]
+     * @var \Resque\Component\Queue\Model\QueueInterface[]
      */
-    public $queues = array();
+    public $queues = null;
 
     /**
      * @var JobInstanceFactory
@@ -101,7 +102,7 @@ class Application
     public $workerRegistry;
 
     /**
-     * @var WorkerInterface[]
+     * @var \Resque\Component\Worker\Model\WorkerInterface[]
      */
     public $workers = array();
 
@@ -215,7 +216,7 @@ class Application
     {
         if (null === $this->logger) {
             if ($this->config['verbose'] || $this->config['very_verbose']) {
-                $this->logger = new Logger();
+                $this->logger = new SimpleLogger();
 
                 return;
             }
@@ -290,17 +291,19 @@ class Application
 
     protected function setupQueues()
     {
-        if (count($this->queues) < 1) {
+        if (null === $this->queues) {
             $configQueues = explode(',', $this->config['queues']);
 
+            $queues = array();
             if (in_array('*', $configQueues)) {
                 $wildcard = new \Resque\Component\Queue\WildcardQueue($this->queueRegistry);
                 $queues[] = $wildcard;
             } else {
                 foreach ($configQueues as $configQueue) {
-                    $this->queues[] = $this->queueRegistry->createQueue($configQueue);
+                    $queues[] = $this->queueRegistry->createQueue($configQueue);
                 }
             }
+            $this->queues = $queues;
         }
     }
 
@@ -384,6 +387,11 @@ class Application
 
     protected function setupWorkers()
     {
+        // This method of worker setup requires an array of queues
+        if(!is_array($this->queues)){
+            throw new ResqueRuntimeException("Queues not initialized correctly.");
+        }
+
         $this->workers = array();
         for ($i = 0; $i < $this->config['worker_count']; ++$i) {
             $worker = $this->workerFactory->createWorker();
@@ -403,6 +411,10 @@ class Application
         $this->foreman->setLogger($this->logger);
     }
 
+    protected function queueDescription(){
+        return implode($this->queues, ',');
+    }
+
     public function work()
     {
         $this->foreman->pruneDeadWorkers();
@@ -410,7 +422,7 @@ class Application
         echo sprintf(
             '%d workers attached to the %s queues successfully started.' . PHP_EOL,
             count($this->workers),
-            implode($this->queues, ', ')
+            $this->queueDescription()
         );
 
         echo sprintf(
