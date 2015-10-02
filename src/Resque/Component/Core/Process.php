@@ -24,9 +24,9 @@ class Process
      */
     protected $exitCode;
 
-    public function __construct()
+    public function __construct($pid = null)
     {
-        $this->pid = null;
+        $this->pid = $pid;
     }
 
     /**

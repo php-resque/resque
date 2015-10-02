@@ -59,7 +59,7 @@ class WorkerFactory implements WorkerFactoryInterface
      *
      * @return WorkerInterface
      */
-    public function createWorker()
+    public function createWorker(Process $process = null)
     {
         $worker = new Worker(
             $this->jobInstanceFactory,
@@ -67,6 +67,9 @@ class WorkerFactory implements WorkerFactoryInterface
         );
 
         $worker->setHostname($this->getHostname());
+        if($process) {
+            $worker->setProcess($process);
+        }
 
         return $worker;
     }
