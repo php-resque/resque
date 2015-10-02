@@ -77,7 +77,7 @@ class Application
     public $queueRegistry;
 
     /**
-     * @var QueueInterface[]
+     * @var \Resque\Component\Queue\Model\QueueInterface[]
      */
     public $queues = null;
 
@@ -102,7 +102,7 @@ class Application
     public $workerRegistry;
 
     /**
-     * @var WorkerInterface[]
+     * @var \Resque\Component\Worker\Model\WorkerInterface[]
      */
     public $workers = array();
 
