@@ -1,13 +1,13 @@
 <?php
 
-namespace Resque\Bin;
+namespace Resque\Component\Log;
 
 use Psr\Log\AbstractLogger;
 
 /**
  * Throw away CLI logger
  */
-class Logger extends AbstractLogger
+class SimpleLogger extends AbstractLogger
 {
     /**
      * {@inheritDoc}
