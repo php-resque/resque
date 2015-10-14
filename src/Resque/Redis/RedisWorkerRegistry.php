@@ -112,6 +112,7 @@ class RedisWorkerRegistry implements
             return array();
         }
 
+        /** @var WorkerInterface[] $instances */
         $instances = array();
         foreach ($workerIds as $workerId) {
             $instances[] = $this->workerFactory->createWorkerFromId($workerId);

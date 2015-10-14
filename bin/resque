@@ -23,6 +23,6 @@ require $file;
 
 unset($file);
 
-$app = new Resque\Bin\Application;
+$app = new Resque\Application;
 $app->setup();
 $app->work();
