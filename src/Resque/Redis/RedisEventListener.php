@@ -18,14 +18,11 @@ class RedisEventListener implements RedisClientAwareInterface
     }
 
     /**
-     * @param ClientInterface|RedisClientInterface $redis
-     * @return $this
+     * {@inheritDoc}
      */
     public function setRedisClient(RedisClientInterface $redis)
     {
         $this->redis = $redis;
-
-        return $this;
     }
 
     public function disconnectFromRedis()

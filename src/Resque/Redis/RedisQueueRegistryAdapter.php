@@ -8,7 +8,7 @@ use Resque\Component\Queue\Registry\QueueRegistryAdapterInterface;
 /**
  * Redis queue registry adapter
  *
- * Connects redis in to the Resque core, and stores queues the original Resque way.
+ * Connects Redis in to the Resque core, and stores queues the original Resque way.
  */
 class RedisQueueRegistryAdapter implements
     QueueRegistryAdapterInterface,
@@ -20,7 +20,7 @@ class RedisQueueRegistryAdapter implements
     protected $redis;
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param RedisClientInterface $redis
      */
@@ -35,8 +35,6 @@ class RedisQueueRegistryAdapter implements
     public function setRedisClient(RedisClientInterface $redis)
     {
         $this->redis = $redis;
-
-        return $this;
     }
 
     /**

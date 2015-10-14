@@ -8,10 +8,10 @@ namespace Resque\Redis;
 interface RedisClientAwareInterface
 {
     /**
-     * Set redis client
+     * Set redis client,
      *
      * @param RedisClientInterface $redis Client/connection to redis server/cluster.
-     * @return $this
+     * @return void
      */
     public function setRedisClient(RedisClientInterface $redis);
 }

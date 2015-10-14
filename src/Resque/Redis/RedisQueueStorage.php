@@ -49,7 +49,10 @@ class RedisQueueStorage implements
     }
 
     /**
-     * @return string Key name for redis.
+     * Get redis key.
+     *
+     * @param QueueInterface $queue A the queue to the get the Resque Redis key name for.
+     * @return string Key name for Redis.
      */
     protected function getRedisKey(QueueInterface $queue)
     {

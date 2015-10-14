@@ -29,8 +29,6 @@ class RedisFailure implements FailureInterface, RedisClientAwareInterface
     public function setRedisClient(RedisClientInterface $redis)
     {
         $this->redis = $redis;
-
-        return $this;
     }
 
     /**

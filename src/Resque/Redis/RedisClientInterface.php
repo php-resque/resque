@@ -3,12 +3,12 @@
 namespace Resque\Redis;
 
 /**
- * Redis client interface
+ * Redis client
  *
- * This just makes it easier for me to test/spec, as Predis does not have a rigid client interface. It's also
- * easy enough now to see the redis commands used thus far in the project.
+ * This just makes it easier to test/spec, as Predis does not have a rigid client interface. It's also
+ * easy enough now to see the Redis commands used thus far in the project.
  *
- * This does also allow anyone to bridge in their own redis client/connection.
+ * This does also allow anyone to bridge in their own Redis client/connection.
  */
 interface RedisClientInterface
 {

@@ -17,4 +17,15 @@ class RedisEventListenerSpec extends ObjectBehavior
     {
         $this->shouldHaveType('Resque\Redis\RedisEventListener');
     }
+
+    function it_is_redis_client_aware()
+    {
+        $this->shouldHaveType('Resque\Redis\RedisClientAwareInterface');
+    }
+
+    function it_disconnects_redis_client(RedisClientInterface $redis)
+    {
+        $redis->disconnect()->shouldBecalled();
+        $this->disconnectFromRedis();
+    }
 }
