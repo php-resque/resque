@@ -7,6 +7,7 @@ use Prophecy\Argument;
 use Resque\Component\Core\Event\EventDispatcherInterface;
 use Resque\Component\Core\Process;
 use Resque\Component\core\ResqueEvents;
+use Resque\Component\System\SystemInterface;
 use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Component\Worker\Registry\WorkerRegistryInterface;
 
@@ -14,9 +15,10 @@ class ForemanSpec extends ObjectBehavior
 {
     function let(
         WorkerRegistryInterface $workerRegistry,
-        EventDispatcherInterface $eventDispatcher
+        EventDispatcherInterface $eventDispatcher,
+        SystemInterface $system
     ) {
-        $this->beConstructedWith($workerRegistry, $eventDispatcher);
+        $this->beConstructedWith($workerRegistry, $eventDispatcher, $system);
     }
 
     function it_is_initializable()
@@ -28,6 +30,7 @@ class ForemanSpec extends ObjectBehavior
     // @see Resque\Component\Core\Tests\ForemanTest
 
     function it_cleans_up_dead_workers(
+        SystemInterface $system,
         WorkerRegistryInterface $workerRegistry,
         WorkerInterface $worker,
         WorkerInterface $deadWorker1,
@@ -36,18 +39,19 @@ class ForemanSpec extends ObjectBehavior
         Process $deadWorker1Process,
         Process $deadWorker2Process
     ) {
-        $hostname = (function_exists('gethostname')) ? gethostname() : php_uname('n'); // @todo fix hostname fetching
+        $system->getHostname()->shouldBeCalled()->willReturn('foo1.resque.com');
+
         $workerRegistry->all()->shouldBeCalled()->willReturn(array($worker, $deadWorker1, $deadWorker2));
 
-        $worker->getHostname()->shouldBeCalled()->willReturn($hostname);
+        $worker->getHostname()->shouldBeCalled()->willReturn('foo1.resque.com');
         $worker->getProcess()->shouldBeCalled()->willReturn($workerProcess);
         $workerProcess->getPid()->shouldBeCalled()->willReturn(getmypid());
 
-        $deadWorker1->getHostname()->shouldBeCalled()->willReturn($hostname);
+        $deadWorker1->getHostname()->shouldBeCalled()->willReturn('foo1.resque.com');
         $deadWorker1->getProcess()->shouldBeCalled()->willReturn($deadWorker1Process);
         $deadWorker1Process->getPid()->shouldBeCalled()->willReturn('1');
 
-        $deadWorker2->getHostname()->shouldBeCalled()->willReturn($hostname);
+        $deadWorker2->getHostname()->shouldBeCalled()->willReturn('foo1.resque.com');
         $deadWorker2->getProcess()->shouldBeCalled()->willReturn($deadWorker2Process);
         $deadWorker2Process->getPid()->shouldBeCalled()->willReturn('2');
 
@@ -59,18 +63,21 @@ class ForemanSpec extends ObjectBehavior
     }
 
     function it_does_not_clean_up_workers_on_another_host(
+        SystemInterface $system,
         $workerRegistry,
         WorkerInterface $localWorker,
         WorkerInterface $remoteWorker,
         Process $localProcess,
         Process $remoteProcess
     ) {
+        $system->getHostname()->shouldBeCalled()->willReturn('bar.resque.com');
+
         $workerRegistry->all()->shouldBeCalled()->willReturn([$localWorker, $remoteWorker]);
 
         $localWorker->getProcess()->shouldBeCalled()->willReturn($localProcess);
         $remoteWorker->getProcess()->shouldBeCalled()->willReturn($remoteProcess);
 
-        $localWorker->getHostname()->shouldBeCalled()->willReturn((function_exists('gethostname')) ? gethostname() : php_uname('n')); // @todo fix hostname fetching
+        $localWorker->getHostname()->shouldBeCalled()->willReturn('bar.resque.com');
         $remoteWorker->getHostname()->shouldBeCalled()->willReturn('my.other.host');
 
         $localProcess->getPid()->willReturn(1);
