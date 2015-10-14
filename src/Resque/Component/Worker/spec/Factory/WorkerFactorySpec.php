@@ -8,15 +8,17 @@ use Resque\Component\Core\Event\EventDispatcherInterface;
 use Resque\Component\Job\Factory\JobInstanceFactoryInterface;
 use Resque\Component\Queue\Factory\QueueFactoryInterface;
 use Resque\Component\Queue\Model\QueueInterface;
+use Resque\Component\System\SystemInterface;
 
 class WorkerFactorySpec extends ObjectBehavior
 {
     function let(
         QueueFactoryInterface $queueFactory,
         JobInstanceFactoryInterface $jobInstanceFactory,
-        EventDispatcherInterface $eventDispatcher
+        EventDispatcherInterface $eventDispatcher,
+        SystemInterface $system
     ) {
-        $this->beConstructedWith($queueFactory, $jobInstanceFactory, $eventDispatcher);
+        $this->beConstructedWith($queueFactory, $jobInstanceFactory, $eventDispatcher, $system);
     }
 
     function it_is_initializable()
@@ -42,5 +44,12 @@ class WorkerFactorySpec extends ObjectBehavior
         $queueFactory->createQueue('high')->shouldBeCalled()->willReturn($queueHigh);
         $queueFactory->createQueue('low')->shouldBeCalled()->willReturn($queueLow);
         $this->createWorkerFromId('localhost:4753:high,low')->shouldReturnAnInstanceOf('Resque\Component\Worker\Worker');
+    }
+
+    function it_sets_the_workers_hostname_on_create(
+        SystemInterface $system
+    ) {
+        $system->getHostname()->shouldBeCalled(1)->willReturn('wild.ones');
+        $this->createWorker()->getHostname()->shouldEqual('wild.ones');
     }
 }
