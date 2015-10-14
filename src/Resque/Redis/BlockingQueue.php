@@ -7,7 +7,7 @@ use Resque\Redis\RedisQueue;
 /**
  * Resque Blocking RedisQueue
  *
- * Blocks on dequeue return immediately if queue enqueue
+ * Blocks on dequeue return immediately if queue enqueue.
  *
  * @todo this is really just to hold blpop usage until I decided how it should be a part of normal queues.
  *       it could be like wildcard, but takes a bunch of queues?
