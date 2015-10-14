@@ -20,7 +20,7 @@ interface OriginQueueAwareInterface
     /**
      * Get origin queue.
      *
-     * @return QueueInterface|null The origin queue the subject came from, if one at all.
+     * @return QueueInterface|null The queue the subject came from, if one at all.
      */
     public function getOriginQueue();
 }

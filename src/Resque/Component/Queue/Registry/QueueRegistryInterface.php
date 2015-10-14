@@ -34,7 +34,7 @@ interface QueueRegistryInterface
     public function deregister(QueueInterface $queue);
 
     /**
-     * Return all registered queues
+     * Return array of all registered queues.
      *
      * @return QueueInterface[]
      */

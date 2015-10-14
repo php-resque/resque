@@ -3,14 +3,14 @@
 namespace Resque\Component\Job;
 
 /**
- * Performant Job Interface
+ * Performant job
  *
  * Job target classes must implement this, else a worker cannot ask them to perform.
  */
 interface PerformantJobInterface
 {
     /**
-     * Perform
+     * Perform.
      *
      * This is how your task is invoked.
      *
