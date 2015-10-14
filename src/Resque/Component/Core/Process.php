@@ -70,6 +70,8 @@ class Process
     public function setPidFromCurrentProcess()
     {
         $this->pid = getmypid();
+
+        return $this;
     }
 
     /**
