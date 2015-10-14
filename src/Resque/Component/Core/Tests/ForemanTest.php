@@ -13,7 +13,8 @@ class ForemanTest extends PHPUnit_Framework_TestCase
         $workerRegistry = $this->getMock('Resque\Component\Worker\Registry\WorkerRegistryInterface');
         $jobInstanceFactory = $this->getMock('Resque\Component\Job\Factory\JobInstanceFactoryInterface');
         $eventDispatcher = $this->getMock('Resque\Component\Core\Event\EventDispatcherInterface');
-        $foreman = new Foreman($workerRegistry, $eventDispatcher);
+        $system = $this->getMock('Resque\Component\System\SystemInterface');
+        $foreman = new Foreman($workerRegistry, $eventDispatcher, $system);
 
         $mockWorker = $this->getMock(
             'Resque\Component\Worker\Worker',
