@@ -9,7 +9,7 @@ use Resque\Component\Queue\Model\QueueInterface;
 use Resque\Component\Queue\Registry\QueueRegistryInterface;
 
 /**
- * Resque wildcard queue
+ * Resque wildcard queue.
  *
  * Provides the ability to pull jobs from all known queues. Optionally allows for a prefix, so foo* like filtering
  * can be used, useful if you use a single redis instance that multiple projects talk too and you give projects queue
@@ -49,7 +49,7 @@ class WildcardQueue extends Queue
     /**
      * {@inheritdoc}
      */
-    public function push(JobInterface $job)
+    public function enqueue(JobInterface $job)
     {
         throw new \Exception('Wildcard queue does not support pushing');
     }
@@ -59,7 +59,7 @@ class WildcardQueue extends Queue
      *
      * Queues will be searched in alphabetic order.
      */
-    public function pop()
+    public function dequeue()
     {
         $queues = $this->registry->all();
 
