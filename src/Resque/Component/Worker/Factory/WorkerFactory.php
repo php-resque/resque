@@ -54,12 +54,9 @@ class WorkerFactory implements WorkerFactoryInterface
     }
 
     /**
-     * Create worker
-     *
-     * @param Process $process
-     * @return WorkerInterface
+     * {@inheritDoc}
      */
-    public function createWorker(Process $process = null)
+    public function createWorker()
     {
         $worker = new Worker(
             $this->jobInstanceFactory,
@@ -67,9 +64,6 @@ class WorkerFactory implements WorkerFactoryInterface
         );
 
         $worker->setHostname($this->system->getHostname());
-        if($process) {
-            $worker->setProcess($process);
-        }
 
         return $worker;
     }
@@ -96,8 +90,7 @@ class WorkerFactory implements WorkerFactoryInterface
         );
         $worker->setHostname($hostname);
 
-        $process = new Process(); // @todo When worker is on another host, Process is over kill.
-        $process->setPid($pid);
+        $process = new Process($pid); // @todo When worker is on another host, Process is over kill.
         $worker->setProcess($process);
 
         foreach ($queues as $queue) {

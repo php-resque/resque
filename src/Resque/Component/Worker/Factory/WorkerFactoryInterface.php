@@ -7,14 +7,14 @@ use Resque\Component\Worker\Model\WorkerInterface;
 interface WorkerFactoryInterface
 {
     /**
-     * Create worker
+     * Create worker.
      *
      * @return WorkerInterface
      */
     public function createWorker();
 
     /**
-     * Create worker from ID
+     * Create worker from ID.
      *
      * @param $workerId
      * @return WorkerInterface
