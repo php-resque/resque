@@ -100,7 +100,8 @@ class Worker implements
         $this->eventDispatcher = $eventDispatcher;
     }
 
-    public function isShutdown(){
+    public function isShutdown()
+    {
         return $this->shutdown;
     }
 

@@ -103,26 +103,6 @@ class WorkerTest extends PHPUnit_Framework_TestCase
         $this->assertNull($this->worker->reserve());
     }
 
-    public function testWorkerPerformSendsCorrectArgumentsToJobInstance()
-    {
-        $args = array(
-            1,
-            array(
-                'foo' => 'test'
-            ),
-            'key' => 'baz',
-        );
-
-        $job = new Job('Resque\Component\Job\Tests\Jobs\Simple', $args);
-
-        $this->worker->perform($job);
-
-        $this->assertSame(
-            $args,
-            Simple::$lastPerformArguments
-        );
-    }
-
     /**
      * @dataProvider dataProviderWorkerPerformEvents
      *
@@ -369,7 +349,10 @@ class WorkerTest extends PHPUnit_Framework_TestCase
         $this->worker = $this->getMock(
             'Resque\Component\Worker\Worker',
             array('perform', 'reserve'),
-            array(null)
+            array(
+                $this->getMock('Resque\Component\Job\Factory\JobInstanceFactoryInterface'),
+                $this->getMock('Resque\Component\Core\Event\EventDispatcherInterface'),
+            )
         );
         $this->worker->expects($this->at(0))->method('reserve')->will($this->returnValue($job));
         $this->worker->expects($this->at(1))->method('perform')->will($this->returnValue(null));
