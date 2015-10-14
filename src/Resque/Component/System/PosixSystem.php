@@ -1,21 +1,23 @@
 <?php
+
 namespace Resque\Component\System;
 
 /**
  * Interface to a standard POSIX system
- * @todo getmypid and other system functions
- *
- * @package Resque\Component\System
  */
-class StandardSystem implements SystemInterface
+class PosixSystem implements SystemInterface
 {
     /**
      * @var string The systems hostname
      */
     protected $hostname;
 
-    function getHostname(){
-        if($this->hostname !== null){
+    /**
+     * {@inheritDoc}
+     */
+    public function getHostname()
+    {
+        if ($this->hostname !== null) {
             return $this->hostname;
         }
 
