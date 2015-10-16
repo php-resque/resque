@@ -21,16 +21,15 @@ if (true === is_null($file)) {
 
 require $file;
 
-unset($file);
-
 $app = new Resque\Application;
 $app->setup();
 
-for ($i=0;$i<1000000;$i++) {
-    $q = $app->queueFactory->createQueue('high');
-    $q->push(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\DirtyExit'));
-    $q->push(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\Failure'));
-    $q->push(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\NoPerformMethod'));
-    $q->push(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\PhpError'));
-    $q->push(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\Simple'));
+for ($i = 0; $i < 1000000; $i++) {
+    foreach ($app->queues as $queue) {
+        $queue->enqueue(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\DirtyExit'));
+        $queue->enqueue(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\Failure'));
+        $queue->enqueue(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\NoPerformMethod'));
+        $queue->enqueue(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\PhpError'));
+        $queue->enqueue(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\Simple'));
+    }
 }
