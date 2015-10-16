@@ -256,6 +256,11 @@ class Worker implements
                         new WorkerJobEvent($this, $job)
                     );
 
+                    // @todo do not construct Process here.
+                    $child = new Process();
+                    $child->setPidFromCurrentProcess();
+                    $this->setProcess($child);
+
                     $this->perform($job);
 
                     exit(0);

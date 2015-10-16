@@ -47,7 +47,7 @@ class Process
     /**
      * Set PID.
      *
-     * @deprecated This makes no sense when you consider that in theory process is the thing that knows about
+     * @deprecated This makes no sense when you consider that in theory Process is the thing that knows about
      *             and manages PIDs.
      *
      * @todo see Resque\Component\Core\Foreman::startWorker() it calls self::setPid().
@@ -209,8 +209,14 @@ class Process
      */
     public function setTitle($title)
     {
-        if(getmypid() != $this->getPid()){
-            throw new ResqueRuntimeException("This function wont work unless called from the same process.");
+        if (getmypid() != $this->getPid()) {
+            throw new ResqueRuntimeException(
+                sprintf(
+                    'Can not set title when process pid has changed. Expected "%s", got "%s"',
+                    $this->getPid(),
+                    getmypid()
+                )
+            );
         }
 
         // @todo, it is the workers domain to set this, move this logic back to the worker.
