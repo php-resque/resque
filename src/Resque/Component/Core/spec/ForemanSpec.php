@@ -39,13 +39,14 @@ class ForemanSpec extends ObjectBehavior
         Process $deadWorker1Process,
         Process $deadWorker2Process
     ) {
+        $system->getCurrentPid()->willReturn(2341);
         $system->getHostname()->shouldBeCalled()->willReturn('foo1.resque.com');
 
         $workerRegistry->all()->shouldBeCalled()->willReturn(array($worker, $deadWorker1, $deadWorker2));
 
         $worker->getHostname()->shouldBeCalled()->willReturn('foo1.resque.com');
         $worker->getProcess()->shouldBeCalled()->willReturn($workerProcess);
-        $workerProcess->getPid()->shouldBeCalled()->willReturn(getmypid());
+        $workerProcess->getPid()->shouldBeCalled()->willReturn(2341);
 
         $deadWorker1->getHostname()->shouldBeCalled()->willReturn('foo1.resque.com');
         $deadWorker1->getProcess()->shouldBeCalled()->willReturn($deadWorker1Process);
@@ -70,6 +71,7 @@ class ForemanSpec extends ObjectBehavior
         Process $localProcess,
         Process $remoteProcess
     ) {
+        $system->getCurrentPid()->willReturn(6545);
         $system->getHostname()->shouldBeCalled()->willReturn('bar.resque.com');
 
         $workerRegistry->all()->shouldBeCalled()->willReturn([$localWorker, $remoteWorker]);

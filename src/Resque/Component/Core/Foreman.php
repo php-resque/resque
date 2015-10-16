@@ -54,7 +54,8 @@ class Foreman implements LoggerAwareInterface
         WorkerRegistryInterface $workerRegistry,
         EventDispatcherInterface $eventDispatcher,
         SystemInterface $system
-    ) {
+    )
+    {
         $this->logger = new NullLogger();
         $this->registry = $workerRegistry;
         $this->eventDispatcher = $eventDispatcher;
@@ -86,7 +87,7 @@ class Foreman implements LoggerAwareInterface
      */
     public function work($workers, $wait = false)
     {
-        if($this->working){
+        if ($this->working) {
             throw new ResqueRuntimeException(
                 'Foreman error was last called to work, must be halted first'
             );
@@ -116,7 +117,7 @@ class Foreman implements LoggerAwareInterface
      */
     public function startWorker(WorkerInterface $worker)
     {
-        $parent = new Process();
+        $parent = $this->system->createCurrentProcess();
 
         $this->eventDispatcher->dispatch(ResqueEvents::BEFORE_FORK);
         $child = $parent->fork();
@@ -127,7 +128,7 @@ class Foreman implements LoggerAwareInterface
 
         if (null === $child) {
             // This is spawned worker process, it will process jobs until told to exit.
-            $worker->getProcess()->setPid(getmypid()); // @todo shouldn't this happen automagically?
+            $worker->setProcess($this->system->createCurrentProcess());
 
             $this->registry->register($worker);
             $worker->work();
@@ -181,7 +182,6 @@ class Foreman implements LoggerAwareInterface
      * server may have been killed and the workers did not exit gracefully
      * and therefore leave state information in Redis.
      *
-     * @todo remove usage of getmypid(), try and consolidate everything to Process.
      * @return void
      */
     public function pruneDeadWorkers()
@@ -191,11 +191,14 @@ class Foreman implements LoggerAwareInterface
         $hostname = $this->system->getHostname();
         foreach ($workers as $worker) {
             if ($worker instanceof WorkerInterface) {
-                $pid = $worker->getProcess()->getPid();
-                if ($worker->getHostname() != $hostname || in_array($pid, $workerPids) || $pid == getmypid()) {
+                $isNotOnCurrentHost = $worker->getHostname() != $hostname;
+                $isCurrentlyRunning = in_array($worker->getProcess()->getPid(), $workerPids);
+                $isCurrentProcess = $worker->getProcess()->getPid() == $this->system->getCurrentPid();
 
+                if ($isNotOnCurrentHost || $isCurrentlyRunning || $isCurrentProcess) {
                     continue;
                 }
+
                 $this->logger->warning('Pruning dead worker {worker}', array('worker' => $worker));
                 $this->registry->deregister($worker);
             }

@@ -4,6 +4,7 @@ namespace Resque\Component\Core\Tests;
 
 use PHPUnit_Framework_TestCase;
 use Resque\Component\Core\Foreman;
+use Resque\Component\System\PosixSystem;
 
 class ForemanTest extends PHPUnit_Framework_TestCase
 {
@@ -13,8 +14,8 @@ class ForemanTest extends PHPUnit_Framework_TestCase
         $workerRegistry = $this->getMock('Resque\Component\Worker\Registry\WorkerRegistryInterface');
         $jobInstanceFactory = $this->getMock('Resque\Component\Job\Factory\JobInstanceFactoryInterface');
         $eventDispatcher = $this->getMock('Resque\Component\Core\Event\EventDispatcherInterface');
-        $system = $this->getMock('Resque\Component\System\SystemInterface');
-        $foreman = new Foreman($workerRegistry, $eventDispatcher, $system);
+        // @todo move away from mocking.
+        $foreman = new Foreman($workerRegistry, $eventDispatcher, new PosixSystem());
 
         $mockWorker = $this->getMock(
             'Resque\Component\Worker\Worker',

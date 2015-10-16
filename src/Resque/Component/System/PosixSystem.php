@@ -2,6 +2,8 @@
 
 namespace Resque\Component\System;
 
+use Resque\Component\Core\Process;
+
 /**
  * Interface to a standard POSIX system
  */
@@ -28,5 +30,24 @@ class PosixSystem implements SystemInterface
         }
 
         return $this->hostname;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getCurrentPid()
+    {
+        return $this->createCurrentProcess()->getPid();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function createCurrentProcess()
+    {
+        $process = new Process();
+        $process->setPidFromCurrentProcess();
+
+        return $process;
     }
 }
