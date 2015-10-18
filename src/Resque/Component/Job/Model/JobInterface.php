@@ -30,7 +30,7 @@ interface JobInterface
     /**
      * Set target job class
      *
-     * @todo I think I should rename this to "target". It's up to the instance factory what it means..
+     * @todo I think I should rename this to "target". It's up to the instance factory to know what it means..
      *
      * @param $class
      * @return void

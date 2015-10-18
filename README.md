@@ -29,7 +29,7 @@ It also supports the following additional features:
 
 ## Requirements
 
-* PHP 5.3+
+* PHP 5.4+
 * Redis 2.2+
 * Composer
 
@@ -42,7 +42,7 @@ If you're not familiar with Composer, please see <http://getcomposer.org/>.
 Add php-resque to your application's composer.json.
 
 ```sh
-composer require zomble/php-resque:dev-master
+composer require php-resque/resque:dev-master
 ```
 
 ## Jobs
@@ -56,6 +56,8 @@ $resque = new Resque\Component\Core\Resque(/* predis connection */);
 $resque->enqueue('default', 'Acme\My\Job', array('name' => 'Chris'));
 ```
 
+This is assuming you're happy with the default internals.
+
 ### Defining Jobs
 
 Each job should be in its own class, and implement the `Resque\Component\Job\PerformantJobInterface` interface.
@@ -67,16 +69,13 @@ use Resque\Component\Job\PerformantJobInterface;
 
 class Job implements PerformantJobInterface
 {
-    public function perform()
+    public function perform($args)
     {
         // Work work work
-        echo $this->args['name'];
+        echo $args['name'];
     }
 }
 ```
-
-When the job is run, the class will be instantiated and any arguments will be set as an array on the instantiated
-object, and are accessible via `$this->args`.
 
 Any exception thrown by a job will result in the job failing - be careful here and make sure you handle the
 exceptions that shouldn't result in a job failing.
@@ -139,7 +138,7 @@ class.
 
 ## Workers
 
-Workers work in the exact same way as the Ruby workers. For complete
+Workers work in much the exact same way as the Ruby workers. For complete
 documentation on workers, see the original documentation.
 
 A basic "up-and-running" `bin/resque` file is included that sets up a
@@ -172,7 +171,7 @@ Alternately, you can always `include('bin/resque')` from your application and
 skip setting `APP_INCLUDE` altogether.  Just be sure the various environment
 variables are set (`setenv`) before you do.
 
-### Logging ###
+### Logging
 
 The port supports the same environment variables for logging to STDOUT.
 Setting `VERBOSE` will print basic debugging information and `VVERBOSE`
@@ -196,7 +195,7 @@ $ QUEUE=file_serve,warm_cache bin/resque
 
 The `file_serve` queue will always be checked for new jobs on each iteration before the `warm_cache` queue is checked.
 
-### Running All Queues ###
+### Running All Queues
 
 All queues are supported in the same manner and processed in alphabetical order:
 
@@ -209,7 +208,7 @@ $ QUEUE='*' bin/resque
 Multiple workers can be launched simultaneously by supplying the `COUNT` environment variable:
 
 ```sh
-$ COUNT=5 bin/resque
+$ QUEUES=emails COUNT=5 bin/resque
 ```
 
 Be aware, however, that each worker is its own fork, and the original process
@@ -263,8 +262,8 @@ automatically detect and use it.
 
 ## Event System
 
-php-resque comes with a basic event system that can be used by your application. However you can [plug in
-a bridge to your applications event system](#dispatcher-replacement).
+php-resque comes with a basic event system that can be used by your application. However it's recommended
+that you [plug in a bridge to your applications event system](#dispatcher-replacement).
 
 In the supplied dispatcher you can listen in on events ([as listed below](#events) by registering
 [callables](http://php.net/manual/en/language.types.callable.php) against them, that will be triggered when an
@@ -280,9 +279,7 @@ $dispatcher->addListener('eventName', [callback]);
 Event objects are passed through as a singular argument, ([documented below](#events)).
 
 You can stop listening to an event by calling `EventDispatcher->removeListener` with the same arguments supplied
-to `EventDispatcher->removeListener`.
-
-A sample plugin is included in the `extras` directory.
+to `EventDispatcher->addListener`.
 
 ### Events
 
@@ -360,8 +357,3 @@ Called after a job has been queued using the `Resque::enqueue` method. Arguments
 ### Dispatcher Replacement
 
 // @todo document usage
-
-## Step-By-Step
-
-For a more in-depth look at what php-resque does under the hood (without 
-needing to directly examine the code), have a look at `HOWITWORKS.md`.
