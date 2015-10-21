@@ -31,9 +31,9 @@ interface QueueRegistryAdapterInterface
     public function delete(QueueInterface $queue);
 
     /**
-     * Return all queues.
+     * All queues.
      *
-     * @return array
+     * @return string[] A list of registered queues.
      */
     public function all();
 }

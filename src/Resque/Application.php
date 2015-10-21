@@ -1,29 +1,30 @@
 <?php
 namespace Resque;
 
-use Resque\Component\Core\Exception\ResqueRuntimeException;
-use Resque\Component\Core\ResqueEvents;
-use Resque\Component\Log\SimpleLogger;
-use Resque\Component\Queue\Factory\QueueFactory;
-use Resque\Component\System\PosixSystem;
-use Resque\Redis\RedisQueueStorage;
-use Resque\Redis\RedisStatistic;
-use Resque\Component\Queue\Registry\QueueRegistry;
-use RuntimeException;
 use Predis\Client;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Resque\Component\Core\Event\EventDispatcher;
+use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\Core\Foreman;
-use Resque\Redis\Bridge\PredisBridge;
+use Resque\Component\Core\ResqueEvents;
 use Resque\Component\Job\Factory\JobInstanceFactory;
 use Resque\Component\Job\ResqueJobEvents;
+use Resque\Component\Log\SimpleLogger;
+use Resque\Component\Queue\Factory\QueueFactory;
+use Resque\Component\Queue\Registry\QueueRegistry;
+use Resque\Component\System\StandardSystem;
 use Resque\Component\Worker\Factory\WorkerFactory;
+use Resque\Component\Worker\Registry\WorkerRegistry;
 use Resque\Component\Worker\ResqueWorkerEvents;
+use Resque\Redis\Bridge\PredisBridge;
 use Resque\Redis\RedisEventListener;
 use Resque\Redis\RedisFailure;
 use Resque\Redis\RedisQueueRegistryAdapter;
-use Psr\Log\LoggerInterface;
-use Resque\Redis\RedisWorkerRegistry;
+use Resque\Redis\RedisQueueStorage;
+use Resque\Redis\RedisStatistic;
+use Resque\Redis\RedisWorkerRegistryAdapter;
+use RuntimeException;
 
 /**
  * Resque application.
@@ -98,7 +99,12 @@ class Application
     public $workerFactory;
 
     /**
-     * @var RedisWorkerRegistry
+     * @var \Resque\Redis\RedisWorkerRegistryAdapter|\Resque\Component\Worker\Registry\WorkerRegistryAdapterInterface
+     */
+    public $workerRegistryAdapter;
+
+    /**
+     * @var WorkerRegistry
      */
     public $workerRegistry;
 
@@ -125,7 +131,7 @@ class Application
     public function __construct()
     {
         $this->eventDispatcher = new EventDispatcher();
-        $this->system = new PosixSystem();
+        $this->system = new StandardSystem();
     }
 
     /**
@@ -152,6 +158,7 @@ class Application
         $this->setupStatisticBackend();
         $this->setupJobInstanceFactory();
         $this->setupWorkerFactory();
+        $this->setupWorkerRegistryAdapter();
         $this->setupWorkerRegistry();
         $this->setupWorkers();
         $this->setupForeman();
@@ -372,11 +379,18 @@ class Application
         }
     }
 
+    protected function setupWorkerRegistryAdapter()
+    {
+        if (null === $this->workerRegistryAdapter) {
+            $this->workerRegistryAdapter = new RedisWorkerRegistryAdapter($this->redisClient);
+        }
+    }
+
     protected function setupWorkerRegistry()
     {
         if (null === $this->workerRegistry) {
-            $this->workerRegistry = new RedisWorkerRegistry(
-                $this->redisClient,
+            $this->workerRegistry = new WorkerRegistry(
+                $this->workerRegistryAdapter,
                 $this->eventDispatcher,
                 $this->workerFactory
             );

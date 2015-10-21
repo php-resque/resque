@@ -45,7 +45,7 @@ interface WorkerRegistryInterface
     public function count();
 
     /**
-     * Find worker
+     * Find worker.
      *
      * Given a worker Id, find it and return an instantiated worker class for it.
      *
@@ -55,7 +55,7 @@ interface WorkerRegistryInterface
     public function findWorkerById($id);
 
     /**
-     * Save worker state
+     * Save worker state.
      *
      * @todo I'm not 100% sure about this being here. Think about it.
      *

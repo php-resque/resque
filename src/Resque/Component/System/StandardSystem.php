@@ -5,12 +5,12 @@ namespace Resque\Component\System;
 use Resque\Component\Core\Process;
 
 /**
- * Interface to a standard POSIX system
+ * Interface to a standard system
  */
-class PosixSystem implements SystemInterface
+class StandardSystem implements SystemInterface
 {
     /**
-     * @var string The systems hostname
+     * @var string The systems hostname.
      */
     protected $hostname;
 

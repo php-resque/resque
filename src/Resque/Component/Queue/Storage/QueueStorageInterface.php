@@ -33,10 +33,10 @@ interface QueueStorageInterface
      * Remove.
      *
      * @param QueueInterface $queue
-     * @param $filter
+     * @param $filter @deprecated This should not be handled here.
      * @return mixed
      */
-    public function remove(QueueInterface $queue, $filter);
+    public function remove(QueueInterface $queue, $filter = array());
 
     /**
      * Count.

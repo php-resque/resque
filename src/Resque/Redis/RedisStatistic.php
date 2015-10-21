@@ -19,6 +19,11 @@ class RedisStatistic implements
      */
     protected $redis;
 
+    /**
+     * Constructor.
+     *
+     * @param RedisClientInterface $redis A Redis client.
+     */
     public function __construct(RedisClientInterface $redis)
     {
         $this->setRedisClient($redis);

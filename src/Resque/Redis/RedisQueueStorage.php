@@ -2,14 +2,11 @@
 
 namespace Resque\Redis;
 
-use Resque\Component\Core\Event\EventDispatcherInterface;
 use Resque\Component\Job\Model\FilterableJobInterface;
 use Resque\Component\Job\Model\Job;
 use Resque\Component\Job\Model\JobInterface;
-use Resque\Component\Queue\Event\QueueJobEvent;
 use Resque\Component\Queue\Model\OriginQueueAwareInterface;
 use Resque\Component\Queue\Model\QueueInterface;
-use Resque\Component\Queue\ResqueQueueEvents;
 use Resque\Component\Queue\Storage\QueueStorageInterface;
 
 /**
