@@ -86,7 +86,13 @@ class QueueRegistry implements
      */
     public function all()
     {
-        return $this->adapter->all();
+        $queues = array();
+
+        foreach ($this->adapter->all() as $queueName) {
+            $queues[$queueName] = $this->createQueue($queueName);
+        }
+
+        return $queues;
     }
 
     /**
