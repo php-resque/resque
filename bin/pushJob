@@ -24,6 +24,10 @@ require $file;
 $app = new Resque\Application;
 $app->setup();
 
+foreach ($app->queues as $queue) {
+    $app->queueRegistry->register($queue);
+}
+
 for ($i = 0; $i < 1000000; $i++) {
     foreach ($app->queues as $queue) {
         $queue->enqueue(new \Resque\Component\Job\Model\Job('Resque\Component\Job\Tests\Jobs\DirtyExit'));
