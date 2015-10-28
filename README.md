@@ -4,6 +4,8 @@ PHP Resque
 PHP Resque is a Redis-backed library for creating background jobs, placing those jobs in queues, and processing
 them some time in the future.
 
+Build Status: [![Build Status](https://api.travis-ci.org/php-resque/resque.png?branch=master)](https://travis-ci.org/php-resque/resque)
+
 ## Background
 
 Resque was pioneered and is developed by the fine folks at GitHub, and written in Ruby. What you're seeing here is a
