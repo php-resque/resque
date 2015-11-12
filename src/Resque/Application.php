@@ -262,7 +262,7 @@ class Application
             array($redisEventListener, 'disconnectFromRedis')
         );
         $this->eventDispatcher->addListener(
-            ResqueEvents::BEFORE_FORK,
+            ResqueEvents::PRE_FORK,
             array($redisEventListener, 'disconnectFromRedis')
         );
         $this->eventDispatcher->addListener(

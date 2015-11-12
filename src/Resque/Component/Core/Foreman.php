@@ -119,7 +119,8 @@ class Foreman implements LoggerAwareInterface
     {
         $parent = $this->system->createCurrentProcess();
 
-        $this->eventDispatcher->dispatch(ResqueEvents::BEFORE_FORK);
+        $this->eventDispatcher->dispatch(ResqueEvents::PRE_FORK);
+
         $child = $parent->fork();
 
         // This exists because workers that get reset after a crash still hold their old id.
@@ -128,6 +129,8 @@ class Foreman implements LoggerAwareInterface
 
         if (null === $child) {
             // This is spawned worker process, it will process jobs until told to exit.
+            $this->eventDispatcher->dispatch(ResqueEvents::POST_FORK_CHILD);
+
             $worker->setProcess($this->system->createCurrentProcess());
 
             $this->registry->register($worker);
@@ -136,6 +139,8 @@ class Foreman implements LoggerAwareInterface
 
             exit(0);
         }
+
+        $this->eventDispatcher->dispatch(ResqueEvents::POST_FORK_PARENT);
 
         $worker->setProcess($child);
 

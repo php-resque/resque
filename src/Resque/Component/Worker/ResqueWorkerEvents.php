@@ -58,5 +58,8 @@ final class ResqueWorkerEvents
      */
     const AFTER_FORK_TO_PERFORM = 'resque.worker.after_fork_to_perform';
 
+    /**
+     *
+     */
     const WAIT_NO_JOB = 'resque.worker.wait_no_job';
 }
