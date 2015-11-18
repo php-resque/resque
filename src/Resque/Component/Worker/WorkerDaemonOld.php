@@ -23,12 +23,12 @@ use Resque\Component\Worker\Event\WorkerJobEvent;
 use Resque\Component\Worker\Model\WorkerInterface;
 
 /**
- * Resque Worker
+ * Resque Worker.
  *
  * The worker handles querying issued queues for jobs, processing them and handling the result.
  */
-class Worker implements
-    WorkerInterface,
+class WorkerDaemonOld implements
+    WorkerDaemonInterface,
     LoggerAwareInterface
 {
     /**
@@ -57,11 +57,6 @@ class Worker implements
     protected $queues = array();
 
     /**
-     * @var string The hostname of this worker.
-     */
-    protected $hostname;
-
-    /**
      * @var boolean True if on the next iteration, the worker should shutdown.
      */
     protected $shutdown = false;
@@ -87,7 +82,7 @@ class Worker implements
     protected $fork = true;
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param JobInstanceFactoryInterface $jobInstanceFactory
      * @param EventDispatcherInterface $eventDispatcher
@@ -103,24 +98,6 @@ class Worker implements
     public function isShutdown()
     {
         return $this->shutdown;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function addQueue(QueueInterface $queue)
-    {
-        $this->queues[$queue->getName()] = $queue;
-
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getQueues()
-    {
-        return $this->queues;
     }
 
     /**
@@ -147,17 +124,6 @@ class Worker implements
     }
 
     /**
-     * @param Process $process
-     * @return $this
-     */
-    public function setProcess(Process $process)
-    {
-        $this->process = $process;
-
-        return $this;
-    }
-
-    /**
      * @return Process
      */
     public function getProcess()
@@ -171,126 +137,9 @@ class Worker implements
         return $this->process;
     }
 
-    /**
-     * Work
-     *
-     * The primary loop for a worker which when called on an instance starts
-     * the worker's life cycle.
-     *
-     * Queues are checked every $interval (seconds) for new jobs.
-     *
-     * @param int $interval How often to check for new jobs across the queues. @todo remove, use setInterval or similar
-     */
-    public function work($interval = 3)
-    {
-        $this->startup();
-
-        while (true) {
-            if ($this->shutdown) {
-                break;
-            }
-
-            $this->getProcess()->dispatchSignals();
-
-            if ($this->paused) {
-                $this->getProcess()->setTitle('Paused');
-
-                if ($interval == 0) {
-                    break;
-                }
-
-                usleep($interval * 1000000);
-
-                continue;
-            }
-
-            try {
-                $job = $this->reserve();
-            }catch(\Exception $ex){
-                $this->getLogger()->error('Failed to reserve due to exception "{message}", skipping', array('message'=>$ex->getMessage()));
-                continue;
-            }
-
-            if (null === $job) {
-                // For an interval of 0, break now - helps with unit testing etc
-                // @todo replace with some method, which can be mocked... an interval of 0 should be considered valid
-                if ($interval == 0) {
-                    break;
-                }
-
-                $this->eventDispatcher->dispatch(
-                    ResqueWorkerEvents::WAIT_NO_JOB,
-                    new WorkerEvent($this)
-                );
-
-                $this->getProcess()->setTitle('Waiting for ' . implode(',', $this->queues));
+    public 
 
 
-                $this->getLogger()->debug('Sleeping for {seconds}s, no jobs on {queues}', array('queues'=>implode(', ',array_map(function($a){return $a->getName();}, $this->getQueues())), 'seconds'=>$interval));
-
-                sleep($interval);
-
-                continue;
-            }
-
-            $this->getLogger()->notice('Starting work on {job}', array('job' => $job));
-
-            if ($job instanceof TrackableJobInterface) {
-                $job->setState(JobInterface::STATE_PERFORMING);
-            }
-
-            $this->setCurrentJob($job);
-
-            if ($this->fork) {
-                $this->eventDispatcher->dispatch(
-                    ResqueWorkerEvents::BEFORE_FORK_TO_PERFORM,
-                    new WorkerJobEvent($this, $job)
-                );
-
-                $this->childProcess = $this->getProcess()->fork();
-
-                if (null === $this->childProcess) {
-                    // This is child process, it will perform the job and then die.
-                    $this->eventDispatcher->dispatch(
-                        ResqueWorkerEvents::AFTER_FORK_TO_PERFORM,
-                        new WorkerJobEvent($this, $job)
-                    );
-
-                    // @todo do not construct Process here.
-                    $child = new Process();
-                    $child->setPidFromCurrentProcess();
-                    $this->setProcess($child);
-
-                    $this->perform($job);
-
-                    exit(0);
-                } else {
-                    // This is the parent.
-                    $title = 'Forked ' . $this->childProcess->getPid() . ' at ' . date('c');
-                    $this->getProcess()->setTitle($title);
-                    $this->getLogger()->debug($title);
-
-                    // Wait until the child process finishes before continuing.
-                    $this->childProcess->wait();
-
-                    if (false === $this->childProcess->isCleanExit()) {
-                        $exception = new DirtyExitException(
-                            'Job dirty exited with code ' . $this->childProcess->getExitCode()
-                        );
-
-                        $this->handleFailedJob($job, $exception);
-                    }
-                }
-
-                // Child should be dead by now.
-                $this->childProcess = null;
-            } else {
-                $this->perform($job);
-            }
-
-            $this->workComplete($job);
-        }
-    }
 
     /**
      * Perform necessary actions to start a worker
@@ -338,7 +187,7 @@ class Worker implements
     }
 
     /**
-     * Process a single job
+     * Process a single job.
      *
      * @throws InvalidJobException if the given job cannot actually be asked to perform.
      *
@@ -459,7 +308,7 @@ class Worker implements
      * QUIT: Shutdown after the current job finishes processing.
      * USR1: Kill the forked child immediately and continue processing jobs.
      */
-    private function registerSignalHandlers()
+    protected function registerSignalHandlers()
     {
         if (!function_exists('pcntl_signal')) {
             return;

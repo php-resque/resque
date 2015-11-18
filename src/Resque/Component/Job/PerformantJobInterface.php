@@ -12,7 +12,7 @@ interface PerformantJobInterface
     /**
      * Perform.
      *
-     * This is how your task is invoked.
+     * This is how your task/job is invoked.
      *
      * A clean exit is what considers the job as complete. Be mindful of this with your exception
      * handling and exit codes.
