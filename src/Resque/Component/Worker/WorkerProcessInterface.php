@@ -3,8 +3,9 @@
 namespace Resque\Component\Worker;
 
 use Resque\Component\Core\Process;
+use Resque\Component\Worker\Model\WorkerInterface;
 
-interface WorkerDaemonInterface
+interface WorkerProcessInterface
 {
     /**
      * Get worker model.

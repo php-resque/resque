@@ -147,7 +147,7 @@ class Process
     }
 
     /**
-     * Attempt to kill the process
+     * Attempt to kill the process.
      *
      * @param int $signal The signal to send to the process
      * @return $this

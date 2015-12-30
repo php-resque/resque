@@ -11,6 +11,11 @@ class WorkerEvent
      */
     protected $worker;
 
+    /**
+     * Constructor.
+     *
+     * @param WorkerInterface $worker
+     */
     public function __construct(WorkerInterface $worker)
     {
         $this->worker = $worker;

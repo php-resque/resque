@@ -22,7 +22,7 @@ final class ResqueJobEvents
     const STATE_CHANGE = 'resque.job.state_change';
 
     /**
-     * The BEFORE_PERFORM event is dispatched before a job perform is attempted.
+     * The PRE_PERFORM event is dispatched before a job perform is attempted.
      *
      * The event listener receives a JobInstanceEvent instance.
      *
@@ -30,7 +30,18 @@ final class ResqueJobEvents
      *
      * @var string
      */
-    const BEFORE_PERFORM = 'resque.job.before_perform';
+    const PRE_PERFORM = 'resque.job.pre_perform';
+
+    /**
+     * The POST_PERFORM event is dispatched after a job is executed. Regardless of if it fails or not.
+     *
+     * The event listener receives a JobEvent instance.
+     *
+     * @see \Resque\Component\Job\Event\JobEvent
+     *
+     * @var string
+     */
+    const POST_PERFORM = 'resque.job.post_perform';
 
     /**
      * The PERFORMED event is dispatched whenever a job successfully performs from with in a worker.

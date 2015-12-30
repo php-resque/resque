@@ -5,7 +5,9 @@ namespace Resque\Component\System;
 use Resque\Component\Core\Process;
 
 /**
- * Interface to a standard system
+ * Standard System.
+ *
+ * @see SystemInteface
  */
 class StandardSystem implements SystemInterface
 {

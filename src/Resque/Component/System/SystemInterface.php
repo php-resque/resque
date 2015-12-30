@@ -4,7 +4,10 @@ namespace Resque\Component\System;
 use Resque\Component\Core\Process;
 
 /**
- * Interface for system calls.
+ * System.
+ *
+ * Interface for system calls. It's intended to make various system calls easy to swap out for different
+ * operating systems.
  */
 interface SystemInterface
 {

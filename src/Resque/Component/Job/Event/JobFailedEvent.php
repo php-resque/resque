@@ -4,7 +4,6 @@ namespace Resque\Component\Job\Event;
 
 use Exception;
 use Resque\Component\Job\Model\JobInterface;
-use Resque\Component\Worker\Model\WorkerInterface;
 
 class JobFailedEvent extends JobEvent
 {
@@ -13,16 +12,11 @@ class JobFailedEvent extends JobEvent
      */
     protected $exception;
 
-    /**
-     * @var WorkerInterface The worker the job failed with in.
-     */
-    protected $worker;
-
-    public function __construct(JobInterface $job, Exception $exception, WorkerInterface $worker)
+    public function __construct(JobInterface $job, Exception $exception)
     {
         parent::__construct($job);
+
         $this->exception = $exception;
-        $this->worker = $worker;
     }
 
     /**
@@ -31,13 +25,5 @@ class JobFailedEvent extends JobEvent
     public function getException()
     {
         return $this->exception;
-    }
-
-    /**
-     * @return WorkerInterface
-     */
-    public function getWorker()
-    {
-        return $this->worker;
     }
 }
