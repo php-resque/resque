@@ -8,8 +8,10 @@ use Resque\Component\Core\Process;
 use Resque\Component\Job\Factory\JobInstanceFactoryInterface;
 use Resque\Component\Queue\Factory\QueueFactoryInterface;
 use Resque\Component\System\SystemInterface;
+use Resque\Component\Worker\JobPerformer;
 use Resque\Component\Worker\Model\WorkerInterface;
-use Resque\Component\Worker\Worker;
+use Resque\Component\Worker\Model\Worker;
+use Resque\Component\Worker\WorkerProcess;
 
 class WorkerFactory implements WorkerFactoryInterface
 {
@@ -63,9 +65,22 @@ class WorkerFactory implements WorkerFactoryInterface
             $this->eventDispatcher
         );
 
-        $worker->setHostname($this->system->getHostname());
+//        $worker->setHostname($this->system->getHostname());
 
         return $worker;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function createWorkerProcess(WorkerInterface $workerModel)
+    {
+        return new WorkerProcess(
+            $workerModel,
+            $this->eventDispatcher,
+            new JobPerformer($this->jobInstanceFactory, $this->eventDispatcher), // @todo
+            $this->system
+        );
     }
 
     /**

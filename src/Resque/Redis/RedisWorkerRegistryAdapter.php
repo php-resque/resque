@@ -45,14 +45,16 @@ class RedisWorkerRegistryAdapter implements
     {
         $currentJob = $worker->getCurrentJob();
 
+        $startDate = $worker->getStartedAtDateTime()->format('c');
+
         $this->redis->sadd('workers', $worker->getId());
-        $this->redis->set('worker:' . $worker->getId() . ':started', date('c')); // @todo worker->getStartedAt()
+        $this->redis->set('worker:' . $worker->getId() . ':started', $startDate);
 
         if ($currentJob) {
             $payload = json_encode(
                 array(
                     'queue' => ($currentJob instanceof OriginQueueAwareInterface) ? $currentJob->getOriginQueue() : null,
-                    'run_at' => date('c'), // @todo currentJob->getRunAt
+                    'run_at' => $startDate,
                     'payload' => $currentJob->encode(),
                 )
             );

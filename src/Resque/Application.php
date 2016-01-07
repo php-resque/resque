@@ -258,15 +258,12 @@ class Application
         $redisEventListener = new RedisEventListener($this->redisClient);
 
         $this->eventDispatcher->addListener(
-            ResqueWorkerEvents::BEFORE_FORK_TO_PERFORM,
-            array($redisEventListener, 'disconnectFromRedis')
-        );
-        $this->eventDispatcher->addListener(
             ResqueEvents::PRE_FORK,
             array($redisEventListener, 'disconnectFromRedis')
         );
+
         $this->eventDispatcher->addListener(
-            ResqueWorkerEvents::WAIT_NO_JOB,
+            ResqueWorkerEvents::PROCESS_WAIT_NO_JOB,
             array($redisEventListener, 'disconnectFromRedis')
         );
     }
@@ -417,7 +414,6 @@ class Application
         $this->workers = array();
         for ($i = 0; $i < $this->config['worker_count']; ++$i) {
             $worker = $this->workerFactory->createWorker();
-            $worker->setLogger($this->logger);
 
             foreach ($this->queues as $queue) {
                 $worker->addQueue($queue);
