@@ -49,7 +49,7 @@ class JobPerformer
      *
      * @param JobInterface $job The job to be processed.
      *
-     * @return bool TRUE, if the job performed, FALSE otherwise.
+     * @return bool|\Exception TRUE, if the job performed, \Exception otherwise.
      */
     public function perform(JobInterface $job)
     {
@@ -75,7 +75,7 @@ class JobPerformer
         } catch (\Exception $exception) {
             $this->handleFailedJob($job, $exception);
 
-            return false;
+            return $exception;
         }
 
         $this->handleSuccessfulJob($job, $jobInstance);
