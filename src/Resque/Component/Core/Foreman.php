@@ -10,11 +10,14 @@ use Resque\Component\Core\Exception\ResqueRuntimeException;
 use Resque\Component\System\SystemInterface;
 use Resque\Component\Worker\Model\WorkerInterface;
 use Resque\Component\Worker\Registry\WorkerRegistryInterface;
+use Resque\Component\Worker\WorkerProcessInterface;
 
 /**
  * Resque Foreman
  *
  * Handles pruning, forking, killing and general management of workers.
+ *
+ * @todo Foreman should not be in "core".
  */
 class Foreman implements LoggerAwareInterface
 {
@@ -79,8 +82,8 @@ class Foreman implements LoggerAwareInterface
      * Given workers this will fork a new process for each worker and set them to work, whilst registering them with
      * the worker registry.
      *
-     * @param WorkerInterface[] $workers An array of workers you would like forked into child processes and set
-     *                          on their way.
+     * @param WorkerProcessInterface[] $workers An array of workers you would like forked into child processes and set
+     *                                          on their way.
      * @param bool $wait If true, this Foreman will wait for the workers to complete. This will guarantee workers are
      *                   cleaned up after correctly, however this is not really practical for most purposes.
      * @return void
@@ -97,14 +100,14 @@ class Foreman implements LoggerAwareInterface
 
         // @todo Check workers are instanceof WorkerInterface.
 
-        /** @var WorkerInterface $worker */
-        foreach ($workers as $worker) {
-            $this->startWorker($worker);
+        /** @var WorkerProcessInterface $workerProcess */
+        foreach ($workers as $workerProcess) {
+            $this->startWorker($workerProcess);
         }
 
         if ($wait) {
-            foreach ($workers as $worker) {
-                $this->deregisterOnWorkerExit($worker);
+            foreach ($workers as $workerProcess) {
+                $this->deregisterOnWorkerExit($workerProcess);
             }
         }
     }
@@ -112,10 +115,10 @@ class Foreman implements LoggerAwareInterface
     /**
      * Start worker.
      *
-     * @param WorkerInterface $worker The worker to start.
+     * @param WorkerProcessInterface $workerProcess The worker process to start.
      * @return void
      */
-    public function startWorker(WorkerInterface $worker)
+    public function startWorker(WorkerProcessInterface $workerProcess)
     {
         $parent = $this->system->createCurrentProcess();
 
@@ -125,52 +128,52 @@ class Foreman implements LoggerAwareInterface
 
         // This exists because workers that get reset after a crash still hold their old id.
         // @todo this shouldn't be needed if id was always derived.. hmm.
-        $worker->setId(null);
+        //$worker->setId(null);
 
         if (null === $child) {
             // This is spawned worker process, it will process jobs until told to exit.
             $this->eventDispatcher->dispatch(ResqueEvents::POST_FORK_CHILD);
 
-            $worker->setProcess($this->system->createCurrentProcess());
+          // @todo  $workerProcess->setProcess($this->system->createCurrentProcess());
 
-            $this->registry->register($worker);
-            $worker->work();
-            $this->registry->deregister($worker);
+            $this->registry->register($workerProcess->getModel());
+            $workerProcess->start();
+            $this->registry->deregister($workerProcess->getModel());
 
             exit(0);
         }
 
         $this->eventDispatcher->dispatch(ResqueEvents::POST_FORK_PARENT);
 
-        $worker->setProcess($child);
+      // @todo  $workerProcess->setProcess($child);
 
-        $this->logger->info(
-            'Successfully started worker {worker} with pid {childPid}',
-            array(
-                'worker' => $worker,
-                'childPid' => $child->getPid(),
-            )
-        );
+//        $this->logger->info(
+//            'Successfully started worker {worker} with pid {childPid}',
+//            array(
+//                'worker' => $workerProcess,
+//                'childPid' => $child->getPid(),
+//            )
+//        );
     }
 
     /**
      * Deregister on worker exit.
      *
-     * @param WorkerInterface $worker The worker to wait for exit and then deregister.
+     * @param WorkerProcessInterface $workerProcess The worker to wait for exit and then deregister.
      * @throws ResqueRuntimeException when $worker fails to exit cleanly.
      * @return void
      */
-    public function deregisterOnWorkerExit(WorkerInterface $worker)
+    public function deregisterOnWorkerExit(WorkerProcessInterface $workerProcess)
     {
-        $process = $worker->getProcess();
+        $process = $workerProcess->getProcess();
         $process->wait();
         if ($process->isCleanExit()) {
-            $this->registry->deregister($worker);
+            $this->registry->deregister($workerProcess->getModel());
         } else {
             throw new ResqueRuntimeException(
                 sprintf(
                     'Foreman error with worker %s wait on pid %d',
-                    $worker->getId(),
+                    $workerProcess->getModel()->getId(),
                     $process->getPid()
                 )
             );

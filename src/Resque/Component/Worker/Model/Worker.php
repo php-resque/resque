@@ -2,8 +2,15 @@
 
 namespace Resque\Component\Worker\Model;
 
+use Resque\Component\Queue\Model\QueueInterface;
+
 class Worker implements WorkerInterface
 {
+    /**
+     * @var array
+     */
+    protected $queues = [];
+
     /**
      * {@inheritDoc}
      */
@@ -25,7 +32,7 @@ class Worker implements WorkerInterface
      */
     public function getAssignedQueues()
     {
-        // TODO: Implement getAssignedQueues() method.
+        return $this->queues;
     }
 
     /**
@@ -50,5 +57,13 @@ class Worker implements WorkerInterface
     public function getStartedAtDateTime()
     {
         // TODO: Implement getStartedAtDateTime() method.
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function addQueue(QueueInterface $queue)
+    {
+        $this->queues[$queue->getName()] = $queue;
     }
 }

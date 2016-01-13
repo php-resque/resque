@@ -53,4 +53,12 @@ interface WorkerInterface
      * @return DateTime|null The DateTime the worker was started.. if ever.
      */
     public function getStartedAtDateTime();
+
+    /**
+     * Add queue.
+     *
+     * @param QueueInterface $queue
+     * @return void
+     */
+    public function addQueue(QueueInterface $queue);
 }

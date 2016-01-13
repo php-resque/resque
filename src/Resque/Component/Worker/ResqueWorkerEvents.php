@@ -18,6 +18,8 @@ final class ResqueWorkerEvents
      *
      */
     const STARTED = 'resque.worker.process_started';
+    const REGISTERED = 'resque.worker.registered';
+    const UNREGISTERED = 'resque.worker.unregistered';
 
     const PROCESS_WAIT_NO_JOB = 'resque.worker.process_wait_no_job';
     const PROCESS_WAIT_PAUSED = 'resque.worker.process_wait_paused';

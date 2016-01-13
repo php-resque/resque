@@ -119,12 +119,10 @@ class WorkerProcess implements
      */
     public function start()
     {
+        $this->process = $this->system->createCurrentProcess();
         $this->process->setTitle('Starting');
-
         $this->registerSignalHandlers();
-
         $this->eventDispatcher->dispatch(ResqueWorkerEvents::STARTED, new WorkerProcessEvent($this));
-
         $this->work();
     }
 
